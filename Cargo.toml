@@ -1,0 +1,25 @@
+[package]
+name = "dinobot"
+version = "0.1.0"
+authors = ["AXON <axonasif@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#wildmatch = "2.1.0"
+serde_json = "1.0.64"
+regex = "1.4.5"
+#obfstr = "0.3.0"
+glob = "0.3.0"
+term_grid = "0.2.0"
+thorne = "0.1.7"
+
+[dependencies.serenity]
+default-features = false
+features = ["client", "gateway", "rustls_backend", "model", "utils", "cache", "framework", "standard_framework"]
+version = "0.10.5"
+
+[dependencies.tokio]
+version = "1.4.0"
+features = ["macros", "rt-multi-thread", "process"]
