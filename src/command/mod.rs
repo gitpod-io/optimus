@@ -87,7 +87,7 @@ impl TypeMapKey for CommandCounter {
     // bashget,
     // ping,
     latency,
-    whois,
+    // whois,
     // some_long_command,
     // upper_command
 )]

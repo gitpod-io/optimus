@@ -9,7 +9,7 @@ use crate::command::note::*;
 use crate::utils::db::*;
 use glob::*;
 use regex::Regex;
-use serde_json::json;
+use serde_json::{json, Result, Value};
 use serenity::{
     async_trait,
     model::{
