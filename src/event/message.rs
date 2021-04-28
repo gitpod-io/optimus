@@ -17,6 +17,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
     // let user_date = _new_member.user.created_at().date().naive_utc();
     let dbnode_userid = Database::from("userid".to_string()).await;
     let members = &_msg.guild(&_ctx.cache).await.unwrap().members;
+    //
 
     for (_user_id, _member) in members {
         dbnode_userid
