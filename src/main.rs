@@ -12,7 +12,7 @@ use serenity::{
 };
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::{atomic::AtomicBool, Arc},
 };
 
 #[tokio::main]
@@ -107,7 +107,9 @@ async fn main() {
         .group(&OWNER_GROUP);
 
     let mut client = Client::builder(&token)
-        .event_handler(event::Listener)
+        .event_handler(event::Listener {
+            is_loop_running: AtomicBool::new(false),
+        })
         .intents(GatewayIntents::all())
         .framework(framework)
         .await
