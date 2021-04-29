@@ -9,9 +9,16 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     // let reactions_count = react_data.reactions.iter().count();
     let is_self_reacted = react_data.reactions.iter().as_ref().first().unwrap().me;
 
+    let reactated_user = &_added_reaction.user(&_ctx.http).await.unwrap();
+
     match emoji.as_str() {
         "✍" => {
             if !*a_bot_reacted_now && is_self_reacted {
+                react_data
+                    .delete_reaction_emoji(&_ctx.http, '✍')
+                    .await
+                    .unwrap();
+
                 let dbnode = Database::from("msgcache".to_string()).await;
                 // Use contentsafe options
                 let settings = {
@@ -31,11 +38,15 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 .await;
 
                 react_data
-                    .reply(&_ctx.http, content.replace("~~MSG_TYPE~~", "Edited:"))
+                    .reply(
+                        &_ctx.http,
+                        content.replace(
+                            "~~MSG_TYPE~~",
+                            format!("Asked by {}  ||  Edited by", &reactated_user).as_str(),
+                        ),
+                    )
                     .await
                     .unwrap();
-
-                react_data.delete_reactions(&_ctx.http).await.unwrap();
             }
         }
         "❎" => {

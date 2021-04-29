@@ -27,16 +27,16 @@ pub async fn responder(
     let _msg_id = _event.id;
     let _channel_id = _event.channel_id;
 
-    let _okay = &_ctx
+    let message = &_ctx
         .http
         .get_message(
             u64::try_from(_channel_id).unwrap(),
             u64::try_from(_msg_id).unwrap(),
         )
         .await
-        .unwrap()
-        .react(&_ctx.http, '✍')
-        .await
         .unwrap();
-    // react(&_ctx.http, '❎').await.unwrap();
+
+    if message.edited_timestamp.is_some() {
+        message.react(&_ctx.http, '✍').await.unwrap();
+    }
 }

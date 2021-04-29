@@ -9,15 +9,81 @@ pub async fn responder(
     let dbnode = Database::from("msgcache".to_string()).await;
     let deleted_message = dbnode.fetch_deleted_msg(_deleted_message_id).await;
 
-    if !Regex::new(r"^.react")
+    // let last_msg_id = _new
+    //     .unwrap()
+    //     .channel(&_ctx.cache)
+    //     .await
+    //     .unwrap()
+    //     .guild()
+    //     .unwrap()
+    //     .last_message_id
+    //     .unwrap();
+
+    // let last_msg_id = _ctx
+    //     .cache
+    //     .channel(_channel_id)
+    //     .await
+    //     .unwrap()
+    //     .guild()
+    //     .unwrap()
+    //     .last_message_id
+    //     .unwrap();
+
+    let qq = _ctx
+        .http
+        .get_messages(u64::try_from(_channel_id).unwrap(), "")
+        .await
+        .unwrap();
+
+    let nqn_exists = _ctx
+        .cache
+        .guild(_guild_id.unwrap())
+        .await
         .unwrap()
-        .is_match(&deleted_message.as_str())
+        .member(&_ctx.http, 559426966151757824)
+        .await;
+
+    // let botis = &qq.first().as_ref().map(|x| x.author.bot).unwrap();
+    let re = Regex::new(r"<:.*.:.*.>").unwrap();
+
+    let parsed_last_msg = re
+        .replace_all(
+            &qq.first()
+                .as_ref()
+                .map(|x| String::from(&x.content))
+                .unwrap(),
+            "",
+        )
+        .to_string();
+
+    let msg_is_nqnbot = {
+        if nqn_exists.is_err() {
+            false
+        } else if (&deleted_message).contains(&parsed_last_msg) {
+            true
+        } else {
+            false
+        }
+    };
+
+    // let botis = _ctx
+    //     .cache
+    //     .message(_channel_id, last_msg_id)
+    //     .await
+    //     .unwrap()
+    //     .author
+    //     .bot;
+
+    if !msg_is_nqnbot
+        && !Regex::new(r"^.react")
+            .unwrap()
+            .is_match(&deleted_message.as_str())
         && !Regex::new(r"^dsay ")
             .unwrap()
             .is_match(&deleted_message.as_str())
-        && !Regex::new(r":*:")
-            .unwrap()
-            .is_match(&deleted_message.as_str())
+        // && !Regex::new(r":*:")
+        //     .unwrap()
+        //     .is_match(&deleted_message.as_str())
         && !Regex::new(r"^.delete")
             .unwrap()
             .is_match(&deleted_message.as_str())
