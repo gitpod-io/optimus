@@ -2,8 +2,8 @@ mod guild_member_addition;
 mod guild_member_removal;
 mod message;
 mod message_delete;
+mod message_update;
 mod reaction_add;
-// mod message_update;
 
 use crate::command::note::*;
 use crate::utils::db::*;
@@ -14,6 +14,7 @@ use serenity::{
     async_trait,
     model::{
         channel::{Message, Reaction},
+        event::MessageUpdateEvent,
         gateway::{Activity, Ready},
         guild::Member,
         id::{ChannelId, GuildId, MessageId},
@@ -61,15 +62,15 @@ impl EventHandler for Listener {
         message_delete::responder(_ctx, _channel_id, _deleted_message_id, _guild_id).await;
     }
 
-    // async fn message_update(
-    //     &self,
-    //     _ctx: Context,
-    //     _old_if_available: Option<Message>,
-    //     _new: Option<Message>,
-    //     _event: MessageUpdateEvent,
-    // ) {
-    //     message_update::responder(_ctx, _old_if_available, _new, _event).await;
-    // }
+    async fn message_update(
+        &self,
+        _ctx: Context,
+        _old_if_available: Option<Message>,
+        _new: Option<Message>,
+        _event: MessageUpdateEvent,
+    ) {
+        message_update::responder(_ctx, _old_if_available, _new, _event).await;
+    }
 
     // Set a handler to be called on the `ready` event. This is called when a
     // shard is booted, and a READY payload is sent by Discord. This payload

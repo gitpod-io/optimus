@@ -35,6 +35,18 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
 
         let user_colors = &user_data.colour(&_ctx.cache).await.unwrap().hex();
 
+        // let guild = &_msg.guild_id.unwrap();
+        // let messages = &_ctx.cache.guild_channels(guild).await.unwrap();
+
+        // let mut countmsg = 1;
+
+        // for (id, channel) in messages.iter() {
+        //     countmsg = countmsg + 1;
+        //     let chi = id.messages_iter(&_ctx.http).un;
+        // }
+
+        // let hmm = &_msg.channel(&_ctx.cache).await.unwrap().guild().unwrap().messages(http, builder)
+
         _msg.channel_id
             .send_message(&_ctx.http, |m| {
                 m.embed(|e| {
