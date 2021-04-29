@@ -19,39 +19,27 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
     if !_msg.is_own(&_ctx.cache).await {
         let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
-        if !Regex::new(r"^.react ")
-            .unwrap()
-            .is_match(&_msg.content.as_str())
-            && !Regex::new(r"^dsay ")
-                .unwrap()
-                .is_match(&_msg.content.as_str())
-            && !Regex::new(r":*:").unwrap().is_match(&_msg.content.as_str())
-            && !Regex::new(r"^.delete ")
-                .unwrap()
-                .is_match(&_msg.content.as_str())
-        {
-            let attc = &_msg.attachments;
-            let mut _attachments = String::new();
+        let attc = &_msg.attachments;
+        let mut _attachments = String::new();
 
-            for var in attc.iter() {
-                let url = &var.proxy_url;
-                _attachments.push_str(format!("\n{}", url).as_str());
-            }
-
-            // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
-            dbnode_msgcache
-                .cache_deleted_msg(
-                    &_msg.id,
-                    format!(
-                        "{}{}\n> ~~MSG_TYPE~~ {}",
-                        &_msg.content,
-                        &_attachments,
-                        &_msg.author,
-                        // &_msg.timestamp
-                    ),
-                )
-                .await;
+        for var in attc.iter() {
+            let url = &var.proxy_url;
+            _attachments.push_str(format!("\n{}", url).as_str());
         }
+
+        // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
+        dbnode_msgcache
+            .cache_deleted_msg(
+                &_msg.id,
+                format!(
+                    "{}{}\n> ~~MSG_TYPE~~ {}",
+                    &_msg.content,
+                    &_attachments,
+                    &_msg.author,
+                    // &_msg.timestamp
+                ),
+            )
+            .await;
     }
 
     let dbnode_notes = Database::from("notes".to_string()).await;

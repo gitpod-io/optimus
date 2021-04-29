@@ -8,34 +8,47 @@ pub async fn responder(
 ) {
     let dbnode = Database::from("msgcache".to_string()).await;
     let deleted_message = dbnode.fetch_deleted_msg(_deleted_message_id).await;
-    // println!("{}", &deleted_message);
-    // println!("{}", &_deleted_message_id);
-    let settings = {
-        ContentSafeOptions::default()
-            .clean_channel(false)
-            .clean_role(true)
-            .clean_user(false)
-            .clean_everyone(true)
-            .clean_here(true)
-    };
 
-    let content = content_safe(
-        &_ctx.cache,
-        &deleted_message.replace("~~MSG_TYPE~~", "Deleted:"),
-        &settings,
-    )
-    .await;
+    if !Regex::new(r"^.react")
+        .unwrap()
+        .is_match(&deleted_message.as_str())
+        && !Regex::new(r"^dsay ")
+            .unwrap()
+            .is_match(&deleted_message.as_str())
+        && !Regex::new(r":*:")
+            .unwrap()
+            .is_match(&deleted_message.as_str())
+        && !Regex::new(r"^.delete")
+            .unwrap()
+            .is_match(&deleted_message.as_str())
+    {
+        let settings = {
+            ContentSafeOptions::default()
+                .clean_channel(false)
+                .clean_role(true)
+                .clean_user(false)
+                .clean_everyone(true)
+                .clean_here(true)
+        };
 
-    _channel_id.say(&_ctx, &content).await.ok();
-    process::Command::new("find")
-        .args(&[
-            dbnode.to_string(),
-            String::from("-type"),
-            String::from("f"),
-            String::from("-mtime"),
-            String::from("+5"),
-            String::from("-delete"),
-        ])
-        .spawn()
-        .ok();
+        let content = content_safe(
+            &_ctx.cache,
+            &deleted_message.replace("~~MSG_TYPE~~", "Deleted:"),
+            &settings,
+        )
+        .await;
+
+        _channel_id.say(&_ctx, &content).await.ok();
+        process::Command::new("find")
+            .args(&[
+                dbnode.to_string(),
+                String::from("-type"),
+                String::from("f"),
+                String::from("-mtime"),
+                String::from("+5"),
+                String::from("-delete"),
+            ])
+            .spawn()
+            .ok();
+    }
 }
