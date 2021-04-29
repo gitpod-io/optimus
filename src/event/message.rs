@@ -77,7 +77,23 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
                             .http
                             .start_typing(u64::try_from(_msg.channel_id).unwrap())
                             .unwrap();
-                        let content = Note::from(&note).await.get_contents().await;
+
+                        // Use contentsafe options
+                        let settings = {
+                            ContentSafeOptions::default()
+                                .clean_channel(false)
+                                .clean_role(true)
+                                .clean_user(false)
+                                .clean_everyone(true)
+                                .clean_here(true)
+                        };
+
+                        let content = content_safe(
+                            &_ctx.cache,
+                            Note::from(&note).await.get_contents().await,
+                            &settings,
+                        )
+                        .await;
                         if ref_msg.is_some() {
                             &ref_msg
                                 .as_ref()

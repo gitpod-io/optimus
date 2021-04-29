@@ -13,9 +13,10 @@ pub async fn responder(
     let settings = {
         ContentSafeOptions::default()
             .clean_channel(false)
-            .clean_role(false)
+            .clean_role(true)
             .clean_user(false)
-            .clean_everyone(false)
+            .clean_everyone(true)
+            .clean_here(true)
     };
 
     let content = content_safe(
