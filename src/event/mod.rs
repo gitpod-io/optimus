@@ -134,6 +134,7 @@ impl EventHandler for Listener {
                         let members = &ctx1.cache.guild(guild).await.unwrap().members;
 
                         for (_user_id, _member) in members {
+                            tokio::time::sleep(Duration::from_secs(2)).await;
                             dbnode_userid
                                 .save_user_info(&_user_id, _member.user.tag())
                                 .await;

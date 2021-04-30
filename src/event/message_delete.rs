@@ -35,32 +35,53 @@ pub async fn responder(
         .await
         .unwrap();
 
-    let nqn_exists = _ctx
-        .cache
-        .guild(_guild_id.unwrap())
-        .await
-        .unwrap()
-        .member(&_ctx.http, 559426966151757824)
-        .await;
+    let gg = _ctx.cache.guild(_guild_id.unwrap()).await.unwrap();
 
-    // let botis = &qq.first().as_ref().map(|x| x.author.bot).unwrap();
-    let re = Regex::new("<*.:.*.:.*.>").unwrap();
+    let nqn_exists = gg.member(&_ctx.http, 559426966151757824).await;
 
-    let parsed_last_msg = re
+    let botis = &qq.first().as_ref().map(|x| x.author.id).unwrap();
+
+    let is_valid_member = gg.member(&_ctx.http, botis).await;
+
+    let re = Regex::new("<*.:.*.:.*>").unwrap();
+    let re2 = Regex::new(":.*:").unwrap();
+    let re3 = Regex::new("\\n.* ~~MSG_TYPE~~.*").unwrap();
+
+    let mut parsed_last_msg = re
         .replace_all(
             &qq.first()
                 .as_ref()
-                .map(|x| String::from(&x.content))
+                .map(|x| String::from(dbg!(&x.content)))
                 .unwrap(),
-            "",
+            "%%emoji%%",
         )
         .to_string();
+
+    parsed_last_msg = re2.replace_all(&parsed_last_msg, "%%emoji%%").to_string();
+
+    let mut parsed_deleted_msg = re
+        .replace_all(dbg!(&deleted_message).as_str(), "%%emoji%%")
+        .to_string();
+    parsed_deleted_msg = re2
+        .replace_all(&parsed_deleted_msg, "%%emoji%%")
+        .to_string();
+
+    parsed_deleted_msg = re3.replace_all(&parsed_deleted_msg, "").to_string();
 
     let msg_is_nqnbot = {
         if nqn_exists.is_err() {
             false
-        } else if (&deleted_message).contains(&parsed_last_msg) {
-            true
+        } else if is_valid_member.is_err() {
+            if Regex::new(format!("^{}$", dbg!(parsed_last_msg)).as_str())
+                .unwrap()
+                .is_match(dbg!(&parsed_deleted_msg).as_str())
+            // if dbg!(parsed_last_msg).contains(dbg!(&parsed_deleted_msg))
+            {
+                dbg!("hmm");
+                true
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -74,7 +95,7 @@ pub async fn responder(
     //     .author
     //     .bot;
 
-    if !msg_is_nqnbot
+    if dbg!(!msg_is_nqnbot)
         && !Regex::new(r"^.react")
             .unwrap()
             .is_match(&deleted_message.as_str())
@@ -92,7 +113,7 @@ pub async fn responder(
             ContentSafeOptions::default()
                 .clean_channel(false)
                 .clean_role(true)
-                .clean_user(false)
+                .clean_user(true)
                 .clean_everyone(true)
                 .clean_here(true)
         };

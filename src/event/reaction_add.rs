@@ -25,25 +25,25 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                     ContentSafeOptions::default()
                         .clean_channel(false)
                         .clean_role(true)
-                        .clean_user(false)
+                        .clean_user(true)
                         .clean_everyone(true)
                         .clean_here(true)
                 };
 
-                let content = content_safe(
-                    &_ctx.cache,
-                    dbnode.fetch_deleted_msg(_added_reaction.message_id).await,
-                    &settings,
-                )
-                .await;
+                let content = dbnode.fetch_deleted_msg(_added_reaction.message_id).await;
 
                 react_data
                     .reply(
                         &_ctx.http,
-                        content.replace(
-                            "~~MSG_TYPE~~",
-                            format!("Asked by {}  ||  Edited by", &reactated_user).as_str(),
-                        ),
+                        content_safe(
+                            &_ctx.cache,
+                            content.replace(
+                                "~~MSG_TYPE~~",
+                                format!("Asked by {} || Edited by", &reactated_user).as_str(),
+                            ),
+                            &settings,
+                        )
+                        .await,
                     )
                     .await
                     .unwrap();
