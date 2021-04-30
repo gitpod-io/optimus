@@ -140,7 +140,7 @@ impl EventHandler for Listener {
                         }
                     }
 
-                    tokio::time::sleep(Duration::from_secs(12 * (60 * 60))).await;
+                    tokio::time::sleep(Duration::from_secs(3 * (24 * (60 * 60)))).await;
                 }
             });
 

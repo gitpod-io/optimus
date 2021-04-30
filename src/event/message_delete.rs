@@ -44,7 +44,7 @@ pub async fn responder(
         .await;
 
     // let botis = &qq.first().as_ref().map(|x| x.author.bot).unwrap();
-    let re = Regex::new(r"<:.*.:.*.>").unwrap();
+    let re = Regex::new("<*.:.*.:.*.>").unwrap();
 
     let parsed_last_msg = re
         .replace_all(
