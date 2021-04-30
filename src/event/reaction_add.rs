@@ -2,14 +2,20 @@ use super::*;
 
 pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     let emoji = &_added_reaction.emoji.to_string();
-    let a_bot_reacted_now = &_added_reaction.user(&_ctx.http).await.unwrap().bot;
+    let reacted_user = &_added_reaction.user(&_ctx.http).await.unwrap();
+    let a_bot_reacted_now = &reacted_user.bot;
 
     let react_data = &_added_reaction.message(&_ctx.http).await.unwrap();
     let is_self_msg = react_data.is_own(&_ctx.cache).await;
     // let reactions_count = react_data.reactions.iter().count();
-    let is_self_reacted = react_data.reactions.iter().as_ref().first().unwrap().me;
-
-    let reactated_user = &_added_reaction.user(&_ctx.http).await.unwrap();
+    let reactions = &react_data.reactions;
+    
+    let mut is_self_reacted = false;
+    for user in reactions.iter() {
+        if user.me {
+            is_self_reacted = true;
+        }
+    }
 
     match emoji.as_str() {
         "✍" => {
@@ -39,7 +45,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                             &_ctx.cache,
                             content.replace(
                                 "~~MSG_TYPE~~",
-                                format!("Asked by {} || Edited by", &reactated_user).as_str(),
+                                format!("Triggered: {} `||` Edited:", &reacted_user).as_str(),
                             ),
                             &settings,
                         )

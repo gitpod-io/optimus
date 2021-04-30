@@ -37,6 +37,7 @@ pub async fn responder(
         .unwrap();
 
     if message.edited_timestamp.is_some() {
+        // message.delete_reaction_emoji(&_ctx.http, '✍').await.unwrap();
         message.react(&_ctx.http, '✍').await.unwrap();
     }
 }
