@@ -32,6 +32,7 @@ impl Note {
 }
 
 #[command]
+#[required_permissions(ADMINISTRATOR)]
 async fn add(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
     let mut note_name = Args::new(_args.rest(), &[Delimiter::Single(' ')]);
     let first_arg = note_name.single_quoted::<String>().unwrap();
