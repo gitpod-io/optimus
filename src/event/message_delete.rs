@@ -43,41 +43,38 @@ pub async fn responder(
 
     let is_valid_member = gg.member(&_ctx.http, botis).await;
 
-    let re = Regex::new("<*.:.*.:.*>").unwrap();
-    let re2 = Regex::new(":.*:").unwrap();
+    let re0 = Regex::new(r"(<:|<a:)").unwrap();
+    let re = Regex::new(r":\d.*>").unwrap();
+    let re2 = Regex::new("[<::>]").unwrap();
     let re3 = Regex::new("\\n.* ~~MSG_TYPE~~.*").unwrap();
 
-    let mut parsed_last_msg = re
+    let mut parsed_last_msg = re0
         .replace_all(
             &qq.first()
                 .as_ref()
-                .map(|x| String::from(dbg!(&x.content)))
+                .map(|x| String::from(&x.content))
                 .unwrap(),
-            "%%emoji%%",
+            "",
         )
         .to_string();
+    parsed_last_msg = re.replace_all(&parsed_last_msg, "").to_string();
+    parsed_last_msg = re2.replace_all(&parsed_last_msg, "").to_string();
 
-    parsed_last_msg = re2.replace_all(&parsed_last_msg, "%%emoji%%").to_string();
-
-    let mut parsed_deleted_msg = re
-        .replace_all(dbg!(&deleted_message).as_str(), "%%emoji%%")
-        .to_string();
-    parsed_deleted_msg = re2
-        .replace_all(&parsed_deleted_msg, "%%emoji%%")
-        .to_string();
-
+    let mut parsed_deleted_msg = re0.replace_all(&deleted_message.as_str(), "").to_string();
+    parsed_deleted_msg = re.replace_all(&parsed_deleted_msg, "").to_string();
+    parsed_deleted_msg = re2.replace_all(&parsed_deleted_msg, "").to_string();
     parsed_deleted_msg = re3.replace_all(&parsed_deleted_msg, "").to_string();
 
     let msg_is_nqnbot = {
         if nqn_exists.is_err() {
             false
         } else if is_valid_member.is_err() {
-            if Regex::new(format!("^{}$", dbg!(parsed_last_msg)).as_str())
+            if Regex::new(format!("^{}$", parsed_last_msg).as_str())
                 .unwrap()
-                .is_match(dbg!(&parsed_deleted_msg).as_str())
+                .is_match(&parsed_deleted_msg.as_str())
             // if dbg!(parsed_last_msg).contains(dbg!(&parsed_deleted_msg))
             {
-                dbg!("hmm");
+                // dbg!("hmm");
                 true
             } else {
                 false
@@ -95,7 +92,7 @@ pub async fn responder(
     //     .author
     //     .bot;
 
-    if dbg!(!msg_is_nqnbot)
+    if !msg_is_nqnbot
         && !Regex::new(r"^.react")
             .unwrap()
             .is_match(&deleted_message.as_str())
