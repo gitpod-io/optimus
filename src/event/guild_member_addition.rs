@@ -27,6 +27,22 @@ pub async fn responder(_ctx: Context, _guild_id: GuildId, _new_member: Member) {
         .await
         .unwrap();
 
+    let jailbreak_channel = _ctx
+        .cache
+        .guild(_guild_id)
+        .await
+        .unwrap()
+        .channel_id_from_name(&_ctx.cache, "jailbreak")
+        .await;
+
+    if jailbreak_channel.is_some() {
+        jailbreak_channel
+            .unwrap()
+            .send_message(&_ctx.http, |x| x.content(format!("> {} welcome to our server, you will be given full access if your account is verified legitimate after the verification process is done, meanwhile you can ask about anything at here.", _new_member.mention())))
+            .await
+            .unwrap();
+    }
+
     let blacklist = fs::read_to_string(format!(
         "{}/db/blacklisted_names",
         env::current_exe()
