@@ -7,21 +7,11 @@ pub async fn responder(
     _guild_id: Option<GuildId>,
 ) {
     let dbnode = Database::from("msgcache".to_string()).await;
-    let deleted_message = dbnode.fetch_deleted_msg(_deleted_message_id).await;
+    let deleted_message = dbnode.fetch_msg(_deleted_message_id).await;
 
     // let last_msg_id = _new
     //     .unwrap()
     //     .channel(&_ctx.cache)
-    //     .await
-    //     .unwrap()
-    //     .guild()
-    //     .unwrap()
-    //     .last_message_id
-    //     .unwrap();
-
-    // let last_msg_id = _ctx
-    //     .cache
-    //     .channel(_channel_id)
     //     .await
     //     .unwrap()
     //     .guild()
@@ -122,22 +112,53 @@ pub async fn responder(
 
         let content = content_safe(
             &_ctx.cache,
-            &deleted_message.replace("~~MSG_TYPE~~", "Deleted:"),
+            &deleted_message.replace("~~MSG_TYPE~~", "Deleted before the linked msg:"),
             &settings,
         )
         .await;
 
-        _channel_id.say(&_ctx, &content).await.ok();
-        process::Command::new("find")
-            .args(&[
-                dbnode.to_string(),
-                String::from("-type"),
-                String::from("f"),
-                String::from("-mtime"),
-                String::from("+5"),
-                String::from("-delete"),
-            ])
-            .spawn()
-            .ok();
+        let last_msg = qq.first();
+        let last_msg_id = last_msg.as_ref().map(|x| x.id);
+
+        if last_msg_id.is_some() {
+            let dbnode_delmsg_trigger = Database::from("delmsg_trigger".to_string()).await;
+            dbnode.remove_msg(&_deleted_message_id).await;
+            dbnode_delmsg_trigger
+                .save_msg(&last_msg_id.unwrap(), content)
+                .await;
+
+            last_msg
+                .as_ref()
+                .map(|x| async move { x.react(&_ctx.http, '📩').await.unwrap() })
+                .unwrap()
+                .await;
+
+            // _ctx.cache
+            //     .channel(_channel_id)
+            //     .await
+            //     .unwrap()
+            //     .guild()
+            //     .unwrap()
+            //     .message(&_ctx.http, last_msg_id)
+            //     .await
+            //     .unwrap()
+            //     .react(&_ctx.http, '📩')
+            //     .await
+            //     .unwrap();
+        } else {
+            _channel_id.say(&_ctx, &content).await.ok();
+        }
     }
+
+    process::Command::new("find")
+        .args(&[
+            dbnode.to_string(),
+            String::from("-type"),
+            String::from("f"),
+            String::from("-mtime"),
+            String::from("+5"),
+            String::from("-delete"),
+        ])
+        .spawn()
+        .ok();
 }

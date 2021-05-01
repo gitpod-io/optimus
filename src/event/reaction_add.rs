@@ -9,7 +9,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     let is_self_msg = react_data.is_own(&_ctx.cache).await;
     // let reactions_count = react_data.reactions.iter().count();
     let reactions = &react_data.reactions;
-    
+
     let mut is_self_reacted = false;
     for user in reactions.iter() {
         if user.me {
@@ -36,7 +36,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                         .clean_here(true)
                 };
 
-                let content = dbnode.fetch_deleted_msg(_added_reaction.message_id).await;
+                let content = dbnode.fetch_msg(_added_reaction.message_id).await;
 
                 react_data
                     .reply(
@@ -55,6 +55,22 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                     .unwrap();
             }
         }
+
+        "📩" => {
+            if !*a_bot_reacted_now && is_self_reacted {
+                react_data
+                    .delete_reaction_emoji(&_ctx.http, '📩')
+                    .await
+                    .unwrap();
+
+                let dbnode = Database::from("delmsg_trigger".to_string()).await;
+
+                let content = dbnode.fetch_msg(_added_reaction.message_id).await;
+
+                react_data.reply(&_ctx.http, content).await.unwrap();
+            }
+        }
+
         "❎" => {
             if !*a_bot_reacted_now && is_self_reacted && is_self_msg {
                 react_data.delete(&_ctx.http).await.unwrap();

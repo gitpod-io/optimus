@@ -24,18 +24,25 @@ impl Database {
         Self { node_name }
     }
 
-    pub async fn fetch_deleted_msg(&self, id: MessageId) -> String {
+    pub async fn fetch_msg(&self, id: MessageId) -> String {
         let var = fs::read_to_string(format!("{}/{}", &self.node_name, id))
             .await
             .unwrap();
         var
     }
 
-    pub async fn cache_deleted_msg(&self, id: &MessageId, contents: String) {
+    pub async fn save_msg(&self, id: &MessageId, contents: String) {
         fs::write(format!("{}/{}", &self.node_name, &id), &contents)
             .await
             .unwrap();
     }
+
+    pub async fn remove_msg(&self, id: &MessageId) {
+        fs::remove_file(format!("{}/{}", &self.node_name, id.to_string()))
+            .await
+            .unwrap();
+    }
+
     pub async fn save_user_info(&self, id: &UserId, contents: String) {
         let path = format!("{}/{}", &self.node_name, &id);
 

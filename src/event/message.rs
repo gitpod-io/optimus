@@ -29,7 +29,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
 
         // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
         dbnode_msgcache
-            .cache_deleted_msg(
+            .save_msg(
                 &_msg.id,
                 format!(
                     "{}{}\n> ~~MSG_TYPE~~ {}",
