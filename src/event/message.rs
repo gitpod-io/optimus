@@ -23,7 +23,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
         let mut _attachments = String::new();
 
         for var in attc.iter() {
-            let url = &var.proxy_url;
+            let url = &var.url;
             _attachments.push_str(format!("\n{}", url).as_str());
         }
 

@@ -1,27 +1,29 @@
 // import random and file and io
 use rand::Rng;
-use std::*;
+use std::fs;
 mod english;
 mod number_gen;
 
 // gen function
 /*
-    * generates random string
-    * uses normal list
+ * generates random string
+ * uses normal list
 */
 pub fn gen(charnr: u32, times: u32) -> String {
     // char list
-    let charlist: [&str; 94] = [ 
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
-        "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
-        "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%", "$", "#", "@",
-        "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".", ">", "<", ",", "`", "~"
+    let charlist: [&str; 94] = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+        "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2",
+        "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%",
+        "$", "#", "@", "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".",
+        ">", "<", ",", "`", "~",
     ];
 
     let mut out: String = String::from("");
 
-    for i in  0..times {
-        for _ in  0..charnr {
+    for i in 0..times {
+        for _ in 0..charnr {
             let randomnr = rand::thread_rng().gen_range(0..charlist.len());
             out = String::from(out + charlist[randomnr]);
         }
@@ -34,24 +36,26 @@ pub fn gen(charnr: u32, times: u32) -> String {
 
 // fullgen function
 /*
-    * generates random string
-    * uses full list
+ * generates random string
+ * uses full list
 */
 pub fn fullgen(charnr: u32, times: u32) -> String {
     // char list
-    let charlist: [&str; 140] = [ 
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
-        "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
-        "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%", "$", "#", "@",
-        "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".", ">", "<", ",", "`", "~", "¡", "™", "£", "¢",
-        "∞", "¶", "•", "ª", "º", "–", "≠", "‘", "æ", "«", "…", "π", "ø", "ˆ", "¨", "¥", "†", "®", "´", "∑", "œ", "“", "…", "¬", "˚",
-        "∆", "˙", "©", "ƒ", "ß", "∂", "å", "÷", "≥", "≤", "µ", "˜", "∫", "√", "ç", "≈", "`"
+    let charlist: [&str; 140] = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+        "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2",
+        "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%",
+        "$", "#", "@", "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".",
+        ">", "<", ",", "`", "~", "¡", "™", "£", "¢", "∞", "¶", "•", "ª", "º", "–", "≠", "‘", "æ",
+        "«", "…", "π", "ø", "ˆ", "¨", "¥", "†", "®", "´", "∑", "œ", "“", "…", "¬", "˚", "∆", "˙",
+        "©", "ƒ", "ß", "∂", "å", "÷", "≥", "≤", "µ", "˜", "∫", "√", "ç", "≈", "`",
     ];
 
     let mut out: String = String::from("");
 
-    for i in  0..times {
-        for _ in  0..charnr {
+    for i in 0..times {
+        for _ in 0..charnr {
             let randomnr = rand::thread_rng().gen_range(0..charlist.len());
             out = String::from(out + charlist[randomnr]);
         }
@@ -64,23 +68,25 @@ pub fn fullgen(charnr: u32, times: u32) -> String {
 
 // tofile function
 /*
-    * generates random string
-    * prints to file
-    * uses normal list
+ * generates random string
+ * prints to file
+ * uses normal list
 */
 pub fn tofile(charnr: u32, times: u32, filename: String) {
     // char list
-    let charlist: [&str; 94] = [ 
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
-        "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
-        "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%", "$", "#", "@",
-        "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".", ">", "<", ",", "`", "~"
+    let charlist: [&str; 94] = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+        "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2",
+        "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%",
+        "$", "#", "@", "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".",
+        ">", "<", ",", "`", "~",
     ];
 
     let mut out: String = String::from("");
 
-    for i in  0..times {
-        for _ in  0..charnr {
+    for i in 0..times {
+        for _ in 0..charnr {
             let randomnr = rand::thread_rng().gen_range(0..charlist.len());
             out = String::from(out + charlist[randomnr]);
         }
@@ -89,31 +95,32 @@ pub fn tofile(charnr: u32, times: u32, filename: String) {
         }
     }
 
-    fs::write(filename, out)
-        .expect("Unable to write file");
+    fs::write(filename, out).expect("Unable to write file");
 }
 
 // tofile function
 /*
-    * generates random string
-    * prints to file
-    * uses full list
+ * generates random string
+ * prints to file
+ * uses full list
 */
 pub fn tofile_full(charnr: u32, times: u32, filename: String) {
     // char list
-    let charlist: [&str; 140] = [ 
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
-        "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
-        "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%", "$", "#", "@",
-        "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".", ">", "<", ",", "`", "~", "¡", "™", "£", "¢",
-        "∞", "¶", "•", "ª", "º", "–", "≠", "‘", "æ", "«", "…", "π", "ø", "ˆ", "¨", "¥", "†", "®", "´", "∑", "œ", "“", "…", "¬", "˚",
-        "∆", "˙", "©", "ƒ", "ß", "∂", "å", "÷", "≥", "≤", "µ", "˜", "∫", "√", "ç", "≈", "`"
+    let charlist: [&str; 140] = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+        "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2",
+        "3", "4", "5", "6", "7", "8", "9", "0", "-", "_", "+", "=", ")", "(", "*", "&", "^", "%",
+        "$", "#", "@", "!", "}", "[", "]", "}", "\"", "/", "?", "|", "\"", "\"", ":", ";", ".",
+        ">", "<", ",", "`", "~", "¡", "™", "£", "¢", "∞", "¶", "•", "ª", "º", "–", "≠", "‘", "æ",
+        "«", "…", "π", "ø", "ˆ", "¨", "¥", "†", "®", "´", "∑", "œ", "“", "…", "¬", "˚", "∆", "˙",
+        "©", "ƒ", "ß", "∂", "å", "÷", "≥", "≤", "µ", "˜", "∫", "√", "ç", "≈", "`",
     ];
 
     let mut out: String = String::from("");
 
-    for i in  0..times {
-        for _ in  0..charnr {
+    for i in 0..times {
+        for _ in 0..charnr {
             let randomnr = rand::thread_rng().gen_range(0..charlist.len());
             out = String::from(out + charlist[randomnr]);
         }
@@ -122,8 +129,7 @@ pub fn tofile_full(charnr: u32, times: u32, filename: String) {
         }
     }
 
-    fs::write(filename, out)
-        .expect("Unable to write file");
+    fs::write(filename, out).expect("Unable to write file");
 }
 
 pub fn english_gen(str_nr: u64, times: u64) -> String {
@@ -170,5 +176,5 @@ pub fn english_to_file(str_nr: u32, times: u32, filename: String) {
 pub fn number(digits: i128, times: i128) -> String {
     let num = number_gen::_number(digits, times);
 
-    return num
+    return num;
 }

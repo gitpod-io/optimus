@@ -2,7 +2,7 @@ mod command;
 mod event;
 mod utils;
 use command::*;
-use std::*;
+use std::env;
 
 use serenity::http::Http;
 use serenity::prelude::*;

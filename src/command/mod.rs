@@ -33,7 +33,6 @@ use note::*;
 use whois::*;
 
 use crate::utils::{db::*, substr::*};
-use std::*;
 use thorne::*;
 
 use serenity::{

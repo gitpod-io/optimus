@@ -24,9 +24,9 @@ use serenity::{
     utils::{content_safe, ContentSafeOptions},
 };
 use std::convert::TryFrom;
-use std::*;
 
 use std::{
+    env, path,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -34,9 +34,8 @@ use std::{
     time::Duration,
 };
 
-// use reqwest;
-
-use tokio::fs;
+use reqwest;
+use tokio::{fs, process};
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,
@@ -136,7 +135,7 @@ impl EventHandler for Listener {
                         let members = &ctx1.cache.guild(guild).await.unwrap().members;
 
                         for (_user_id, _member) in members {
-                            tokio::time::sleep(Duration::from_secs(2)).await;
+                            // tokio::time::sleep(Duration::from_secs(2)).await;
                             dbnode_userid
                                 .save_user_info(&_user_id, _member.user.tag())
                                 .await;

@@ -7,6 +7,11 @@ pub async fn responder(
     _guild_id: Option<GuildId>,
 ) {
     let dbnode = Database::from("msgcache".to_string()).await;
+
+    if !dbnode.msg_exists(&_deleted_message_id).await {
+        return;
+    }
+    
     let deleted_message = dbnode.fetch_msg(_deleted_message_id).await;
 
     // let last_msg_id = _new
@@ -108,64 +113,123 @@ pub async fn responder(
                 .clean_here(true)
         };
 
-        let mut content = content_safe(
-            &_ctx.cache,
-            &deleted_message.replace("~~MSG_TYPE~~", "Deleted before the linked msg:"),
-            &settings,
-        )
-        .await;
+        let mut content = content_safe(&_ctx.cache, &deleted_message, &settings).await;
 
-        // let mut content_urls_new = String::new();
-        // let mut content_new = String::new();
+        let mut proxied_content_attachments = Vec::new();
+        let mut content_attachments = Vec::new();
 
-        // for caps in Regex::new(r"(?P<url>https://media.discordapp.net/attachments/.*/.*\n)")
-        //     .unwrap()
-        //     .captures_iter(&content.as_str())
-        // {
-        //     let url = &caps["url"];
+        for caps in Regex::new(r"(?P<url>https://cdn.discordapp.com/attachments/.*/.*)")
+            .unwrap()
+            .captures_iter(&content.as_str())
+        {
+            let url = &caps["url"];
 
-        //     // Check if the file is an image
-        //     let mut is_image = false;
-        //     let extension_var = path::Path::new(&url).extension();
-        //     if extension_var.is_some() {
-        //         let extension = extension_var.unwrap().to_string_lossy().to_string();
+            content_attachments.push(caps["url"].to_string());
 
-        //         match extension.as_str() {
-        //             "png" | "jpeg" | "jpg" | "webp" | "gif" => {
-        //                 is_image = true;
-        //             }
-        //             _ => {}
-        //         }
-        //     }
+            // Check if the file is an image
+            let mut is_image = false;
+            let extension_var = path::Path::new(&url).extension();
+            if extension_var.is_some() {
+                let extension = extension_var.unwrap().to_string_lossy().to_string();
 
-        //     if is_image {
-        //         let params = [("image", url)];
-        //         let client = reqwest::Client::new()
-        //             .post("https://api.imgur.com/3/image")
-        //             .form(&params)
-        //             .header("Authorization", "Client-ID ce8c306d711c6cf")
-        //             .send()
-        //             .await
-        //             .unwrap()
-        //             .text()
-        //             .await
-        //             .unwrap();
+                match extension.as_str() {
+                    "png" | "jpeg" | "jpg" | "webp" | "gif" => {
+                        is_image = true;
+                    }
+                    _ => {}
+                }
+            }
 
-        //         let client_data = Regex::new(r#"\\"#)
-        //             .unwrap()
-        //             .replace_all(client.as_str(), "");
+            if is_image {
+                let params = [("image", url)];
+                let client = reqwest::Client::new()
+                    .post("https://api.imgur.com/3/image")
+                    .form(&params)
+                    .header("Authorization", "Client-ID ce8c306d711c6cf")
+                    .send()
+                    .await
+                    .unwrap()
+                    .text()
+                    .await
+                    .unwrap();
 
-        //         for caps in Regex::new(r#"(?P<link>https://.+?")"#)
-        //             .unwrap()
-        //             .captures_iter(&client_data)
-        //         {
-        //             let link = &caps["link"];
+                let client_data = Regex::new(r#"\\"#)
+                    .unwrap()
+                    .replace_all(client.as_str(), "");
 
-        //             content_urls_new.push_str(&Regex::new(r#"""#).unwrap().replace(&link, ""));
-        //         }
-        //     }
-        //     content_new.push_str(&content.replace(&url, &content_urls_new));
-        // }
+                for caps_next in Regex::new(r#"(?P<link>https://.+?")"#)
+                    .unwrap()
+                    .captures_iter(&client_data)
+                {
+                    // let link = caps_next["link"];
+
+                    proxied_content_attachments
+                        .push(caps_next["link"].to_string().replace("\"", ""));
+
+                    // println!("{}", link);
+
+                    // content_urls_new.push_str(&Regex::new(r#"""#).unwrap().replace(&link, ""));
+                }
+            } else {
+                let current_dir = env::current_exe().unwrap();
+                let current_dir = current_dir.parent().unwrap();
+                let file_name = path::Path::new(&url)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string();
+
+                process::Command::new("curl")
+                    .current_dir(&current_dir)
+                    .args(&["-s", "-o", &file_name, &url])
+                    .status()
+                    .await
+                    .unwrap();
+
+                let client = process::Command::new("curl")
+                    .current_dir(&current_dir)
+                    .args(&[
+                        "-F".to_string(),
+                        format!("file=@{}", &file_name),
+                        "-F".to_string(),
+                        "no_index=false".to_string(),
+                        "https://api.anonymousfiles.io".to_string(),
+                    ])
+                    .output()
+                    .await
+                    .unwrap();
+
+                fs::remove_file(format!(
+                    "{}/{}",
+                    &current_dir.to_string_lossy().to_string(),
+                    &file_name
+                ))
+                .await
+                .unwrap();
+
+                let client = String::from_utf8_lossy(&client.stdout);
+
+                let client_data = Regex::new(r#"\\"#).unwrap().replace_all(&client, "");
+
+                for caps_next in Regex::new(r#"(?P<link>https://.+?")"#)
+                    .unwrap()
+                    .captures_iter(&client_data)
+                {
+                    // let link = caps_next["link"];
+
+                    proxied_content_attachments
+                        .push(caps_next["link"].to_string().replace("\"", ""));
+
+                    // content_urls_new.push_str(&Regex::new(r#"""#).unwrap().replace(&link, ""));
+                }
+            }
+            // content_new.push_str(&content.replace(&url, &content_urls_new));
+        }
+
+        for var in proxied_content_attachments.iter() {
+            content.push_str(format!("{} > `{}`", "\n", var).as_str());
+            // content.replace(&content_attachments[loop_times].to_string(), &var.to_string())
+        }
 
         let last_msg = qq.first();
         let last_msg_id = last_msg.as_ref().map(|x| x.id);

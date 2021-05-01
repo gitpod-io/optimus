@@ -43,26 +43,28 @@ pub async fn responder(_ctx: Context, _guild_id: GuildId, _new_member: Member) {
             .unwrap();
     }
 
-    let blacklist = fs::read_to_string(format!(
+    let blacklist = format!(
         "{}/db/blacklisted_names",
         env::current_exe()
             .unwrap()
             .parent()
             .unwrap()
             .to_string_lossy()
-    ))
-    .await
-    .unwrap();
+    );
 
-    if blacklist.contains(&_new_member.display_name().to_ascii_uppercase()) {
-        _new_member
-            .user
-            .direct_message(&_ctx.http, |m| m.content("Lacks a Brain"))
-            .await
-            .unwrap();
-        _new_member
-            .ban_with_reason(&_ctx.http, 0, "Missing Brain.exe")
-            .await
-            .unwrap();
+    if path::Path::new(&blacklist).exists() {
+        let blacklist = fs::read_to_string(blacklist).await.unwrap();
+
+        if blacklist.contains(&_new_member.display_name().to_ascii_uppercase()) {
+            _new_member
+                .user
+                .direct_message(&_ctx.http, |m| m.content("Lacks a Brain"))
+                .await
+                .unwrap();
+            _new_member
+                .ban_with_reason(&_ctx.http, 0, "Missing Brain.exe")
+                .await
+                .unwrap();
+        }
     }
 }
