@@ -42,7 +42,7 @@ pub async fn responder(
         .replace_all(
             &qq.first()
                 .as_ref()
-                .map(|x| String::from(dbg!(&x.content)))
+                .map(|x| String::from(&x.content))
                 .unwrap(),
             "",
         )
@@ -64,9 +64,7 @@ pub async fn responder(
         if nqn_exists.is_err() {
             false
         } else if is_valid_member.is_err() {
-            if Regex::new(format!("^{}$", dbg!(parsed_last_msg)).as_str())
-                .unwrap()
-                .is_match(dbg!(&parsed_deleted_msg).as_str())
+            if parsed_last_msg.contains(&parsed_deleted_msg)
             // if dbg!(parsed_last_msg).contains(dbg!(&parsed_deleted_msg))
             {
                 // dbg!("hmm");
