@@ -11,7 +11,7 @@ pub async fn responder(
     if !dbnode.msg_exists(&_deleted_message_id).await {
         return;
     }
-    
+
     let deleted_message = dbnode.fetch_msg(_deleted_message_id).await;
 
     // let last_msg_id = _new
@@ -237,6 +237,16 @@ pub async fn responder(
         if last_msg_id.is_some() {
             let dbnode_delmsg_trigger = Database::from("delmsg_trigger".to_string()).await;
             dbnode.remove_msg(&_deleted_message_id).await;
+
+            content = {
+                if dbnode_delmsg_trigger.msg_exists(&_deleted_message_id).await {
+                    let file_path = format!("{}/{}", dbnode_delmsg_trigger, &_deleted_message_id);
+                    let prev_content = fs::read_to_string(&file_path).await.unwrap();
+                    format!("{}\n{}", &prev_content, content)
+                } else {
+                    content
+                }
+            };
 
             content = {
                 if dbnode_delmsg_trigger
