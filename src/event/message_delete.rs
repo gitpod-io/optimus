@@ -115,28 +115,57 @@ pub async fn responder(
         )
         .await;
 
-        for caps in Regex::new(r"(?P<url>https://media.discordapp.net/attachments/.*/.*)")
-            .unwrap()
-            .captures_iter(&content.as_str())
-        {
-            let url = &caps["url"];
+        // let mut content_urls_new = String::new();
+        // let mut content_new = String::new();
 
-            let mut provider = String::new();
-            let extension_var = path::Path::new(&url).extension();
+        // for caps in Regex::new(r"(?P<url>https://media.discordapp.net/attachments/.*/.*\n)")
+        //     .unwrap()
+        //     .captures_iter(&content.as_str())
+        // {
+        //     let url = &caps["url"];
 
-            if extension_var.is_some() {
-                let extension = extension_var.unwrap().to_string_lossy().to_string();
-                
-                match extension.as_str() {
-                    "png" | "jpeg" | "jpg" | "webp" | "gif" => {
-                        println!("{}", &extension);
-                    }
-                    _ => {}
-                }
-                provider.push_str("")
-            }
-            println!("{}", &url);
-        }
+        //     // Check if the file is an image
+        //     let mut is_image = false;
+        //     let extension_var = path::Path::new(&url).extension();
+        //     if extension_var.is_some() {
+        //         let extension = extension_var.unwrap().to_string_lossy().to_string();
+
+        //         match extension.as_str() {
+        //             "png" | "jpeg" | "jpg" | "webp" | "gif" => {
+        //                 is_image = true;
+        //             }
+        //             _ => {}
+        //         }
+        //     }
+
+        //     if is_image {
+        //         let params = [("image", url)];
+        //         let client = reqwest::Client::new()
+        //             .post("https://api.imgur.com/3/image")
+        //             .form(&params)
+        //             .header("Authorization", "Client-ID ce8c306d711c6cf")
+        //             .send()
+        //             .await
+        //             .unwrap()
+        //             .text()
+        //             .await
+        //             .unwrap();
+
+        //         let client_data = Regex::new(r#"\\"#)
+        //             .unwrap()
+        //             .replace_all(client.as_str(), "");
+
+        //         for caps in Regex::new(r#"(?P<link>https://.+?")"#)
+        //             .unwrap()
+        //             .captures_iter(&client_data)
+        //         {
+        //             let link = &caps["link"];
+
+        //             content_urls_new.push_str(&Regex::new(r#"""#).unwrap().replace(&link, ""));
+        //         }
+        //     }
+        //     content_new.push_str(&content.replace(&url, &content_urls_new));
+        // }
 
         let last_msg = qq.first();
         let last_msg_id = last_msg.as_ref().map(|x| x.id);
@@ -144,6 +173,20 @@ pub async fn responder(
         if last_msg_id.is_some() {
             let dbnode_delmsg_trigger = Database::from("delmsg_trigger".to_string()).await;
             dbnode.remove_msg(&_deleted_message_id).await;
+
+            content = {
+                if dbnode_delmsg_trigger
+                    .msg_exists(&last_msg_id.unwrap())
+                    .await
+                {
+                    let file_path = format!("{}/{}", dbnode_delmsg_trigger, &last_msg_id.unwrap());
+                    let prev_content = fs::read_to_string(&file_path).await.unwrap();
+                    format!("{}\n{}", &prev_content, content)
+                } else {
+                    content
+                }
+            };
+
             dbnode_delmsg_trigger
                 .save_msg(&last_msg_id.unwrap(), content)
                 .await;
@@ -153,19 +196,6 @@ pub async fn responder(
                 .map(|x| async move { x.react(&_ctx.http, '📩').await.unwrap() })
                 .unwrap()
                 .await;
-
-            // _ctx.cache
-            //     .channel(_channel_id)
-            //     .await
-            //     .unwrap()
-            //     .guild()
-            //     .unwrap()
-            //     .message(&_ctx.http, last_msg_id)
-            //     .await
-            //     .unwrap()
-            //     .react(&_ctx.http, '📩')
-            //     .await
-            //     .unwrap();
         } else {
             _channel_id.say(&_ctx, &content).await.ok();
         }

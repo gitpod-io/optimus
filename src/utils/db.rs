@@ -7,7 +7,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn from(mut node_name: String) -> Self {
+    pub async fn from(node_name: String) -> Self {
         let botsource = env::current_exe().unwrap();
         let botsource_dir = path::Path::new(botsource.parent().unwrap());
         let db_root = format!(
@@ -20,8 +20,9 @@ impl Database {
         let new_node = format!("{}/{}", &db_root, node_name);
         fs::create_dir_all(&new_node).await.unwrap();
 
-        node_name = new_node;
-        Self { node_name }
+        Self {
+            node_name: new_node,
+        }
     }
 
     pub async fn fetch_msg(&self, id: MessageId) -> String {
@@ -41,6 +42,15 @@ impl Database {
         fs::remove_file(format!("{}/{}", &self.node_name, id.to_string()))
             .await
             .unwrap();
+    }
+
+    pub async fn msg_exists(&self, id: &MessageId) -> bool {
+        let _path = format!("{}/{}", &self.node_name, id);
+        if path::Path::new(&_path).exists() {
+            true
+        } else {
+            false
+        }
     }
 
     pub async fn save_user_info(&self, id: &UserId, contents: String) {
