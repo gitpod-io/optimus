@@ -108,12 +108,35 @@ pub async fn responder(
                 .clean_here(true)
         };
 
-        let content = content_safe(
+        let mut content = content_safe(
             &_ctx.cache,
             &deleted_message.replace("~~MSG_TYPE~~", "Deleted before the linked msg:"),
             &settings,
         )
         .await;
+
+        for caps in Regex::new(r"(?P<url>https://media.discordapp.net/attachments/.*/.*)")
+            .unwrap()
+            .captures_iter(&content.as_str())
+        {
+            let url = &caps["url"];
+
+            let mut provider = String::new();
+            let extension_var = path::Path::new(&url).extension();
+
+            if extension_var.is_some() {
+                let extension = extension_var.unwrap().to_string_lossy().to_string();
+                
+                match extension.as_str() {
+                    "png" | "jpeg" | "jpg" | "webp" | "gif" => {
+                        println!("{}", &extension);
+                    }
+                    _ => {}
+                }
+                provider.push_str("")
+            }
+            println!("{}", &url);
+        }
 
         let last_msg = qq.first();
         let last_msg_id = last_msg.as_ref().map(|x| x.id);
