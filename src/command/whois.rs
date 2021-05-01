@@ -31,9 +31,23 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
 
         let user_time = &_msg.author.created_at().time().format("%H:%M:%S %p");
 
-        let user_avatar = &user_data.user.avatar_url().unwrap();
+        let user_avatar = {
+            let user = &user_data.user;
+            if user.avatar_url().is_some() {
+                user.avatar_url().unwrap()
+            } else {
+                user.default_avatar_url()
+            }
+        };
 
-        let user_colors = &user_data.colour(&_ctx.cache).await.unwrap().hex();
+        let user_colors = {
+            let user = &user_data.colour(&_ctx.cache).await;
+            if user.is_some() {
+                user.unwrap().hex()
+            } else {
+                String::from("0000")
+            }
+        };
 
         // let guild = &_msg.guild_id.unwrap();
         // let messages = &_ctx.cache.guild_channels(guild).await.unwrap();
@@ -53,18 +67,62 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
                     e.title("FreeBSD whois");
                     // e.color()
                     e.thumbnail(user_avatar);
+                    e.url("https://www.freebsd.org/cgi/man.cgi?query=whois");
 
-                    e.field("Intoduction.exe", format!("A {}", english_gen(2, 1)), true);
-                    e.field(
-                        "RegisteredAt.exe",
-                        format!("{} {}", &user_date, &user_time),
-                        true,
-                    );
+                    let intro = english_gen(1, 1);
+
+                    let article = {
+                        let first_char = intro.chars().next();
+                        let mut is_vowel = false;
+
+                        if first_char.is_some() {
+                            for vowel in ["a", "e", "i", "o", "u"].iter() {
+                                let first_char_low = first_char.unwrap().to_lowercase().to_string();
+                                let vowel_string = vowel.to_string();
+
+                                if first_char_low == vowel_string {
+                                    is_vowel = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if is_vowel {
+                            "An"
+                        } else {
+                            "A"
+                        }
+                    };
+
+                    e.fields(vec![
+                        (
+                            "Intoduction.exe",
+                            format!(
+                                "{} [{}](https://www.dictionary.com/browse/{})",
+                                &article, &intro, &intro
+                            ),
+                            true,
+                        ),
+                        (
+                            "Color.exe",
+                            format!(
+                                "[#{}](https://www.colorhexa.com/{}) (Heximal)",
+                                &user_colors, &user_colors
+                            ),
+                            true,
+                        ),
+                    ]);
 
                     e.field("‎", "‎", false);
 
-                    e.field("JoinedAt.exe", &user_server_date, true);
-                    e.field("Color.exe", format!("#{} (Heximal)", &user_colors), true);
+                    e.fields(vec![
+                        ("JoinedAt.exe", format!("{}", &user_server_date), true),
+                        (
+                            "RegisteredAt.exe",
+                            format!("{} {}", &user_date, &user_time),
+                            true,
+                        ),
+                    ]);
 
                     e.field(
                         "Usernames.exe:",
