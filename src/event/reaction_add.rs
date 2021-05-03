@@ -42,12 +42,21 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                     .reply(
                         &_ctx.http,
                        content.replace(
-                                "~~MSG_TYPE~~",
+                                "<<<MSG_TYPE>>>",
                                 format!("Triggered: {} `||` Edited:", &reacted_user).as_str(),
                             ) 
                     )
                     .await
                     .unwrap();
+
+                // let msg_content = &react_data.content;
+                // let edit_time = &react_data.edited_timestamp.unwrap().format("%H:%M:%S %p");
+                // let old_content = dbnode.fetch_msg(react_data.id).await;
+                // let new_content = format!(
+                //     "{}\n> Edited at: {}\n {}",
+                //     &msg_content, &edit_time, &old_content
+                // );
+                // dbnode.save_msg(&react_data.id, new_content).await;
             }
         }
 
@@ -61,7 +70,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 let dbnode = Database::from("delmsg_trigger".to_string()).await;
 
                 let content = dbnode.fetch_msg(_added_reaction.message_id).await.replace(
-                    "~~MSG_TYPE~~",
+                    "<<<MSG_TYPE>>>",
                     format!("Triggered: {} `||` Deleted:", &reacted_user).as_str(),
                 );
 

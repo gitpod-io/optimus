@@ -41,7 +41,7 @@ pub async fn responder(
     let re0 = Regex::new(r"(<:|<a:)").unwrap();
     let re = Regex::new(r"\d").unwrap();
     let re2 = Regex::new("[<::>]").unwrap();
-    let re3 = Regex::new("\\n.* ~~MSG_TYPE~~.*").unwrap();
+    let re3 = Regex::new("\\n.* <<<MSG_TYPE>>>.*").unwrap();
 
     let mut parsed_last_msg = re
         .replace_all(
@@ -275,15 +275,15 @@ pub async fn responder(
         }
     }
 
-    process::Command::new("find")
-        .args(&[
-            dbnode.to_string(),
-            String::from("-type"),
-            String::from("f"),
-            String::from("-mtime"),
-            String::from("+5"),
-            String::from("-delete"),
-        ])
-        .spawn()
-        .ok();
+    // process::Command::new("find")
+    //     .args(&[
+    //         dbnode.to_string(),
+    //         String::from("-type"),
+    //         String::from("f"),
+    //         String::from("-mtime"),
+    //         String::from("+5"),
+    //         String::from("-delete"),
+    //     ])
+    //     .spawn()
+    //     .ok();
 }

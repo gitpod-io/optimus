@@ -32,11 +32,11 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
             .save_msg(
                 &_msg.id,
                 format!(
-                    "{}{}\n> ~~MSG_TYPE~~ {}",
+                    "{}{}\n> <<<MSG_TYPE>>> {} `||` At: {}",
                     &_msg.content,
                     &_attachments,
                     &_msg.author,
-                    // &_msg.timestamp
+                    &_msg.timestamp.format("%H:%M:%S %p")
                 ),
             )
             .await;

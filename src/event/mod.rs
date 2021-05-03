@@ -7,6 +7,7 @@ mod reaction_add;
 
 use crate::command::note::*;
 use crate::utils::db::*;
+use crate::utils::misc::vowel_gen;
 use glob::*;
 use regex::Regex;
 use serde_json::json;
@@ -35,6 +36,7 @@ use std::{
 };
 
 use reqwest;
+use thorne::english_gen;
 use tokio::{fs, process};
 
 pub struct Listener {

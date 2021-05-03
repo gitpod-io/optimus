@@ -18,7 +18,7 @@ pub async fn responder(
 
     // let dbnode = Database::from("msgcache".to_string()).await;
 
-    // let map = json!({"content": dbnode.fetch_deleted_msg(_event.id).await.replace("~~MSG_TYPE~~", "Edited:")});
+    // let map = json!({"content": dbnode.fetch_deleted_msg(_event.id).await.replace("<<<MSG_TYPE>>>", "Edited:")});
     // _ctx.http
     //     .send_message(u64::try_from(_event.channel_id).unwrap(), &map)
     //     .await
@@ -37,7 +37,26 @@ pub async fn responder(
         .unwrap();
 
     if message.edited_timestamp.is_some() {
+        let dbnode = Database::from("msgcache".to_string()).await;
+        let msg_content = &message.content;
+
+        let mut is_self_reacted = false;
+        for user in message.reactions.iter() {
+            if user.me {
+                is_self_reacted = true;
+            }
+        }
+
+        if !is_self_reacted {
+            message.react(&_ctx.http, '✍').await.unwrap();
+        }
+            let edit_time = &message.edited_timestamp.unwrap().format("%H:%M:%S %p");
+            let old_content = dbnode.fetch_msg(_msg_id).await;
+            let new_content = format!(
+                "{}\n> Edited at: {}\n{}",
+                &msg_content, &edit_time, &old_content
+            );
+            dbnode.save_msg(&_msg_id, new_content).await;
         // message.delete_reaction_emoji(&_ctx.http, '✍').await.unwrap();
-        message.react(&_ctx.http, '✍').await.unwrap();
     }
 }

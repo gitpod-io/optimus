@@ -32,7 +32,7 @@ use slow_mode::*;
 use note::*;
 use whois::*;
 
-use crate::utils::{db::*, substr::*};
+use crate::utils::{db::*, substr::*, misc::vowel_gen};
 use thorne::*;
 
 use serenity::{

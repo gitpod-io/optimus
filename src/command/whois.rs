@@ -71,35 +71,12 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
 
                     let intro = english_gen(1, 1);
 
-                    let article = {
-                        let first_char = intro.chars().next();
-                        let mut is_vowel = false;
-
-                        if first_char.is_some() {
-                            for vowel in ["a", "e", "i", "o", "u"].iter() {
-                                let first_char_low = first_char.unwrap().to_lowercase().to_string();
-                                let vowel_string = vowel.to_string();
-
-                                if first_char_low == vowel_string {
-                                    is_vowel = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if is_vowel {
-                            "An"
-                        } else {
-                            "A"
-                        }
-                    };
-
                     e.fields(vec![
                         (
                             "Intoduction.exe",
                             format!(
                                 "{} [{}](https://www.dictionary.com/browse/{})",
-                                &article, &intro, &intro
+                                vowel_gen(&intro), &intro, &intro
                             ),
                             true,
                         ),

@@ -10,7 +10,6 @@ edition = "2018"
 #wildmatch = "2.1.0"
 serde_json = "1.0.64"
 regex = "1.4.5"
-#obfstr = "0.3.0"
 glob = "0.3.0"
 term_grid = "0.2.0"
 thorne = { path = "thorne/" }

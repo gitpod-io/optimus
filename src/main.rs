@@ -17,9 +17,7 @@ use std::{
 
 #[tokio::main]
 async fn main() {
-    // Configure the client with your Discord bot token in the environment.
     let token = env::var("BOT_TOKEN").expect("Expected BOT_TOKEN");
-
     let http = Http::new_with_token(&token);
 
     // We will fetch your bot's owners and id

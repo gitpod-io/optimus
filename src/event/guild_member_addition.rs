@@ -11,13 +11,18 @@ pub async fn responder(_ctx: Context, _guild_id: GuildId, _new_member: Member) {
         .unwrap()
         .unwrap();
 
+    let intro = english_gen(1, 1);
+
     _ctx.http
         .send_message(
             u64::try_from(_system_channel_id).unwrap(),
             &json!({
                 "content":
                     format!(
-                        "> :arrow_forward: {}'s reg Date: **{}**; Time: **{}**",
+                        "> :arrow_forward: {} [{}]({}) {}'s reg Date: **{}**; Time: **{}**",
+                        vowel_gen(&intro),
+                        &intro,
+                        &intro,
                         _new_member.display_name(),
                         &user_date,
                         &user_time
