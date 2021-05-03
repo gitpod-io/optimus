@@ -19,9 +19,8 @@ pub async fn responder(_ctx: Context, _guild_id: GuildId, _new_member: Member) {
             &json!({
                 "content":
                     format!(
-                        "> :arrow_forward: {} [{}]({}) {}'s reg Date: **{}**; Time: **{}**",
+                        "> :arrow_forward: {} _{}_  **{}** came in (reg Date: **{}**; Time: **{}**)",
                         vowel_gen(&intro),
-                        &intro,
                         &intro,
                         _new_member.display_name(),
                         &user_date,
