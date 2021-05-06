@@ -32,7 +32,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
             .save_msg(
                 &_msg.id,
                 format!(
-                    "{}{}\n> <<<MSG_TYPE>>> {} `||` At: {}",
+                    "{}{}\n> ---MSG_TYPE--- {} `||` At: {}",
                     &_msg.content,
                     &_attachments,
                     &_msg.author,

@@ -6,8 +6,8 @@ mod message_update;
 mod reaction_add;
 
 use crate::command::note::*;
-use crate::utils::db::*;
-use crate::utils::misc::vowel_gen;
+use crate::utils::{db::*, misc::vowel_gen, substr};
+
 use glob::*;
 use regex::Regex;
 use serde_json::json;

@@ -96,7 +96,7 @@ async fn link(_ctx: &Context, _msg: &Message, _args: Args) -> CommandResult {
 }
 
 #[command]
-#[required_permissions(ADMINISTRATOR)]
+// #[required_permissions(ADMINISTRATOR)]
 async fn list(_ctx: &Context, _msg: &Message, _args: Args) -> CommandResult {
     let dbnode = Database::from("notes".to_string()).await;
 

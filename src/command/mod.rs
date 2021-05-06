@@ -2,6 +2,7 @@ mod about;
 mod am_i_admin;
 mod bash;
 // mod bashget;
+mod editlog;
 mod emoji;
 mod latency;
 mod math;
@@ -17,6 +18,7 @@ mod whois;
 
 // Import commands
 use about::*;
+use editlog::*;
 // use am_i_admin::*;
 use emoji::*;
 use latency::*;
@@ -32,7 +34,7 @@ use slow_mode::*;
 use note::*;
 use whois::*;
 
-use crate::utils::{db::*, substr::*, misc::vowel_gen};
+use crate::utils::{db::*, misc::vowel_gen, substr::*};
 use thorne::*;
 
 use serenity::{
@@ -79,6 +81,7 @@ impl TypeMapKey for CommandCounter {
 #[group]
 #[commands(
     about,
+    editlog,
     // am_i_admin,
     say,
     commands,

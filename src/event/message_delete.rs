@@ -41,7 +41,7 @@ pub async fn responder(
     let re0 = Regex::new(r"(<:|<a:)").unwrap();
     let re = Regex::new(r"\d").unwrap();
     let re2 = Regex::new("[<::>]").unwrap();
-    let re3 = Regex::new("\\n.* <<<MSG_TYPE>>>.*").unwrap();
+    let re3 = Regex::new("\\n.* ---MSG_TYPE---.*").unwrap();
 
     let mut parsed_last_msg = re
         .replace_all(
@@ -262,16 +262,26 @@ pub async fn responder(
             };
 
             dbnode_delmsg_trigger
-                .save_msg(&last_msg_id.unwrap(), content)
+                .save_msg(&last_msg_id.unwrap(), String::from(&content))
                 .await;
 
             last_msg
                 .as_ref()
-                .map(|x| async move { x.react(&_ctx.http, '📩').await.unwrap() })
+                .map(|x| async move {
+                    if let Err(_) = x.react(&_ctx.http, '📩').await {
+                        _channel_id
+                            .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
+                            .await
+                            .ok();
+                    }
+                })
                 .unwrap()
                 .await;
         } else {
-            _channel_id.say(&_ctx, &content).await.ok();
+            _channel_id
+                .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
+                .await
+                .ok();
         }
     }
 

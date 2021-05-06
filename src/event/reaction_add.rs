@@ -1,3 +1,5 @@
+use substr::StringUtils;
+
 use super::*;
 
 pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
@@ -36,15 +38,23 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                         .clean_here(true)
                 };
 
-                let content = content_safe(&_ctx.cache, dbnode.fetch_msg(_added_reaction.message_id).await, &settings).await;
+                let content = content_safe(
+                    &_ctx.cache,
+                    dbnode.fetch_msg(_added_reaction.message_id).await,
+                    &settings,
+                )
+                .await;
 
                 react_data
                     .reply(
                         &_ctx.http,
-                       content.replace(
-                                "<<<MSG_TYPE>>>",
+                        content
+                            .replace(
+                                "---MSG_TYPE---",
                                 format!("Triggered: {} `||` Edited:", &reacted_user).as_str(),
-                            ) 
+                            )
+                            .as_str()
+                            .substring(0, 2000),
                     )
                     .await
                     .unwrap();
@@ -70,11 +80,14 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 let dbnode = Database::from("delmsg_trigger".to_string()).await;
 
                 let content = dbnode.fetch_msg(_added_reaction.message_id).await.replace(
-                    "<<<MSG_TYPE>>>",
+                    "---MSG_TYPE---",
                     format!("Triggered: {} `||` Deleted:", &reacted_user).as_str(),
                 );
 
-                react_data.reply(&_ctx.http, content).await.unwrap();
+                react_data
+                    .reply(&_ctx.http, content.as_str().substring(0, 2000))
+                    .await
+                    .unwrap();
             }
         }
 
