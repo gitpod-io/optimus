@@ -4,6 +4,7 @@ use super::*;
 // #[sub_commands(fetch)]
 pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
     {
+        println!("{}", _msg.timestamp.time());
         let typing = _ctx
             .http
             .start_typing(u64::try_from(_msg.channel_id).unwrap())
@@ -66,7 +67,7 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
                 m.embed(|e| {
                     e.title("FreeBSD whois");
                     // e.color()
-                    e.thumbnail(user_avatar);
+                    // e.thumbnail(&user_avatar);
                     e.url("https://www.freebsd.org/cgi/man.cgi?query=whois");
 
                     let intro = english_gen(1, 1);
@@ -76,7 +77,9 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
                             "Intoduction.exe",
                             format!(
                                 "{} [{}](https://www.dictionary.com/browse/{})",
-                                vowel_gen(&intro), &intro, &intro
+                                vowel_gen(&intro),
+                                &intro,
+                                &intro
                             ),
                             true,
                         ),
@@ -111,6 +114,8 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
                         ),
                         false,
                     );
+
+                    e.image(&user_avatar);
 
                     e
                 });
