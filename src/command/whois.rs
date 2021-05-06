@@ -1,24 +1,30 @@
 use super::*;
 
 #[command]
+#[aliases("whoami")]
 // #[sub_commands(fetch)]
-pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
+pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
     {
-        println!("{}", _msg.timestamp.time());
         let typing = _ctx
             .http
             .start_typing(u64::try_from(_msg.channel_id).unwrap())
             .unwrap();
 
         let dbnode = Database::from("userid".to_string()).await;
-        let user = &_args.rest().to_string().replace("<@!", "").replace(">", "");
+
+        let user = {
+            if _args.rest().is_empty() {
+                _msg.author.id.to_string()
+            } else {
+                _args.rest().to_string().replace("<@!", "").replace(">", "")
+            }
+        };
         let guid = &_msg.guild_id.unwrap();
 
         let prev_usernames = dbnode
             .get_user_info(&user.trim_matches(' ').to_string())
             .await;
 
-        let user_date = &_msg.author.created_at().date().format("%a, %B %e, %Y");
         let user_data = &_ctx
             .cache
             .guild(guid)
@@ -28,9 +34,11 @@ pub async fn whois(_ctx: &Context, _msg: &Message) -> CommandResult {
             .await
             .unwrap();
 
+        let user_date = &user_data.user.created_at().date().format("%a, %B %e, %Y");
+
         let user_server_date = &user_data.joined_at.unwrap().date().format("%a, %B %e, %Y");
 
-        let user_time = &_msg.author.created_at().time().format("%H:%M:%S %p");
+        let user_time = &_msg.author.created_at().time().format("%H:%M:%S");
 
         let user_avatar = {
             let user = &user_data.user;
