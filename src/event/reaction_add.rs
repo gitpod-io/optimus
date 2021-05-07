@@ -57,6 +57,9 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                             .substring(0, 2000),
                     )
                     .await
+                    .unwrap()
+                    .react(&_ctx.http, '🔃')
+                    .await
                     .unwrap();
 
                 // let msg_content = &react_data.content;
@@ -70,6 +73,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
             }
         }
 
+        // Deleted message handlers and or listeners
         "📩" => {
             if !*a_bot_reacted_now && is_self_reacted {
                 react_data
@@ -87,7 +91,37 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 react_data
                     .reply(&_ctx.http, content.as_str().substring(0, 2000))
                     .await
+                    .unwrap()
+                    .react(&_ctx.http, '🔃')
+                    .await
                     .unwrap();
+            }
+        }
+
+        "🔃" => {
+            if !*a_bot_reacted_now && is_self_msg {
+                react_data
+                    .delete_reaction_emoji(&_ctx.http, '🔃')
+                    .await
+                    .unwrap();
+                react_data.delete(&_ctx.http).await.unwrap();
+
+                let target_emoji = {
+                    if react_data.content.to_string().contains("`||` Edited: ") {
+                        '✍'
+                    } else {
+                        '📩'
+                    }
+                };
+
+                react_data
+                    .referenced_message
+                    .as_ref()
+                    .map(|x| async move {
+                        x.react(&_ctx.http, target_emoji).await.unwrap();
+                    })
+                    .unwrap()
+                    .await;
             }
         }
 
