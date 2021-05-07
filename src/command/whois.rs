@@ -16,7 +16,10 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
             if _args.rest().is_empty() {
                 _msg.author.id.to_string()
             } else {
-                _args.rest().to_string().replace("<@!", "").replace(">", "")
+                let re = Regex::new(r#"\W"#).unwrap();
+                re.replace_all(_args.rest().to_string().as_str(), "")
+                    .to_string()
+                // _args.rest().to_string().replace("<@!", "").replace(">", "")
             }
         };
         let guid = &_msg.guild_id.unwrap();

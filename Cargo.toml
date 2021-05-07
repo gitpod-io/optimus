@@ -24,7 +24,7 @@ version = "0.11.3"
 path = "serenity/"
 default-features = false
 features = ["client", "gateway", "rustls_backend", "model", "utils", "cache", "framework", "standard_framework"]
-version = "0.10.5"
+#version = "0.10.5"
 
 [dependencies.tokio]
 version = "1.4.0"
