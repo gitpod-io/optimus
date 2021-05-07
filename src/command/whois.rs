@@ -1,7 +1,7 @@
 use super::*;
 
 #[command]
-#[aliases("whoami")]
+#[aliases("whoami", "av")]
 // #[sub_commands(fetch)]
 pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
     {
