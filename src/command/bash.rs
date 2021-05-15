@@ -49,7 +49,11 @@ async fn bash(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult 
 
                     m.embed(|e| {
                         e.title("Bash command");
-                        e.description(format!("[{}](https://google.com)", &_args.rest()));
+                        e.description(format!(
+                            "[{}](https://explainshell.com/explain?cmd={})",
+                            &_args.rest(),
+                            &_args.rest()
+                        ));
                         e.field(
                             "Standard output:",
                             format!(
