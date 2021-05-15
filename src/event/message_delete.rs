@@ -24,15 +24,15 @@ pub async fn responder(
     //     .last_message_id
     //     .unwrap();
 
-    let qq = _ctx
+    let qq = &_ctx
         .http
         .get_messages(u64::try_from(_channel_id).unwrap(), "")
         .await
         .unwrap();
 
-    let gg = _ctx.cache.guild(_guild_id.unwrap()).await.unwrap();
+    let gg = &_ctx.cache.guild(_guild_id.unwrap()).await.unwrap();
 
-    let nqn_exists = gg.member(&_ctx.http, 559426966151757824).await;
+    let nqn_exists = &gg.member(&_ctx.http, 559426966151757824).await;
 
     let botis = &qq.first().as_ref().map(|x| x.author.id).unwrap();
 
@@ -113,6 +113,16 @@ pub async fn responder(
                 .clean_here(true)
         };
 
+        // Alert users who got mentioned.
+        // for caps in Regex::new(r"(?P<uid>[0-9]{18}+)")
+        //     .unwrap()
+        //     .captures_iter(&deleted_message)
+        // {
+        //     let user = &caps["url"];
+        //     let hmm = &_ctx.cache.member(_guild_id, user).await.unwrap();
+        // }
+        // End alert
+
         let mut content = content_safe(&_ctx.cache, &deleted_message, &settings).await;
 
         let mut proxied_content_attachments = Vec::new();
@@ -172,7 +182,7 @@ pub async fn responder(
                 }
             } else {
                 let current_dir = env::current_exe().unwrap();
-                let current_dir = current_dir.parent().unwrap();
+                let current_dir = &current_dir.parent().unwrap();
                 let file_name = path::Path::new(&url)
                     .file_name()
                     .unwrap()
@@ -231,8 +241,8 @@ pub async fn responder(
             // content.replace(&content_attachments[loop_times].to_string(), &var.to_string())
         }
 
-        let last_msg = qq.first();
-        let last_msg_id = last_msg.as_ref().map(|x| x.id);
+        let last_msg = &qq.first();
+        let last_msg_id = &last_msg.as_ref().map(|x| x.id);
 
         if last_msg_id.is_some() {
             let dbnode_delmsg_trigger = Database::from("delmsg_trigger".to_string()).await;
@@ -240,9 +250,9 @@ pub async fn responder(
 
             content = {
                 if dbnode_delmsg_trigger.msg_exists(&_deleted_message_id).await {
-                    let file_path = format!("{}/{}", dbnode_delmsg_trigger, &_deleted_message_id);
+                    let file_path = format!("{}/{}", &dbnode_delmsg_trigger, &_deleted_message_id);
                     let prev_content = fs::read_to_string(&file_path).await.unwrap();
-                    format!("{}\n{}", &prev_content, content)
+                    format!("{}\n{}", &prev_content, &content)
                 } else {
                     content
                 }
@@ -253,9 +263,9 @@ pub async fn responder(
                     .msg_exists(&last_msg_id.unwrap())
                     .await
                 {
-                    let file_path = format!("{}/{}", dbnode_delmsg_trigger, &last_msg_id.unwrap());
+                    let file_path = format!("{}/{}", &dbnode_delmsg_trigger, &last_msg_id.unwrap());
                     let prev_content = fs::read_to_string(&file_path).await.unwrap();
-                    format!("{}\n{}", &prev_content, content)
+                    format!("{}\n{}", &prev_content, &content)
                 } else {
                     content
                 }
@@ -269,7 +279,7 @@ pub async fn responder(
                 .as_ref()
                 .map(|x| async move {
                     if let Err(_) = x.react(&_ctx.http, '📩').await {
-                        _channel_id
+                        &_channel_id
                             .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
                             .await
                             .ok();
@@ -278,7 +288,7 @@ pub async fn responder(
                 .unwrap()
                 .await;
         } else {
-            _channel_id
+            &_channel_id
                 .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
                 .await
                 .ok();

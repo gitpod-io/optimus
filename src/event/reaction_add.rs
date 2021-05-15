@@ -8,7 +8,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     let a_bot_reacted_now = &reacted_user.bot;
 
     let react_data = &_added_reaction.message(&_ctx.http).await.unwrap();
-    let is_self_msg = react_data.is_own(&_ctx.cache).await;
+    let is_self_msg = &react_data.is_own(&_ctx.cache).await;
     // let reactions_count = react_data.reactions.iter().count();
     let reactions = &react_data.reactions;
 
@@ -22,7 +22,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     match emoji.as_str() {
         "✍" => {
             if !*a_bot_reacted_now && is_self_reacted {
-                react_data
+                &react_data
                     .delete_reaction_emoji(&_ctx.http, '✍')
                     .await
                     .unwrap();
@@ -45,10 +45,10 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 )
                 .await;
 
-                react_data
+                &react_data
                     .reply(
                         &_ctx.http,
-                        content
+                        &content
                             .replace(
                                 "---MSG_TYPE---",
                                 format!("Triggered: {} `||` Edited:", &reacted_user).as_str(),
@@ -88,8 +88,8 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                     format!("Triggered: {} `||` Deleted:", &reacted_user).as_str(),
                 );
 
-                react_data
-                    .reply(&_ctx.http, content.as_str().substring(0, 2000))
+                &react_data
+                    .reply(&_ctx.http, &content.as_str().substring(0, 2000))
                     .await
                     .unwrap()
                     .react(&_ctx.http, '🔃')
@@ -99,12 +99,12 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
         }
 
         "🔃" => {
-            if !*a_bot_reacted_now && is_self_msg {
-                react_data
+            if !*a_bot_reacted_now && *is_self_msg {
+                &react_data
                     .delete_reaction_emoji(&_ctx.http, '🔃')
                     .await
                     .unwrap();
-                react_data.delete(&_ctx.http).await.unwrap();
+                &react_data.delete(&_ctx.http).await.unwrap();
 
                 let target_emoji = {
                     if react_data.content.to_string().contains("`||` Edited: ") {
@@ -114,7 +114,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                     }
                 };
 
-                react_data
+                &react_data
                     .referenced_message
                     .as_ref()
                     .map(|x| async move {
@@ -126,20 +126,10 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
         }
 
         "❎" => {
-            if !*a_bot_reacted_now && is_self_reacted && is_self_msg {
-                react_data.delete(&_ctx.http).await.unwrap();
+            if !*a_bot_reacted_now && is_self_reacted && *is_self_msg {
+                &react_data.delete(&_ctx.http).await.unwrap();
             }
         }
         _ => {}
     }
-
-    // if !*is_bot && is_self_reacted && *is_self_msg && *emoji == String::from('❎') {
-    //     _added_reaction
-    //         .message(&_ctx.http)
-    //         .await
-    //         .unwrap()
-    //         .delete(&_ctx.http)
-    //         .await
-    //         .unwrap();
-    // }
 }

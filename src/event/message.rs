@@ -93,7 +93,8 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
                                 .await
                                 .unwrap();
                         } else {
-                            _msg.reply(&_ctx.http, &content)
+                            &_msg
+                                .reply(&_ctx.http, &content)
                                 .await
                                 .unwrap()
                                 .react(&_ctx.http, '❎')
