@@ -14,7 +14,7 @@ pub async fn responder(
         .unwrap()
         .unwrap();
 
-    _ctx.http
+    &_ctx.http
         .send_message(
             u64::try_from(_system_channel_id).unwrap(),
             &json!({
