@@ -4,6 +4,7 @@ mod bash;
 // mod bashget;
 mod editlog;
 mod emoji;
+mod invite;
 mod latency;
 mod math;
 pub mod note;
@@ -31,6 +32,7 @@ use slow_mode::*;
 // use some_long_command::*;
 // use upper::*;
 // use bashget::*;
+use invite::*;
 use note::*;
 use whois::*;
 
@@ -92,6 +94,7 @@ impl TypeMapKey for CommandCounter {
     // ping,
     latency,
     whois,
+    invite,
     // some_long_command,
     // upper_command
 )]

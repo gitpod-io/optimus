@@ -1,3 +1,4 @@
+mod guild_create;
 mod guild_member_addition;
 mod guild_member_removal;
 mod message;
@@ -17,7 +18,7 @@ use serenity::{
         channel::{Message, Reaction},
         event::MessageUpdateEvent,
         gateway::{Activity, Ready},
-        guild::Member,
+        guild::{Guild, Member},
         id::{ChannelId, GuildId, MessageId},
         prelude::User,
     },
@@ -148,17 +149,12 @@ impl EventHandler for Listener {
                 }
             });
 
-            // // And of course, we can run more than one thread at different timings.
-            // let ctx2 = Arc::clone(&ctx);
-            // tokio::spawn(async move {
-            //     loop {
-            //         set_status_to_current_time(Arc::clone(&ctx2)).await;
-            //         tokio::time::sleep(Duration::from_secs(60)).await;
-            //     }
-            // });
-
             // Now that the loop is running, we set the bool to true
             self.is_loop_running.swap(true, Ordering::Relaxed);
         }
+    }
+
+    async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {
+        guild_create::responder(_ctx, _guild, _is_new).await;
     }
 }
