@@ -1,7 +1,7 @@
 use super::*;
 
 #[command]
-#[aliases("whoami", "av")]
+#[aliases("whoami")]
 // #[sub_commands(fetch)]
 pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
     {
@@ -12,28 +12,18 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
 
         let dbnode = Database::from("userid".to_string()).await;
 
-        let user = {
-            if _args.rest().is_empty() {
-                _msg.author.id.to_string()
-            } else {
-                let re = Regex::new(r#"\W"#).unwrap();
-                re.replace_all(_args.rest().to_string().as_str(), "")
-                    .to_string()
-                // _args.rest().to_string().replace("<@!", "").replace(">", "")
-            }
-        };
+        let user = Parse::user(&_msg, &_args);
+
         let guid = &_msg.guild_id.unwrap();
 
-        let prev_usernames = dbnode
-            .get_user_info(&user.trim_matches(' ').to_string())
-            .await;
+        let prev_usernames = dbnode.get_user_info(&user.to_string()).await;
 
         let user_data = &_ctx
             .cache
             .guild(guid)
             .await
             .unwrap()
-            .member(&_ctx.http, user.parse::<u64>().unwrap())
+            .member(&_ctx.http, user)
             .await
             .unwrap();
 
@@ -43,14 +33,7 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
 
         let user_time = &_msg.author.created_at().time().format("%H:%M:%S");
 
-        let user_avatar = {
-            let user = &user_data.user;
-            if user.avatar_url().is_some() {
-                user.avatar_url().unwrap()
-            } else {
-                user.default_avatar_url()
-            }
-        };
+        let user_avatar = &user_data.user.face();
 
         let user_colors = {
             let user = &user_data.colour(&_ctx.cache).await;
@@ -78,7 +61,7 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
                 m.embed(|e| {
                     e.title("FreeBSD whois");
                     // e.color()
-                    // e.thumbnail(&user_avatar);
+                    e.thumbnail(&user_avatar);
                     e.url("https://www.freebsd.org/cgi/man.cgi?query=whois");
 
                     let intro = english_gen(1, 1);
@@ -126,7 +109,7 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
                         false,
                     );
 
-                    e.image(&user_avatar);
+                    // e.image(&user_avatar);
 
                     e
                 });
