@@ -1,8 +1,9 @@
 use serenity::model::id::MessageId;
 
-use std::{fmt, env, path};
+use std::{env, fmt, path};
 use tokio::fs;
 
 pub mod db;
-pub mod substr;
 pub mod misc;
+pub mod parser;
+pub mod substr;

@@ -2,6 +2,7 @@ mod about;
 mod am_i_admin;
 mod bash;
 // mod bashget;
+mod av;
 mod editlog;
 mod emoji;
 mod invite;
@@ -13,6 +14,7 @@ mod ping;
 mod say;
 mod slow_mode;
 mod some_long_command;
+mod status;
 mod upper;
 mod whois;
 // use crate::utils::db::*;
@@ -32,11 +34,13 @@ use slow_mode::*;
 // use some_long_command::*;
 // use upper::*;
 // use bashget::*;
+use av::*;
 use invite::*;
 use note::*;
+use status::*;
 use whois::*;
 
-use crate::utils::{db::*, misc::vowel_gen, substr::*};
+use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
 use thorne::*;
 
 use serenity::{
@@ -62,7 +66,6 @@ use std::{
     sync::Arc,
 };
 
-use regex::Regex;
 use serenity::prelude::*;
 use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
 use tokio::{fs, fs::symlink, process, sync::Mutex};
@@ -94,6 +97,8 @@ impl TypeMapKey for CommandCounter {
     // ping,
     latency,
     whois,
+    av,
+    status,
     invite,
     // some_long_command,
     // upper_command
