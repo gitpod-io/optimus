@@ -99,7 +99,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
         }
 
         "🔃" => {
-            if !*a_bot_reacted_now && *is_self_msg {
+            if !*a_bot_reacted_now && *is_self_msg && is_self_reacted {
                 &react_data
                     .delete_reaction_emoji(&_ctx.http, '🔃')
                     .await
