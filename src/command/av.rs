@@ -2,7 +2,7 @@ use super::*;
 
 #[command]
 pub async fn av(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
-    let user = Parse::user(&_msg, &_args);
+    let user = Parse::user(&_ctx,&_msg, &_args).await;
     let guild_id = &_msg.guild_id.unwrap();
     let user_data = &_ctx
         .http
