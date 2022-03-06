@@ -5,7 +5,7 @@ async fn slow_mode(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     let say_content = if let Ok(slow_mode_rate_seconds) = args.single::<u64>() {
         if let Err(why) = msg
             .channel_id
-            .edit(&ctx.http, |c| c.slow_mode_rate(slow_mode_rate_seconds))
+            .edit(&ctx.http, |c| c.rate_limit_per_user(slow_mode_rate_seconds))
             .await
         {
             println!("Error setting channel's slow mode rate: {:?}", why);

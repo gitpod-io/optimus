@@ -4,8 +4,7 @@
 use super::*;
 
 async fn welcome_msg(_ctx: &Context, channel: &ChannelId, guild: &Guild) {
-    &_ctx
-        .http
+    _ctx.http
         .send_message(
             *channel.as_u64(),
             &json!({

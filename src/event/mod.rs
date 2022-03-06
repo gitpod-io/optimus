@@ -1,10 +1,13 @@
 mod guild_create;
 mod guild_member_addition;
 mod guild_member_removal;
+mod interaction_create;
 mod message;
 mod message_delete;
 mod message_update;
+mod questions_thread;
 mod reaction_add;
+mod ready;
 
 use crate::command::note::*;
 use crate::utils::{db::*, misc::vowel_gen, substr};
@@ -12,6 +15,10 @@ use crate::utils::{db::*, misc::vowel_gen, substr};
 use glob::*;
 use regex::Regex;
 use serde_json::json;
+
+use serenity::model::channel::GuildChannel;
+use serenity::model::interactions::message_component::{ActionRowComponent, InputTextStyle};
+use serenity::model::interactions::Interaction;
 use serenity::{
     async_trait,
     model::{
@@ -39,6 +46,22 @@ use std::{
 use reqwest;
 use thorne::english_gen;
 use tokio::{fs, process};
+
+// questions_thread
+
+use serenity::{
+    client::{Context, EventHandler},
+    model::{
+        channel::ReactionType,
+        interactions::{
+            message_component::ButtonStyle, message_component::InputText, InteractionResponseType,
+        },
+    },
+};
+
+// static QUESTIONS_PLACEHOLDER_TEXT: &str = ">
+// > Ask or discuss about anything related with Gitpod
+// > ‎";
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,
@@ -76,6 +99,9 @@ impl EventHandler for Listener {
         message_update::responder(_ctx, _old_if_available, _new, _event).await;
     }
 
+    async fn thread_create(&self, _ctx: Context, _thread: GuildChannel) {
+        _thread.id.join_thread(&_ctx.http).await.unwrap();
+    }
     // Set a handler to be called on the `ready` event. This is called when a
     // shard is booted, and a READY payload is sent by Discord. This payload
     // contains data like the current user's guild Ids, current user data,
@@ -83,9 +109,8 @@ impl EventHandler for Listener {
     //
     // In this case, just print what the current user's username is.
     async fn ready(&self, _ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
-        _ctx.set_activity(Activity::competing("Daily-Dramas of SupremeGamers"))
-            .await;
+        ready::responder(&_ctx, ready).await;
+        questions_thread::responder(&_ctx).await;
     }
 
     async fn guild_member_addition(&self, _ctx: Context, _guild_id: GuildId, _new_member: Member) {
@@ -154,7 +179,55 @@ impl EventHandler for Listener {
         }
     }
 
+    // Was trying to hook into auto thread archival and ask the participants
+    // if the thread was resolved but guess we can't reliably do it now
+    // since there is no reliable way to detect who triggered thread_update.
+    // async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
+    //     let thread_type = {
+    //         if _thread.name.contains("✅") || _thread.name.contains("❓") {
+    //             "question"
+    //         } else {
+    //             "thread"
+    //         }
+    //     };
+
+    //     let last = _thread.last_message_id.unwrap();
+    //     let is_self = &_ctx
+    //         .http
+    //         .get_message(*_thread.id.as_u64(), *last.as_u64())
+    //         .await
+    //         .unwrap();
+
+    //     if !is_self.is_own(&_ctx.cache).await && _thread.thread_metadata.unwrap().archived {
+    //         _thread
+    //             .send_message(&_ctx, |m| {
+    //                 m.content(format!("> This {} was closed. Feel free to re-open if anything is unresolved or needs an update", thread_type))
+    //             })
+    //             .await
+    //             .unwrap();
+    //         let tp = _thread.id.get_thread_members(&_ctx.http).await.unwrap();
+
+    //         for mem in tp.iter() {
+    //             dbg!(mem.user_id);
+    //         }
+
+    //         // let stuff_str: String = tp
+    //         //     .into_iter()
+    //         //     .map(|i| i.mention().to_string())
+    //         //     .collect::<String>();
+    //         // println!("{}", stuff_str);
+
+    //         _thread
+    //             .edit_thread(&_ctx, |t| t.archived(true))
+    //             .await
+    //             .unwrap();
+    //     }
+    // }
+
     async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {
         guild_create::responder(_ctx, _guild, _is_new).await;
+    }
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        interaction_create::responder(ctx, interaction).await;
     }
 }

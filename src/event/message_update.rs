@@ -47,8 +47,8 @@ pub async fn responder(
             }
         }
 
-        if !is_self_reacted {
-            &message.react(&_ctx.http, '✍').await.ok();
+        if !is_self_reacted && !message.is_own(&_ctx.cache).await {
+            message.react(&_ctx.http, '✍').await.ok();
         }
         let edit_time = &message.edited_timestamp.unwrap().format("%H:%M:%S %p");
         let old_content = dbnode.fetch_msg(_msg_id).await;

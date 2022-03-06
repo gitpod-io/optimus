@@ -16,6 +16,9 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
 
     // let user_date = _new_member.user.created_at().date().naive_utc();
 
+    //
+    // Log messages
+    //
     if !_msg.is_own(&_ctx.cache).await {
         let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
@@ -42,6 +45,9 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
             .await;
     }
 
+    //
+    // Auto respond on keywords
+    //
     let dbnode_notes = Database::from("notes".to_string()).await;
     let ref_msg = &_msg.referenced_message;
 
@@ -83,7 +89,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
                         )
                         .await;
                         if ref_msg.is_some() {
-                            &ref_msg
+                            ref_msg
                                 .as_ref()
                                 .map(|x| x.reply_ping(&_ctx.http, &content))
                                 .unwrap()
@@ -93,8 +99,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
                                 .await
                                 .unwrap();
                         } else {
-                            &_msg
-                                .reply(&_ctx.http, &content)
+                            _msg.reply(&_ctx.http, &content)
                                 .await
                                 .unwrap()
                                 .react(&_ctx.http, '❎')

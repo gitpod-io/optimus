@@ -21,7 +21,7 @@ async fn say(_ctx: &Context, _msg: &Message, _args: Args) -> CommandResult {
     let ref_msg = &_msg.referenced_message;
 
     if ref_msg.is_some() {
-        &ref_msg
+        ref_msg
             .as_ref()
             .map(|x| x.reply_ping(&_ctx.http, &content))
             .unwrap()

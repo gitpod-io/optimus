@@ -17,7 +17,11 @@ use std::{
 
 #[tokio::main]
 async fn main() {
-    let token = env::var("BOT_TOKEN").expect("Expected BOT_TOKEN");
+    let token = env::var("DISCORD_TOKEN").expect("Expected BOT_TOKEN");
+    let application_id: u64 = env::var("APPLICATION_ID")
+        .expect("Expected APPLICATION_ID")
+        .parse()
+        .expect("Unable to parse");
     let http = Http::new_with_token(&token);
 
     // We will fetch your bot's owners and id
@@ -104,7 +108,8 @@ async fn main() {
         ////// .group(&MATH_GROUP)
         .group(&OWNER_GROUP);
 
-    let mut client = Client::builder(&token)
+    let mut client = Client::builder(token)
+        .application_id(application_id)
         .event_handler(event::Listener {
             is_loop_running: AtomicBool::new(false),
         })

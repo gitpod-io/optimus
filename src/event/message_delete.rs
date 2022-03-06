@@ -279,7 +279,7 @@ pub async fn responder(
                 .as_ref()
                 .map(|x| async move {
                     if let Err(_) = x.react(&_ctx.http, '📩').await {
-                        &_channel_id
+                        _channel_id
                             .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
                             .await
                             .ok();
@@ -288,7 +288,7 @@ pub async fn responder(
                 .unwrap()
                 .await;
         } else {
-            &_channel_id
+            _channel_id
                 .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
                 .await
                 .ok();
