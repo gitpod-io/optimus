@@ -21,33 +21,33 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     //     .await
     //     .unwrap();
 
+    let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+
+    let thread_type = {
+        if _thread.name.contains("✅") || _thread.name.contains("❓") {
+            "question"
+        } else {
+            "thread"
+        }
+    };
+
+    let thread_name = {
+        if _thread.name.contains("✅") || thread_type == "thread" {
+            _thread.name
+        } else {
+            format!("✅ {}", _thread.name.trim_start_matches("❓ "))
+        }
+    };
     let action_user_mention = mci.member.as_ref().unwrap().mention();
-    let response = format!("This question was closed by {}", action_user_mention);
+    let response = format!("This {} was closed by {}", thread_type, action_user_mention);
+    mci.channel_id.say(&ctx.http, &response).await.unwrap();
     mci.create_interaction_response(&ctx.http, |r| {
         r.kind(InteractionResponseType::UpdateMessage);
         r.interaction_response_data(|d| d)
     })
     .await
     .unwrap();
-    mci.channel_id.say(&ctx.http, &response).await.unwrap();
 
-    // let thread_id = u64::try_from(mci.channel_id).unwrap();
-    // ctx.http
-    //     .create_reaction(
-    //         QUESTIONS_CHANNEL_ID,
-    //         thread_id,
-    //         &ReactionType::Unicode("✅".to_string()),
-    //     )
-    //     .await
-    //     .unwrap();
-    let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
-    let thread_name = {
-        if _thread.name.contains("✅") {
-            _thread.name
-        } else {
-            format!("✅ {}", _thread.name.trim_start_matches("❓ "))
-        }
-    };
     mci.channel_id
         .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
         .await
@@ -76,7 +76,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .custom_id("input_description")
                             .label("Description")
                             .required(true)
-                            .max_length(2000)
+                            .max_length(1960)
                     })
                 });
                 c.create_action_row(|ar| {
@@ -139,7 +139,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         .custom_id("input_description")
                                         .label("Description")
                                         .required(true)
-                                        .max_length(2000)
+                                        .max_length(1960)
                                 })
                             });
                             c.create_action_row(|ar| {
@@ -166,9 +166,19 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
             } else if mci.data.name == "close" {
+                let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+                let thread_type = {
+                    if _thread.name.contains("✅") || _thread.name.contains("❓") {
+                        "question"
+                    } else {
+                        "thread"
+                    }
+                };
                 mci.create_interaction_response(&ctx.http, |r| {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
-                    r.interaction_response_data(|d| d.content("This question was closed"))
+                    r.interaction_response_data(|d| {
+                        d.content(format!("This {} was closed", thread_type))
+                    })
                 })
                 .await
                 .unwrap();
@@ -183,7 +193,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 //     .unwrap();
                 let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_name = {
-                    if thread_node.name.contains("✅") {
+                    if thread_node.name.contains("✅") || thread_type == "thread" {
                         thread_node.name
                     } else {
                         format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
@@ -344,9 +354,9 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             let thread_auto_archive_dur = {
                 if cfg!(debug_assertions) {
-                    1440
+                    1440 // 1 day
                 } else {
-                    4320
+                    4320 // 3 days
                 }
             };
 
@@ -364,38 +374,47 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             //     .await
             //     .unwrap();
 
-            let resonse = MessageBuilder::new()
-                .push_underline_line("**Description**")
-                .push_line_safe(&description.value)
-                .push_bold("\n----------")
-                // .push_codeblock(" ", None)
-                // .push_line("")
-                .build();
-
-            let response_two = MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread! You can close this question by clicking the button below or sending a `/close` message.", user_mention)).build();
-
-            // if &description.value.chars().count() > &1000 {
-            //     let desc_first = &description.value.as_str().slice(..1000);
-            //     let desc_last = &description.value.as_str().slice(1000..);
+            // if &description.value.chars().count() > &2000 {
+            //     let desc_first = &description.value.as_str().slice(..2000);
+            //     let desc_last = &description.value.as_str().slice(2000..);
             //     // let desc_last = &description.value.chars().skip(1000).collect();
             //     thread
-            //         .send_message(&ctx, |m| {
-            //             m.embed(|e| {
-            //                 e.field("========", desc_first, false);
-            //                 e.field("‎", desc_last, false);
-            //                 e.title("Description")
-            //             })
-            //         })
+            //         .say(
+            //             &ctx.http,
+            //             MessageBuilder::new()
+            //                 .push_underline_line("**Description**")
+            //                 .push_line_safe(&desc_first)
+            //                 .build(),
+            //         )
+            //         .await
+            //         .unwrap();
+            //     thread
+            //         .say(
+            //             &ctx.http,
+            //             MessageBuilder::new()
+            //                 .push_line_safe(&desc_last)
+            //                 .push_bold("--------------")
+            //                 .build(),
+            //         )
             //         .await
             //         .unwrap();
             // } else {
-            //     thread.say(&ctx.http, &resonse).await.unwrap();
+            thread
+                .say(
+                    &ctx.http,
+                    MessageBuilder::new()
+                        .push_underline_line("**Description**")
+                        .push_line_safe(&description.value)
+                        .push_bold("---------------")
+                        .build(),
+                )
+                .await
+                .unwrap();
             // }
 
-            thread.say(&ctx.http, &resonse).await.unwrap();
             thread
                 .send_message(&ctx, |m| {
-                    m.content(&response_two).components(|c| {
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread! You can close this question by clicking the button below or sending a `/close` message.", user_mention)).build()).components(|c| {
                         c.create_action_row(|ar| {
                             ar.create_button(|button| {
                                 button
