@@ -1,8 +1,8 @@
 use super::*;
-use crate::utils::substr::StringUtils;
 use serenity::{
     http::AttachmentType,
     model::{channel::Embed, interactions::message_component::MessageComponentInteraction},
+    utils::MessageBuilder,
 };
 
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
@@ -22,17 +22,14 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     //     .unwrap();
 
     let action_user_mention = mci.member.as_ref().unwrap().mention();
+    let response = format!("This question was closed by {}", action_user_mention);
     mci.create_interaction_response(&ctx.http, |r| {
         r.kind(InteractionResponseType::UpdateMessage);
-        r.interaction_response_data(|d| {
-            d.content(format!(
-                "This question was closed by {}",
-                action_user_mention
-            ))
-        })
+        r.interaction_response_data(|d| d)
     })
     .await
     .unwrap();
+    mci.channel_id.say(&ctx.http, &response).await.unwrap();
 
     // let thread_id = u64::try_from(mci.channel_id).unwrap();
     // ctx.http
@@ -349,7 +346,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 if cfg!(debug_assertions) {
                     1440
                 } else {
-                    10080
+                    4320
                 }
             };
 
@@ -367,49 +364,51 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             //     .await
             //     .unwrap();
 
-            if &description.value.chars().count() > &1000 {
-                let desc_first = &description.value.as_str().slice(..1000);
-                let desc_last = &description.value.as_str().slice(1000..);
-                // let desc_last = &description.value.chars().skip(1000).collect();
-                thread
-                    .send_message(&ctx, |m| {
-                        m.embed(|e| {
-                            e.field("========", desc_first, false);
-                            e.field("‎", desc_last, false);
-                            e.title("Description")
-                        })
-                    })
-                    .await
-                    .unwrap();
-            } else {
-                thread
-                    .send_message(&ctx, |m| {
-                        m.embed(|e| {
-                            e.field("========", &description.value, false);
-                            e.title("Description")
-                        })
-                    })
-                    .await
-                    .unwrap();
-            }
+            let resonse = MessageBuilder::new()
+                .push_underline_line("**Description**")
+                .push_line_safe(&description.value)
+                .push_bold("\n----------")
+                // .push_codeblock(" ", None)
+                // .push_line("")
+                .build();
 
+            let response_two = MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread! You can close this question by clicking the button below or sending a `/close` message.", user_mention)).build();
+
+            // if &description.value.chars().count() > &1000 {
+            //     let desc_first = &description.value.as_str().slice(..1000);
+            //     let desc_last = &description.value.as_str().slice(1000..);
+            //     // let desc_last = &description.value.chars().skip(1000).collect();
+            //     thread
+            //         .send_message(&ctx, |m| {
+            //             m.embed(|e| {
+            //                 e.field("========", desc_first, false);
+            //                 e.field("‎", desc_last, false);
+            //                 e.title("Description")
+            //             })
+            //         })
+            //         .await
+            //         .unwrap();
+            // } else {
+            //     thread.say(&ctx.http, &resonse).await.unwrap();
+            // }
+
+            thread.say(&ctx.http, &resonse).await.unwrap();
             thread
-			.send_message(&ctx, |m| {
-				m.content(format!("> Hey {}! Thank you for raising this — please hang tight as someone from Gitpod or our community will help you out. Feel free to add anymore information in this thread! You can also close this issue by clicking the button below or sending a `/close` message.", user_mention));
-				m.components(|c| {
-					c.create_action_row(|ar| {
-						ar.create_button(|button| {
-							button
-							.style(ButtonStyle::Success)
-							.label("Close")
-							.custom_id("gitpod_close_issue")
-							.emoji(ReactionType::Unicode("✉️".to_string()))
-						})
-					})
-				})
-			})
-			.await
-			.unwrap();
+                .send_message(&ctx, |m| {
+                    m.content(&response_two).components(|c| {
+                        c.create_action_row(|ar| {
+                            ar.create_button(|button| {
+                                button
+                                    .style(ButtonStyle::Success)
+                                    .label("Close")
+                                    .custom_id("gitpod_close_issue")
+                                    .emoji(ReactionType::Unicode("✉️".to_string()))
+                            })
+                        })
+                    })
+                })
+                .await
+                .unwrap();
 
             // thread.last_message_id
 
