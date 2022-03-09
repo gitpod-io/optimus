@@ -8,6 +8,7 @@ mod message_update;
 mod questions_thread;
 mod reaction_add;
 mod ready;
+mod thread_update;
 
 use crate::command::note::*;
 use crate::utils::{db::*, misc::vowel_gen, substr};
@@ -179,50 +180,9 @@ impl EventHandler for Listener {
         }
     }
 
-    // Was trying to hook into auto thread archival and ask the participants
-    // if the thread was resolved but guess we can't reliably do it now
-    // since there is no reliable way to detect who triggered thread_update.
-    // async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
-    //     let thread_type = {
-    //         if _thread.name.contains("✅") || _thread.name.contains("❓") {
-    //             "question"
-    //         } else {
-    //             "thread"
-    //         }
-    //     };
-
-    //     let last = _thread.last_message_id.unwrap();
-    //     let is_self = &_ctx
-    //         .http
-    //         .get_message(*_thread.id.as_u64(), *last.as_u64())
-    //         .await
-    //         .unwrap();
-
-    //     if !is_self.is_own(&_ctx.cache).await && _thread.thread_metadata.unwrap().archived {
-    //         _thread
-    //             .send_message(&_ctx, |m| {
-    //                 m.content(format!("> This {} was closed. Feel free to re-open if anything is unresolved or needs an update", thread_type))
-    //             })
-    //             .await
-    //             .unwrap();
-    //         let tp = _thread.id.get_thread_members(&_ctx.http).await.unwrap();
-
-    //         for mem in tp.iter() {
-    //             dbg!(mem.user_id);
-    //         }
-
-    //         // let stuff_str: String = tp
-    //         //     .into_iter()
-    //         //     .map(|i| i.mention().to_string())
-    //         //     .collect::<String>();
-    //         // println!("{}", stuff_str);
-
-    //         _thread
-    //             .edit_thread(&_ctx, |t| t.archived(true))
-    //             .await
-    //             .unwrap();
-    //     }
-    // }
+    async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
+        thread_update::responder(_ctx, _thread).await;
+    }
 
     async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {
         guild_create::responder(_ctx, _guild, _is_new).await;
