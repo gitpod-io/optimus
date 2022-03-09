@@ -1,2 +1,6 @@
 tasks:
   - init: cargo build
+
+vscode:
+  extensions:
+    - matklad.rust-analyzer
