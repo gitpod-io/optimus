@@ -45,6 +45,7 @@ use std::{
 };
 
 use reqwest;
+
 use thorne::english_gen;
 use tokio::{fs, process};
 
@@ -171,7 +172,12 @@ impl EventHandler for Listener {
                         }
                     }
 
+                    // Workaround process uptime limit on free google server
                     tokio::time::sleep(Duration::from_secs(3 * (24 * (60 * 60)))).await;
+                    std::process::Command::new(env::current_exe().unwrap())
+                        .spawn()
+                        .unwrap();
+                    std::process::exit(0);
                 }
             });
 
