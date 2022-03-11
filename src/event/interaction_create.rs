@@ -347,7 +347,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             //     .unwrap();
             // let last_id = msgs.first().unwrap();
             if mci.data.custom_id == "gitpod_help_button_press" {
-                mci.message.unwrap().delete(&ctx).await.unwrap();
+                mci.message.unwrap().delete(&ctx).await.ok();
             }
 
             let user_mention = mci.user.mention();
@@ -399,12 +399,22 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             //         .await
             //         .unwrap();
             // } else {
+            // Use contentsafe options
+            let settings = {
+                ContentSafeOptions::default()
+                    .clean_channel(false)
+                    .clean_role(true)
+                    .clean_user(false)
+            };
+
+            let safe_desc = content_safe(&ctx.cache, &description.value, &settings).await;
+
             thread
                 .say(
                     &ctx.http,
                     MessageBuilder::new()
                         .push_underline_line("**Description**")
-                        .push_line_safe(&description.value)
+                        .push_line(safe_desc)
                         .push_bold("---------------")
                         .build(),
                 )
