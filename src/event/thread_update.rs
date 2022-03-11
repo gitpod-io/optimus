@@ -52,5 +52,10 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
         //     .edit_thread(&_ctx, |t| t.archived(true))
         //     .await
         //     .unwrap();
+    } else if is_self.is_own(&_ctx.cache).await && _thread.thread_metadata.unwrap().archived {
+        _thread
+            .edit_thread(&_ctx.http, |t| t.archived(false))
+            .await
+            .unwrap();
     }
 }
