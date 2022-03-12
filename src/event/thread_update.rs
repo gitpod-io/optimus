@@ -12,12 +12,12 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
         }
     };
 
-    let last = _thread.last_message_id.unwrap();
     let last_msg = &_ctx
         .http
-        .get_message(*_thread.id.as_u64(), *last.as_u64())
+        .get_messages(*_thread.id.as_u64(), "")
         .await
         .unwrap();
+    let last_msg = last_msg.first().unwrap();
 
     let no_activity_message = format!("> This {} did not have any recent activity or wasn't normally closed. Feel free to `/close` it or post an update if anything is unresolved.", thread_type);
 
