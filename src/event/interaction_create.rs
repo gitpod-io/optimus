@@ -316,7 +316,17 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             let desc_safe = safe_text(&ctx, &description.value).await;
             thread
                 .send_message(&ctx.http, |m| {
-                    m.add_embed(|e| e.title("Description").description(desc_safe));
+                    if &description.value.chars().count() < &1960 {
+                        m.content(
+                            MessageBuilder::new()
+                                .push_underline_line("**Description**")
+                                .push_line(&desc_safe)
+                                .push_bold("---------------")
+                                .build(),
+                        );
+                    } else {
+                        m.add_embed(|e| e.title("Description").description(desc_safe));
+                    }
                     if channel_name == SELF_HOSTED_TEXT {
                         m.add_embed(|e| {
                             e.title("config.yaml contents")
