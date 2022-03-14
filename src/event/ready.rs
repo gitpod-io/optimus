@@ -13,9 +13,9 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
     );
 
     let _commands = GuildId::set_application_commands(&guild_id, &_ctx.http, |commands| {
-        commands.create_application_command(|command| {
-            command.name("ask").description("Ask a question")
-        });
+        // commands.create_application_command(|command| {
+        //     command.name("ask").description("Ask a question")
+        // });
         commands.create_application_command(|command| {
             command.name("close").description("Close a question")
         })

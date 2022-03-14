@@ -5,6 +5,21 @@ use serenity::{
     utils::MessageBuilder,
 };
 
+const NO_RESPONSE_TEXT: &str = "_No response_";
+const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
+
+async fn safe_text(_ctx: &Context, _input: &String) -> String {
+    content_safe(
+        &_ctx.cache,
+        _input,
+        &ContentSafeOptions::default()
+            .clean_channel(false)
+            .clean_role(true)
+            .clean_user(false),
+    )
+    .await
+}
+
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     // let first_msg = mci
     //     .channel_id
@@ -55,6 +70,7 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
 }
 
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
+    let channel_name = mci.channel_id.name(&ctx.cache).await.unwrap();
     mci.create_interaction_response(&ctx, |r| {
         r.kind(InteractionResponseType::Modal);
         r.interaction_response_data(|d| {
@@ -76,25 +92,42 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .custom_id("input_description")
                             .label("Description")
                             .required(true)
-                            .max_length(1960)
+                            .max_length(4000)
                     })
                 });
                 c.create_action_row(|ar| {
                     ar.create_input_text(|it| {
-                        it.style(InputTextStyle::Short)
-                            .custom_id("input_workspace")
-                            .label("Workspace affected")
-                            .required(false)
-                            .max_length(100)
+                        if channel_name != SELF_HOSTED_TEXT {
+                            it.style(InputTextStyle::Short)
+                                .custom_id("input_workspace")
+                                .label("Workspace affected")
+                                .required(false)
+                                .max_length(100)
+                        } else {
+                            it.style(InputTextStyle::Paragraph)
+                                .custom_id("input_config_yaml")
+                                .label("Your config.yaml contents")
+                                .required(false)
+                                .max_length(1000)
+                        }
                     })
                 });
                 c.create_action_row(|ar| {
                     ar.create_input_text(|it| {
-                        it.style(InputTextStyle::Short)
-                            .custom_id("input_example_repo")
-                            .label("Example repo")
-                            .required(false)
-                            .max_length(100)
+                        if channel_name != SELF_HOSTED_TEXT {
+                            it.style(InputTextStyle::Short)
+                                .custom_id("input_example_repo")
+                                .label("Example repo")
+                                .required(false)
+                                .max_length(100)
+                        } else {
+                            it.style(InputTextStyle::Paragraph)
+                                .custom_id("input_kubectl_result")
+                                .label("Result of kubectl get pods -n <namespace>")
+                                .required(false)
+                                .max_length(1000)
+                                .value("# Run: kubectl get pods -n <namespace>")
+                        }
                     })
                 })
             })
@@ -113,96 +146,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 show_issue_form(&mci, &ctx).await;
             } else if mci.data.custom_id == "gitpod_close_issue" {
                 close_issue(&mci, &ctx).await;
-            }
-        }
-        Interaction::ApplicationCommand(mci) => {
-            if mci.data.name == "ask" {
-                mci.create_interaction_response(&ctx, |r| {
-                    r.kind(InteractionResponseType::Modal);
-
-                    r.interaction_response_data(|d| {
-                        d.custom_id("gitpod_help_cmd");
-                        d.title("Template");
-                        d.components(|c| {
-                            c.create_action_row(|ar| {
-                                ar.create_input_text(|it| {
-                                    it.style(InputTextStyle::Short)
-                                        .custom_id("input_title")
-                                        .required(true)
-                                        .label("Title")
-                                        .max_length(100)
-                                })
-                            });
-                            c.create_action_row(|ar| {
-                                ar.create_input_text(|it| {
-                                    it.style(InputTextStyle::Paragraph)
-                                        .custom_id("input_description")
-                                        .label("Description")
-                                        .required(true)
-                                        .max_length(1960)
-                                })
-                            });
-                            c.create_action_row(|ar| {
-                                ar.create_input_text(|it| {
-                                    it.style(InputTextStyle::Short)
-                                        .custom_id("input_workspace")
-                                        .label("Workspace affected")
-                                        .required(false)
-                                        .max_length(100)
-                                })
-                            });
-                            c.create_action_row(|ar| {
-                                ar.create_input_text(|it| {
-                                    it.style(InputTextStyle::Short)
-                                        .custom_id("input_example_repo")
-                                        .label("Example repo")
-                                        .required(false)
-                                        .max_length(100)
-                                })
-                            })
-                        })
-                    })
-                })
-                .await
-                .unwrap();
-            } else if mci.data.name == "close" {
-                let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
-                let thread_type = {
-                    if _thread.name.contains("✅") || _thread.name.contains("❓") {
-                        "question"
-                    } else {
-                        "thread"
-                    }
-                };
-                mci.create_interaction_response(&ctx.http, |r| {
-                    r.kind(InteractionResponseType::ChannelMessageWithSource);
-                    r.interaction_response_data(|d| {
-                        d.content(format!("This {} was closed", thread_type))
-                    })
-                })
-                .await
-                .unwrap();
-                // let thread_id = u64::try_from(mci.channel_id).unwrap();
-                // ctx.http
-                //     .create_reaction(
-                //         QUESTIONS_CHANNEL_ID,
-                //         thread_id,
-                //         &ReactionType::Unicode("✅".to_string()),
-                //     )
-                //     .await
-                //     .unwrap();
-                let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
-                let thread_name = {
-                    if thread_node.name.contains("✅") || thread_type == "thread" {
-                        thread_node.name
-                    } else {
-                        format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
-                    }
-                };
-                mci.channel_id
-                    .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
-                    .await
-                    .unwrap();
             }
         }
         Interaction::ModalSubmit(mci) => {
@@ -232,7 +175,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 ActionRowComponent::InputText(it) => it,
                 _ => return,
             };
-            let workspace_affected = match mci
+            let optional_one = match mci
                 .data
                 .components
                 .get(2)
@@ -247,7 +190,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         InputText {
                             custom_id: it.custom_id,
                             kind: it.kind,
-                            value: String::from("_No response_"),
+                            value: String::from(NO_RESPONSE_TEXT),
                         }
                     } else {
                         it
@@ -255,7 +198,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 }
                 _ => return,
             };
-            let example_repo = match mci
+            let optional_two = match mci
                 .data
                 .components
                 .get(3)
@@ -270,7 +213,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         InputText {
                             custom_id: it.custom_id,
                             kind: it.kind,
-                            value: String::from("_No response_"),
+                            value: String::from(NO_RESPONSE_TEXT),
                         }
                     } else {
                         it
@@ -292,6 +235,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             .ok();
 
             let user_name = &mci.user.name;
+            let channel_name = &mci.channel_id.name(&ctx.cache).await.unwrap();
             let self_avatar = &ctx.cache.current_user().await.face();
             let self_name = &ctx.cache.current_user().await.name;
             let webhook_get = mci.channel_id.webhooks(&ctx).await.unwrap();
@@ -310,12 +254,29 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
+            let optional_one_safe = safe_text(&ctx, &optional_one.value).await;
+            let optional_two_safe = safe_text(&ctx, &optional_two.value).await;
             let prepare_embed = Embed::fake(|e| {
                 e.thumbnail(&mci.user.face());
                 // e.field("Author", &user_name, false);
                 e.field("Title", &title.value, false);
-                e.field("Workspace affected", &workspace_affected.value, false);
-                e.field("Example Repository", &example_repo.value, false);
+                if channel_name != SELF_HOSTED_TEXT {
+                    e.field("Workspace affected", &optional_one.value, false);
+                    e.field("Example Repository", &optional_two.value, false);
+                } else {
+                    let placeholder_one = if optional_one.value.contains(NO_RESPONSE_TEXT) {
+                        optional_one.value
+                    } else {
+                        String::from("Provided")
+                    };
+                    let placeholder_two = if optional_two.value.contains(NO_RESPONSE_TEXT) {
+                        optional_two.value
+                    } else {
+                        String::from("Provided")
+                    };
+                    e.field("config.yaml contents", placeholder_one, false);
+                    e.field("Result of kubectl", placeholder_two, false);
+                }
                 e.footer(|f| {
                     f.icon_url(self_avatar);
                     f.text(&self_name)
@@ -329,23 +290,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .unwrap();
             webhook.delete(&ctx.http).await.unwrap();
             typing.stop();
-            // let msg = mci
-            //     .channel_id
-            //     .send_message(ctx.clone(), |m| {
-            //         m.allowed_mentions(|am| am.empty_parse());
-            //         m.embed(|e| {
-            //             // e.title(&title.value);
-            //         })
-            //     })
-            //     .await
-            //     .unwrap();
-
-            // let msgs = ctx
-            //     .http
-            //     .get_messages(questions_channel_id, "")
-            //     .await
-            //     .unwrap();
-            // let last_id = msgs.first().unwrap();
             if mci.data.custom_id == "gitpod_help_button_press" {
                 mci.message.unwrap().delete(&ctx).await.ok();
             }
@@ -368,59 +312,25 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 })
                 .await
                 .unwrap();
-            // thread
-            //     .id
-            //     .add_thread_member(&ctx, mci.user.id)
-            //     .await
-            //     .unwrap();
 
-            // if &description.value.chars().count() > &2000 {
-            //     let desc_first = &description.value.as_str().slice(..2000);
-            //     let desc_last = &description.value.as_str().slice(2000..);
-            //     // let desc_last = &description.value.chars().skip(1000).collect();
-            //     thread
-            //         .say(
-            //             &ctx.http,
-            //             MessageBuilder::new()
-            //                 .push_underline_line("**Description**")
-            //                 .push_line_safe(&desc_first)
-            //                 .build(),
-            //         )
-            //         .await
-            //         .unwrap();
-            //     thread
-            //         .say(
-            //             &ctx.http,
-            //             MessageBuilder::new()
-            //                 .push_line_safe(&desc_last)
-            //                 .push_bold("--------------")
-            //                 .build(),
-            //         )
-            //         .await
-            //         .unwrap();
-            // } else {
-            // Use contentsafe options
-            let settings = {
-                ContentSafeOptions::default()
-                    .clean_channel(false)
-                    .clean_role(true)
-                    .clean_user(false)
-            };
-
-            let safe_desc = content_safe(&ctx.cache, &description.value, &settings).await;
-
+            let desc_safe = safe_text(&ctx, &description.value).await;
             thread
-                .say(
-                    &ctx.http,
-                    MessageBuilder::new()
-                        .push_underline_line("**Description**")
-                        .push_line(safe_desc)
-                        .push_bold("---------------")
-                        .build(),
-                )
+                .send_message(&ctx.http, |m| {
+                    m.add_embed(|e| e.title("Description").description(desc_safe));
+                    if channel_name == SELF_HOSTED_TEXT {
+                        m.add_embed(|e| {
+                            e.title("config.yaml contents")
+                                .description(format!("```yaml\n{}\n```", optional_one_safe))
+                        });
+                        m.add_embed(|e| {
+                            e.title("Result of kubectl")
+                                .description(format!("```javascript\n{}\n```", optional_two_safe))
+                        });
+                    }
+                    m
+                })
                 .await
                 .unwrap();
-            // }
 
             thread
                 .send_message(&ctx, |m| {
