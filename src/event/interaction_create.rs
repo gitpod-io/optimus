@@ -148,6 +148,47 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 close_issue(&mci, &ctx).await;
             }
         }
+        Interaction::ApplicationCommand(mci) => {
+            if mci.data.name == "close" {
+                let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+                let thread_type = {
+                    if _thread.name.contains("✅") || _thread.name.contains("❓") {
+                        "question"
+                    } else {
+                        "thread"
+                    }
+                };
+                mci.create_interaction_response(&ctx.http, |r| {
+                    r.kind(InteractionResponseType::ChannelMessageWithSource);
+                    r.interaction_response_data(|d| {
+                        d.content(format!("This {} was closed", thread_type))
+                    })
+                })
+                .await
+                .unwrap();
+                // let thread_id = u64::try_from(mci.channel_id).unwrap();
+                // ctx.http
+                //     .create_reaction(
+                //         QUESTIONS_CHANNEL_ID,
+                //         thread_id,
+                //         &ReactionType::Unicode("✅".to_string()),
+                //     )
+                //     .await
+                //     .unwrap();
+                let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+                let thread_name = {
+                    if thread_node.name.contains("✅") || thread_type == "thread" {
+                        thread_node.name
+                    } else {
+                        format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
+                    }
+                };
+                mci.channel_id
+                    .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
+                    .await
+                    .unwrap();
+            }
+        }
         Interaction::ModalSubmit(mci) => {
             let typing = mci.channel_id.start_typing(&ctx.http).unwrap();
             // dbg!(&mci);
@@ -344,7 +385,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             thread
                 .send_message(&ctx, |m| {
-                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread! You can close this question by clicking the button below or sending a `/close` message.", user_mention)).build()).components(|c| {
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread!", user_mention)).build()).components(|c| {
                         c.create_action_row(|ar| {
                             ar.create_button(|button| {
                                 button
