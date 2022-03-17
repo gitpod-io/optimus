@@ -10,18 +10,23 @@ impl Parse {
         } else {
             let re = Regex::new(r#"\W"#).unwrap();
             let pstr = &_arguments.rest().to_string();
-            let to_return = re
-                .replace_all(pstr.as_str(), "");
+            let to_return = re.replace_all(pstr.as_str(), "");
 
             if Regex::new("[0-9]{18}+")
                 .unwrap()
                 .is_match(&to_return.to_string().as_str())
             {
-                to_return.parse::<u64>()
-                .unwrap()
+                to_return.parse::<u64>().unwrap()
             } else {
-                
-                let userid_byname = _ctx.cache.guild(*_message.guild_id.unwrap().as_u64()).await.unwrap().member_named(&to_return).unwrap().user.id;
+                let userid_byname = _ctx
+                    .cache
+                    .guild(*_message.guild_id.unwrap().as_u64())
+                    .await
+                    .unwrap()
+                    .member_named(&to_return)
+                    .unwrap()
+                    .user
+                    .id;
                 *userid_byname.as_u64()
             }
 

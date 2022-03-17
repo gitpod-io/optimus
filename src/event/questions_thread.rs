@@ -1,68 +1,71 @@
-
-
 use super::*;
 
 pub async fn responder(_ctx: &Context) {
     // #questions, #selfhosted-questions, #openvscode-questions, #documentation
     #[cfg(debug_assertions)]
-    let channel_ids: [u64;4] = [947769443516284945, 947769443793141761, 947769443918950404, 947769443663106102];
+    let channel_ids: [u64; 4] = [
+        947769443516284945,
+        947769443793141761,
+        947769443918950404,
+        947769443663106102,
+    ];
 
-	#[cfg(not(debug_assertions))]
-	let channel_ids: [u64;4] = [816246578594840586, 879915120510267412, 892384683273388062, 942924201864593490];
+    #[cfg(not(debug_assertions))]
+    let channel_ids: [u64; 4] = [
+        816246578594840586,
+        879915120510267412,
+        892384683273388062,
+        942924201864593490,
+    ];
 
+    for channel_id in channel_ids.iter() {
+        let channel_id = ChannelId(*channel_id);
 
-	for channel_id in channel_ids.iter() {
-		let channel_id = ChannelId(*channel_id);
-		
-		// Might need to do this in the future for race conditions
-		let last_msg_id = _ctx
-			.http
-			.get_messages(*channel_id.as_u64(), "")
-			.await
-			.unwrap();
-	
-		let last_msg_id = last_msg_id.first();
+        // Might need to do this in the future for race conditions
+        let last_msg_id = _ctx
+            .http
+            .get_messages(*channel_id.as_u64(), "")
+            .await
+            .unwrap();
 
-		if last_msg_id.is_some() {
-			if last_msg_id.unwrap().is_own(&_ctx.cache).await {
-				continue;
-			}
+        let last_msg_id = last_msg_id.first();
 
-		}
-		// let last_msg_id2 = _ctx
-		//     .http
-		//     .get_channel(*channel_id.as_u64())
-		//     .await
-		//     .unwrap()
-		//     .guild()
-		//     .unwrap()
-		//     .last_message_id
-		//     .unwrap();
-		// let qq = _ctx.http.get_messages(*channel_id.as_u64(), "").await;
-	
-		// // Clean out any leftover placeholders for thread-help upto 3 messages
-		// if qq.is_ok() {
-		//     let mut _count = 0;
-		//     for message in qq.as_ref().unwrap().iter() {
-		//         if _count > 3 {
-		//             break;
-		//         }
-		//         if message.is_own(&_ctx).await {
-		//             message.delete(&_ctx).await.unwrap();
-		//         }
-		//         _count += 1;
-		//     }
-		// }
-	
-		// // Place the placeholder
-		// let msg = qq.unwrap();
-		// let last_msg = msg.first().unwrap();
-	
-		let _m = channel_id
+        if last_msg_id.is_some() {
+            if last_msg_id.unwrap().is_own(&_ctx.cache).await {
+                continue;
+            }
+        }
+        // let last_msg_id2 = _ctx
+        //     .http
+        //     .get_channel(*channel_id.as_u64())
+        //     .await
+        //     .unwrap()
+        //     .guild()
+        //     .unwrap()
+        //     .last_message_id
+        //     .unwrap();
+        // let qq = _ctx.http.get_messages(*channel_id.as_u64(), "").await;
+
+        // // Clean out any leftover placeholders for thread-help upto 3 messages
+        // if qq.is_ok() {
+        //     let mut _count = 0;
+        //     for message in qq.as_ref().unwrap().iter() {
+        //         if _count > 3 {
+        //             break;
+        //         }
+        //         if message.is_own(&_ctx).await {
+        //             message.delete(&_ctx).await.unwrap();
+        //         }
+        //         _count += 1;
+        //     }
+        // }
+
+        // // Place the placeholder
+        // let msg = qq.unwrap();
+        // let last_msg = msg.first().unwrap();
+
+        let _m = channel_id
 			.send_message(&_ctx, |m| {
-	
-	
-				// m.content(placeholder_text);
 				m.embed(|e| {
 					e.title("Welcome to the Gitpod community!")
 					.description("Community is at the heart of Gitpod 🧡 We’re happy to help you out. 
@@ -105,5 +108,5 @@ pub async fn responder(_ctx: &Context) {
 			})
 			.await
 			.unwrap();
-	}
+    }
 }
