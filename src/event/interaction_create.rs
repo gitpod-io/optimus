@@ -7,6 +7,7 @@ use serenity::{
 
 const NO_RESPONSE_TEXT: &str = "_No response_";
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
+const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
 
 async fn safe_text(_ctx: &Context, _input: &String) -> String {
     content_safe(
@@ -123,10 +124,10 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                         } else {
                             it.style(InputTextStyle::Paragraph)
                                 .custom_id("input_kubectl_result")
-                                .label("Result of kubectl get pods -n <namespace>")
+                                .label("Result of `kubectl get pods -n <namespace>`")
                                 .required(false)
                                 .max_length(1000)
-                                .value("# Run: kubectl get pods -n <namespace>")
+                                .value(SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER)
                         }
                     })
                 })
@@ -296,7 +297,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .unwrap();
 
             let optional_one_safe = safe_text(&ctx, &optional_one.value).await;
-            let optional_two_safe = safe_text(&ctx, &optional_two.value).await;
+            let mut optional_two_safe = safe_text(&ctx, &optional_two.value).await;
             let prepare_embed = Embed::fake(|e| {
                 e.thumbnail(&mci.user.face());
                 // e.field("Author", &user_name, false);
@@ -305,15 +306,19 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     e.field("Workspace affected", &optional_one.value, false);
                     e.field("Example Repository", &optional_two.value, false);
                 } else {
-                    let placeholder_one = if optional_one.value.contains(NO_RESPONSE_TEXT) {
-                        optional_one.value
+                    let placeholder_one = if optional_one.value == NO_RESPONSE_TEXT {
+                        NO_RESPONSE_TEXT
                     } else {
-                        String::from("Provided")
+                        "Provided"
                     };
-                    let placeholder_two = if optional_two.value.contains(NO_RESPONSE_TEXT) {
-                        optional_two.value
+                    let placeholder_two = if optional_two.value == NO_RESPONSE_TEXT
+                        || optional_two.value == SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
+                    {
+                        optional_two_safe.clear();
+                        optional_two_safe.push_str(NO_RESPONSE_TEXT);
+                        NO_RESPONSE_TEXT
                     } else {
-                        String::from("Provided")
+                        "Provided"
                     };
                     e.field("config.yaml contents", placeholder_one, false);
                     e.field("Result of kubectl", placeholder_two, false);
