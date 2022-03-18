@@ -332,7 +332,9 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             webhook.delete(&ctx.http).await.unwrap();
             typing.stop();
             if mci.data.custom_id == "gitpod_help_button_press" {
-                mci.message.unwrap().delete(&ctx).await.ok();
+                if let Some(msg) = mci.message {
+                    msg.delete(&ctx.http).await.ok();
+                }
             }
 
             let user_mention = mci.user.mention();
