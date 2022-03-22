@@ -36,7 +36,7 @@ pub async fn responder(
         .await
         .unwrap();
 
-    if message.edited_timestamp.is_some() {
+    if message.edited_timestamp.is_some() && message.webhook_id.is_none() {
         let dbnode = Database::from("msgcache".to_string()).await;
         let msg_content = &message.content;
 
