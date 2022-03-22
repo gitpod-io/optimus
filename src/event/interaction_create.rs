@@ -299,12 +299,16 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             let optional_one_safe = safe_text(&ctx, &optional_one.value).await;
             let mut optional_two_safe = safe_text(&ctx, &optional_two.value).await;
             let prepare_embed = Embed::fake(|e| {
-                e.thumbnail(&mci.user.face());
+                // e.thumbnail(&mci.user.face());
                 // e.field("Author", &user_name, false);
                 e.field("Title", &title.value, false);
                 if channel_name != SELF_HOSTED_TEXT {
-                    e.field("Workspace affected", &optional_one.value, false);
-                    e.field("Example Repository", &optional_two.value, false);
+                    if optional_one.value != NO_RESPONSE_TEXT {
+                        e.field("Workspace affected", &optional_one.value, false);
+                    }
+                    if optional_two.value != NO_RESPONSE_TEXT {
+                        e.field("Example Repository", &optional_two.value, false);
+                    }
                 } else {
                     let placeholder_one = if optional_one.value == NO_RESPONSE_TEXT {
                         NO_RESPONSE_TEXT
@@ -320,13 +324,20 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     } else {
                         "Provided"
                     };
-                    e.field("config.yaml contents", placeholder_one, false);
-                    e.field("Result of kubectl", placeholder_two, false);
+                    if placeholder_one != NO_RESPONSE_TEXT {
+                        e.field("config.yaml contents", placeholder_one, false);
+                    }
+                    if placeholder_two != NO_RESPONSE_TEXT {
+                        e.field("Result of kubectl", placeholder_two, false);
+                    }
                 }
+                /*
                 e.footer(|f| {
                     f.icon_url(self_avatar);
                     f.text(&self_name)
                 })
+                */
+                e
             });
 
             let msg = webhook
@@ -376,14 +387,20 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         m.add_embed(|e| e.title("Description").description(desc_safe));
                     }
                     if channel_name == SELF_HOSTED_TEXT {
-                        m.add_embed(|e| {
-                            e.title("config.yaml contents")
-                                .description(format!("```yaml\n{}\n```", optional_one_safe))
-                        });
-                        m.add_embed(|e| {
-                            e.title("Result of kubectl")
-                                .description(format!("```javascript\n{}\n```", optional_two_safe))
-                        });
+                        if optional_one_safe != NO_RESPONSE_TEXT {
+                            m.add_embed(|e| {
+                                e.title("config.yaml contents")
+                                    .description(format!("```yaml\n{}\n```", optional_one_safe))
+                            });
+                        }
+                        if optional_two_safe != NO_RESPONSE_TEXT {
+                            m.add_embed(|e| {
+                                e.title("Result of kubectl").description(format!(
+                                    "```javascript\n{}\n```",
+                                    optional_two_safe
+                                ))
+                            });
+                        }
                     }
                     m
                 })
