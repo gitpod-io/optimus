@@ -278,8 +278,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             let user_name = &mci.user.name;
             let channel_name = &mci.channel_id.name(&ctx.cache).await.unwrap();
-            let self_avatar = &ctx.cache.current_user().await.face();
-            let self_name = &ctx.cache.current_user().await.name;
+            // let self_avatar = &ctx.cache.current_user().await.face();
+            // let self_name = &ctx.cache.current_user().await.name;
             let webhook_get = mci.channel_id.webhooks(&ctx).await.unwrap();
             for hook in webhook_get {
                 if hook.name == Some(user_name.clone()) {
@@ -298,7 +298,11 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             let optional_one_safe = safe_text(&ctx, &optional_one.value).await;
             let mut optional_two_safe = safe_text(&ctx, &optional_two.value).await;
-            let prepare_embed = Embed::fake(|e| {
+            let temp_embed = Embed::fake(|e| {
+                e.description(&description.value);
+                e.field("Title", &title.value, false)
+            });
+            let final_embed = Embed::fake(|e| {
                 // e.thumbnail(&mci.user.face());
                 // e.field("Author", &user_name, false);
                 e.field("Title", &title.value, false);
@@ -341,9 +345,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             });
 
             let msg = webhook
-                .execute(&ctx, true, |w| w.embeds(vec![prepare_embed]))
+                .execute(&ctx, true, |w| w.embeds(vec![temp_embed]))
                 .await
                 .unwrap()
+                .unwrap();
+            webhook
+                .edit_message(&ctx.http, msg.id, |e| e.embeds(vec![final_embed]))
+                .await
                 .unwrap();
             webhook.delete(&ctx.http).await.unwrap();
             typing.stop();
