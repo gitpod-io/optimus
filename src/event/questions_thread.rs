@@ -66,7 +66,14 @@ pub async fn responder(_ctx: &Context) {
 
         let _m = channel_id
 			.send_message(&_ctx, |m| {
-				m.content("Before raising a question, remember to check out our documentation or watch our screencasts. 📚 If you think Gitpod is not working, please check our status page. Thank you!");
+				m.embed(|e| {
+					e.title("Welcome to the Gitpod community!")
+					.description("Community is at the heart of Gitpod 🧡 We’re happy to help you out. 
+					Have you got a question? Or are you facing an issue with Gitpod? You’re in the right place!
+					Before raising a question, remember to check out our documentation or watch our screencasts. 📚 If you think Gitpod is not working, please check our status page. 
+					Thank you!
+					")
+				});
 				m.components(|c| {
 					c.create_action_row(|ar| {
 						ar.create_button(|button| {
