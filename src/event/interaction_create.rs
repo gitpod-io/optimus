@@ -456,7 +456,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .style(ButtonStyle::Success)
                                     .label("Close")
                                     .custom_id("gitpod_close_issue")
-                                    .emoji(ReactionType::Unicode("✉️".to_string()))
+                                    .emoji(ReactionType::Unicode("🔒".to_string()))
                             })
                         })
                     })
