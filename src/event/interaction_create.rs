@@ -449,18 +449,17 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             thread
                 .send_message(&ctx, |m| {
-                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread!", user_mention)).build())
-					// .components(|c| {
-                    //     c.create_action_row(|ar| {
-                    //         ar.create_button(|button| {
-                    //             button
-                    //                 .style(ButtonStyle::Success)
-                    //                 .label("Close")
-                    //                 .custom_id("gitpod_close_issue")
-                    //                 .emoji(ReactionType::Unicode("✉️".to_string()))
-                    //         })
-                    //     })
-                    // })
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread!", user_mention)).build()).components(|c| {
+                        c.create_action_row(|ar| {
+                            ar.create_button(|button| {
+                                button
+                                    .style(ButtonStyle::Success)
+                                    .label("Close")
+                                    .custom_id("gitpod_close_issue")
+                                    .emoji(ReactionType::Unicode("✉️".to_string()))
+                            })
+                        })
+                    })
                 })
                 .await
                 .unwrap();
