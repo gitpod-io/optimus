@@ -23,9 +23,9 @@ async fn safe_text(_ctx: &Context, _input: &String) -> String {
 }
 
 async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
-	let mut links = String::new();
-	for site in sites.iter() {
-		if let Ok(resp) = reqwest::Client::new()
+    let mut links = String::new();
+    for site in sites.iter() {
+        if let Ok(resp) = reqwest::Client::new()
 		.get(format!("https://www.google.com/search?q=site:{} {}", encode(&site), encode(query)))
 		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
 		.send()
@@ -44,12 +44,11 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 						break;
 					}
 				}
-				
 			}
 		}
-	}
-	
-	links
+    }
+
+    links
 }
 
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
@@ -446,7 +445,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-
             thread
                 .send_message(&ctx, |m| {
                     m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread!", user_mention)).build()).components(|c| {
@@ -463,20 +461,27 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 })
                 .await
                 .unwrap();
-				
-            	questions_thread::responder(&ctx).await;
 
-				let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
-				let relevant_links = google_site_search_fetch_links(&["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],  &title.value).await;
-				if !relevant_links.is_empty() {
-					thread.send_message(&ctx.http, |m| {
-						m.content("> I also found some relevant links which might answer your question")
-						.embed(|e|e.description(relevant_links))
-					}).await.unwrap();
-				thread_typing.stop();
+            questions_thread::responder(&ctx).await;
 
-			}
-            
+            let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
+            let relevant_links = google_site_search_fetch_links(
+                &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
+                &title.value,
+            )
+            .await;
+            if !relevant_links.is_empty() {
+                thread
+                    .send_message(&ctx.http, |m| {
+                        m.content(
+                            "> I also found some relevant links which might answer your question",
+                        )
+                        .embed(|e| e.description(relevant_links))
+                    })
+                    .await
+                    .unwrap();
+                thread_typing.stop();
+            }
         }
         _ => (),
     }
