@@ -27,4 +27,13 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
 > Running the BOT from Gitpod
 
 - Grab the token from your 🧩 `Bot` page on discord dev portal. You might need to reset it to see.
-![]
+![bot token](/.assets/bot_token_example.png)
+- Grab the **Application ID** from the `General Information` section in your left sidebar
+- Get the **Guild ID**
+    - In Discord app, open your User Settings by clicking the Settings Cog next to your user name on the bottom.
+    - Go to `Appearance` and enable Developer Mode under the Advanced section, then close User Settings.
+    - Right-click on your Discord server name where you invited the BOT, then select `Copy ID`
+- In Gitpod terminal, run the BOT in the following manner:
+```bash
+DISCORD_TOKEN='yOuR.t0KeN.hErE' APPLICATION_ID='your-id-here-123456' GUILD_ID='your-discord-server-id-123456' cargo run
+```
