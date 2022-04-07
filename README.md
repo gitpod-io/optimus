@@ -33,6 +33,8 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
     - In Discord app, open your User Settings by clicking the Settings Cog next to your user name on the bottom.
     - Go to `Appearance` and enable Developer Mode under the Advanced section, then close User Settings.
     - Right-click on your Discord server name where you invited the BOT, then select `Copy ID`
+- Update the channel IDs from https://github.com/gitpod-io/optimus/blob/a7d82011b6334d3bc25404b3e4685fc09ff4f35b/src/event/questions_thread.rs#L8 for question placeholders (This process will be simplified once we close https://github.com/gitpod-io/optimus/issues/13)
+    - You can get IDs by right-clicking on your desired question channels on your dev server.
 - In Gitpod terminal, run the BOT in the following manner:
 ```bash
 DISCORD_TOKEN='yOuR.t0KeN.hErE' APPLICATION_ID='your-id-here-123456' GUILD_ID='your-discord-server-id-123456' cargo run
