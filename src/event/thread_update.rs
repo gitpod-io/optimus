@@ -1,5 +1,5 @@
 use regex::Regex;
-use serenity::{http::CacheHttp, model::channel::MessageType};
+use serenity::model::channel::MessageType;
 
 use super::*;
 
@@ -36,13 +36,11 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
         .unwrap();
     let last_msg = last_msg.first().unwrap();
 
-    if dbg!(_thread.thread_metadata.unwrap().archived) && dbg!(last_msg.is_own(&_ctx.cache).await) {
+    if _thread.thread_metadata.unwrap().archived && last_msg.is_own(&_ctx.cache).await {
         if last_msg.kind.eq(&MessageType::GroupNameUpdate)
-            || dbg!(
-                Regex::new(format!("^This [a-z]+ was closed ?b?y?").as_str())
-                    .unwrap()
-                    .is_match(dbg!(last_msg.content.as_str()))
-            )
+            || Regex::new(format!("^This [a-z]+ was closed ?b?y?").as_str())
+                .unwrap()
+                .is_match(last_msg.content.as_str())
         {
             return;
         } else {
