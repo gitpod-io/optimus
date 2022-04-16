@@ -55,9 +55,7 @@ use serenity::{
     client::{Context, EventHandler},
     model::{
         channel::ReactionType,
-        interactions::{
-            message_component::ButtonStyle, message_component::InputText, InteractionResponseType,
-        },
+        interactions::{message_component::ButtonStyle, InteractionResponseType},
     },
 };
 
