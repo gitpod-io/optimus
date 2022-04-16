@@ -32,12 +32,37 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 			if let Ok(result) = resp.text().await {
 				let mut times = 1;
 				for caps in
-					Regex::new(format!("(?P<url>\"{}/.*?\")", &site).as_str())
+					Regex::new(format!("\"(?P<url>{}/.*?)\"", &site).as_str())
 						.unwrap()
 						.captures_iter(&result)
 				{
 					let url = &caps["url"];
-					links.push_str(format!("• {}\n", url.trim_start_matches('"').trim_end_matches('"')).as_str());
+					let hash = {
+						if let Some(result) = Regex::new(r"(?P<hash>#.*)").unwrap().captures(url) {
+							if let Some(hash) = result.name("hash") {
+								Some(hash.as_str())
+							} else {
+								None
+							}
+						} else {
+							None
+						}
+					};
+					if let Ok(resp) = reqwest::Client::new().get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
+					.send()
+					.await {
+						if let Ok(result) = resp.text().await {
+							for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
+								let title = &caps["title"];
+								let text = if hash.is_none() {
+									format!("[{}]({})", title, url)
+								} else {
+									format!("[{}{}]({})", title, hash.unwrap(), url)
+								};
+								links.push_str(format!("• __{}__\n\n", text).as_str());
+							}
+						}
+					}
 					times += 1;
 					if times > 3 {
 						break;
@@ -419,7 +444,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 thread
                     .send_message(&ctx.http, |m| {
                         m.content(
-                            "> I also found some relevant links which might answer your question",
+                            "I also found some relevant links which might answer your question:",
                         )
                         .embed(|e| e.description(relevant_links))
                     })
