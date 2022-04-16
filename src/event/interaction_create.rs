@@ -373,8 +373,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .description(format!("```yaml\n{}\n```", &optional_one.value))
                             });
                         }
-                        if !optional_two.value.is_empty()
-                            && optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
+                        if optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
+                            && !optional_two.value.is_empty()
                         {
                             m.add_embed(|e| {
                                 e.title("Result of kubectl").description(format!(
