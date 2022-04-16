@@ -6,7 +6,6 @@ use serenity::{
 };
 use urlencoding::encode;
 
-const NO_RESPONSE_TEXT: &str = "_No response_";
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
 const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
 
@@ -256,18 +255,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .get(0)
                 .unwrap()
             {
-                ActionRowComponent::InputText(it) => {
-                    let it = it.clone();
-                    if it.value.is_empty() {
-                        InputText {
-                            custom_id: it.custom_id,
-                            kind: it.kind,
-                            value: String::from(NO_RESPONSE_TEXT),
-                        }
-                    } else {
-                        it
-                    }
-                }
+                ActionRowComponent::InputText(it) => it,
                 _ => return,
             };
             let optional_two = match mci
@@ -279,18 +267,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .get(0)
                 .unwrap()
             {
-                ActionRowComponent::InputText(it) => {
-                    let it = it.clone();
-                    if it.value.is_empty() {
-                        InputText {
-                            custom_id: it.custom_id,
-                            kind: it.kind,
-                            value: String::from(NO_RESPONSE_TEXT),
-                        }
-                    } else {
-                        it
-                    }
-                }
+                ActionRowComponent::InputText(it) => it,
                 _ => return,
             };
 
@@ -326,63 +303,16 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-            let optional_one_safe = safe_text(&ctx, &optional_one.value).await;
-            let mut optional_two_safe = safe_text(&ctx, &optional_two.value).await;
-            let temp_embed = Embed::fake(|e| {
-                e.description(&description.value);
-                e.field("Title", &title.value, false)
-            });
-            let final_embed = Embed::fake(|e| {
-                // e.thumbnail(&mci.user.face());
-                // e.field("Author", &user_name, false);
-                e.field("Title", &title.value, false);
-                if channel_name != SELF_HOSTED_TEXT {
-                    if optional_one.value != NO_RESPONSE_TEXT {
-                        e.field("Workspace affected", &optional_one.value, false);
-                    }
-                    if optional_two.value != NO_RESPONSE_TEXT {
-                        e.field("Example Repository", &optional_two.value, false);
-                    }
-                } else {
-                    let placeholder_one = if optional_one.value == NO_RESPONSE_TEXT {
-                        NO_RESPONSE_TEXT
-                    } else {
-                        "Provided"
-                    };
-                    let placeholder_two = if optional_two.value == NO_RESPONSE_TEXT
-                        || optional_two.value == SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
-                    {
-                        optional_two_safe.clear();
-                        optional_two_safe.push_str(NO_RESPONSE_TEXT);
-                        NO_RESPONSE_TEXT
-                    } else {
-                        "Provided"
-                    };
-                    if placeholder_one != NO_RESPONSE_TEXT {
-                        e.field("config.yaml contents", placeholder_one, false);
-                    }
-                    if placeholder_two != NO_RESPONSE_TEXT {
-                        e.field("Result of kubectl", placeholder_two, false);
-                    }
-                }
-                /*
-                e.footer(|f| {
-                    f.icon_url(self_avatar);
-                    f.text(&self_name)
-                })
-                */
-                e
-            });
+            let temp_embed = Embed::fake(|e| e.description(&description.value));
 
-            let msg = webhook
-                .execute(&ctx, true, |w| w.embeds(vec![temp_embed]))
+            let mut msg = webhook
+                .execute(&ctx, true, |w| {
+                    w.embeds(vec![temp_embed]).content(&title.value)
+                })
                 .await
                 .unwrap()
                 .unwrap();
-            webhook
-                .edit_message(&ctx.http, msg.id, |e| e.embeds(vec![final_embed]))
-                .await
-                .unwrap();
+            msg.suppress_embeds(&ctx.http).await.unwrap();
             webhook.delete(&ctx.http).await.unwrap();
             typing.stop();
             if mci.data.custom_id == "gitpod_help_button_press" {
@@ -424,22 +354,35 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     } else {
                         m.add_embed(|e| e.title("Description").description(desc_safe));
                     }
-                    if channel_name == SELF_HOSTED_TEXT {
-                        if optional_one_safe != NO_RESPONSE_TEXT {
+                    if channel_name != SELF_HOSTED_TEXT {
+                        if !optional_one.value.is_empty() || !optional_two.value.is_empty() {
                             m.add_embed(|e| {
-                                e.title("config.yaml contents")
-                                    .description(format!("```yaml\n{}\n```", optional_one_safe))
+                                if !optional_one.value.is_empty() {
+                                    e.field("Workspace affected", &optional_one.value, false);
+                                }
+                                if !optional_two.value.is_empty() {
+                                    e.field("Example Repository", &optional_two.value, false);
+                                }
+                                e
                             });
                         }
-                        if optional_two_safe != NO_RESPONSE_TEXT {
+                    } else if channel_name == SELF_HOSTED_TEXT {
+                        if !optional_one.value.is_empty() {
+                            m.add_embed(|e| {
+                                e.title("config.yaml contents")
+                                    .description(format!("```yaml\n{}\n```", &optional_one.value))
+                            });
+                        }
+                        if optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER {
                             m.add_embed(|e| {
                                 e.title("Result of kubectl").description(format!(
                                     "```javascript\n{}\n```",
-                                    optional_two_safe
+                                    &optional_two.value
                                 ))
                             });
                         }
                     }
+
                     m
                 })
                 .await
