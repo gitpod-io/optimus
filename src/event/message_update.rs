@@ -40,16 +40,16 @@ pub async fn responder(
         let dbnode = Database::from("msgcache".to_string()).await;
         let msg_content = &message.content;
 
-        let mut is_self_reacted = false;
-        for user in message.reactions.iter() {
-            if user.me {
-                is_self_reacted = true;
-            }
-        }
+        // let mut is_self_reacted = false;
+        // for user in message.reactions.iter() {
+        //     if user.me {
+        //         is_self_reacted = true;
+        //     }
+        // }
 
-        if !is_self_reacted && !message.is_own(&_ctx.cache).await {
-            message.react(&_ctx.http, '✍').await.ok();
-        }
+        // if !is_self_reacted && !message.is_own(&_ctx.cache).await {
+        //     message.react(&_ctx.http, '✍').await.ok();
+        // }
         let edit_time = &message.edited_timestamp.unwrap().format("%H:%M:%S %p");
         let old_content = dbnode.fetch_msg(_msg_id).await;
         let new_content = format!(
