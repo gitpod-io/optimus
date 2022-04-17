@@ -23,8 +23,9 @@ async fn safe_text(_ctx: &Context, _input: &String) -> String {
 
 async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
     let mut links = String::new();
+    let client = reqwest::Client::new();
     for site in sites.iter() {
-        if let Ok(resp) = reqwest::Client::new()
+        if let Ok(resp) = client
 		.get(format!("https://www.google.com/search?q=site:{} {}", encode(&site), encode(query)))
 		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
 		.send()
@@ -48,7 +49,7 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 							None
 						}
 					};
-					if let Ok(resp) = reqwest::Client::new().get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
+					if let Ok(resp) = client.get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
 					.send()
 					.await {
 						if let Ok(result) = resp.text().await {
@@ -57,7 +58,7 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 								let text = if hash.is_none() {
 									format!("[{}]({})", title, url)
 								} else {
-									format!("[{}{}]({})", title, hash.unwrap(), url)
+									format!("[{} | {}]({})", title, hash.unwrap(), url)
 								};
 								links.push_str(format!("• __{}__\n\n", text).as_str());
 							}
@@ -443,9 +444,10 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             if !relevant_links.is_empty() {
                 thread
                     .send_message(&ctx.http, |m| {
-                        m.content(
-                            "I also found some relevant links which might answer your question:",
-                        )
+                        m.content(format!(
+                            "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
+                            &user_mention
+                        ))
                         .embed(|e| e.description(relevant_links))
                     })
                     .await
