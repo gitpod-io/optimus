@@ -8,13 +8,13 @@ use super::*;
 // since there is no reliable way to detect who triggered thread_update
 // Tl;dr : Discord API doesn't tell you who archived the thread, which is a big issue.
 async fn unarchival_action(_ctx: Context, _thread: GuildChannel) {
-    _thread
-            .say(
-                &_ctx.http,
-                "Whoever is trying to archive from the Discord UI, please send `/close` as a message here instead.",
-            )
-            .await
-            .unwrap();
+    // _thread
+    //         .say(
+    //             &_ctx.http,
+    //             "Whoever is trying to archive from the Discord UI, please send `/close` as a message here instead.",
+    //         )
+    //         .await
+    //         .unwrap();
     _thread
         .edit_thread(&_ctx.http, |t| t.archived(false))
         .await
