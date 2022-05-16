@@ -45,74 +45,82 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
             .await;
     }
 
+	//
+	// Moderate "showcase" type channel
+	//
+
+	
+
     //
     // Auto respond on keywords
     //
-    let dbnode_notes = Database::from("notes".to_string()).await;
-    let ref_msg = &_msg.referenced_message;
 
-    let options = MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
-    if !_msg.author.bot && !_msg.content.contains("dnote ") {
-        for entry in glob_with(format!("{}/*", dbnode_notes).as_str(), options).unwrap() {
-            match entry {
-                Ok(path) => {
-                    let note = path.file_name().unwrap().to_string_lossy().to_string();
+    // let dbnode_notes = Database::from("notes".to_string()).await;
+    // let ref_msg = &_msg.referenced_message;
 
-                    if _msg
-                        .content
-                        .to_lowercase()
-                        .contains(&note.as_str().to_lowercase())
-                    {
-                        let typing = _ctx
-                            .http
-                            .start_typing(u64::try_from(_msg.channel_id).unwrap())
-                            .unwrap();
+    // let options = MatchOptions {
+    //     case_sensitive: false,
+    //     require_literal_separator: false,
+    //     require_literal_leading_dot: false,
+    // };
+    // if !_msg.author.bot && !_msg.content.contains("dnote ") {
+    //     for entry in glob_with(format!("{}/*", dbnode_notes).as_str(), options).unwrap() {
+    //         match entry {
+    //             Ok(path) => {
+    //                 let note = path.file_name().unwrap().to_string_lossy().to_string();
 
-                        // Use contentsafe options
-                        let settings = {
-                            ContentSafeOptions::default()
-                                .clean_channel(false)
-                                .clean_role(true)
-                                .clean_user(false)
-                                .clean_everyone(true)
-                                .clean_here(true)
-                        };
+    //                 if _msg
+    //                     .content
+    //                     .to_lowercase()
+    //                     .contains(&note.as_str().to_lowercase())
+    //                 {
+    //                     let typing = _ctx
+    //                         .http
+    //                         .start_typing(u64::try_from(_msg.channel_id).unwrap())
+    //                         .unwrap();
 
-                        let content = content_safe(
-                            &_ctx.cache,
-                            Note::from(&note).await.get_contents().await,
-                            &settings,
-                        )
-                        .await;
-                        if ref_msg.is_some() {
-                            ref_msg
-                                .as_ref()
-                                .map(|x| x.reply_ping(&_ctx.http, &content))
-                                .unwrap()
-                                .await
-                                .unwrap()
-                                .react(&_ctx.http, '❎')
-                                .await
-                                .unwrap();
-                        } else {
-                            _msg.reply(&_ctx.http, &content)
-                                .await
-                                .unwrap()
-                                .react(&_ctx.http, '❎')
-                                .await
-                                .unwrap();
-                        }
-                        typing.stop();
-                    }
-                }
-                Err(e) => println!("{:?}", e),
-            }
-        }
-    }
+    //                     // Use contentsafe options
+    //                     let settings = {
+    //                         ContentSafeOptions::default()
+    //                             .clean_channel(false)
+    //                             .clean_role(true)
+    //                             .clean_user(false)
+    //                             .clean_everyone(true)
+    //                             .clean_here(true)
+    //                     };
+
+    //                     let content = content_safe(
+    //                         &_ctx.cache,
+    //                         Note::from(&note).await.get_contents().await,
+    //                         &settings,
+    //                     )
+    //                     .await;
+    //                     if ref_msg.is_some() {
+    //                         ref_msg
+    //                             .as_ref()
+    //                             .map(|x| x.reply_ping(&_ctx.http, &content))
+    //                             .unwrap()
+    //                             .await
+    //                             .unwrap()
+    //                             .react(&_ctx.http, '❎')
+    //                             .await
+    //                             .unwrap();
+    //                     } else {
+    //                         _msg.reply(&_ctx.http, &content)
+    //                             .await
+    //                             .unwrap()
+    //                             .react(&_ctx.http, '❎')
+    //                             .await
+    //                             .unwrap();
+    //                     }
+    //                     typing.stop();
+    //                 }
+    //             }
+    //             Err(e) => println!("{:?}", e),
+    //         }
+    //     }
+	// }
+
 
     // let user_date = &_msg.author.created_at().naive_utc().date();
     // let user_time = &_msg.author.created_at().naive_utc().time();

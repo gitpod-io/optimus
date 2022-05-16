@@ -2,6 +2,8 @@ mod command;
 mod event;
 mod utils;
 use command::*;
+mod db;
+use db::Db;
 use std::env;
 
 use serenity::http::Http;
@@ -23,6 +25,10 @@ async fn main() {
         .parse()
         .expect("Unable to parse");
     let http = Http::new_with_token(&token);
+
+    // Init sqlite database
+    let db = Db::new().await.expect("Can't init database");
+    db.run_migrations().await.unwrap();
 
     // We will fetch your bot's owners and id
     let (owners, bot_id) = match http.get_current_application_info().await {
@@ -122,6 +128,7 @@ async fn main() {
         let mut data = client.data.write().await;
         data.insert::<CommandCounter>(HashMap::default());
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
+        data.insert::<Db>(Arc::new(db));
     }
 
     if let Err(why) = client.start().await {

@@ -15,6 +15,8 @@ term_grid = "0.2.0"
 urlencoding = "2.1.0"
 thorne = { path = "thorne/" }
 #imgur = { path = "imgur/" }
+sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "sqlite", "offline"] }
+anyhow = "1.0.57"
 
 [dependencies.reqwest]
 default-features = false

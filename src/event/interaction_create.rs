@@ -1,4 +1,7 @@
 use super::*;
+use crate::db::{ClientContextExt, Db};
+use anyhow::Result;
+
 use serenity::{
     http::AttachmentType,
     model::{channel::Embed, interactions::message_component::MessageComponentInteraction},
@@ -8,6 +11,20 @@ use urlencoding::encode;
 
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
 const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
+
+impl Db {
+    async fn add_title(&self, id: i64, title: &str) -> Result<()> {
+        sqlx::query!(
+            "insert into question_titles(id, context) values(?, ?)",
+            id,
+            title
+        )
+        .execute(&self.sqlitedb)
+        .await?
+        .last_insert_rowid();
+        Ok(())
+    }
+}
 
 async fn safe_text(_ctx: &Context, _input: &String) -> String {
     content_safe(
@@ -40,11 +57,7 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 					let url = &caps["url"];
 					let hash = {
 						if let Some(result) = Regex::new(r"(?P<hash>#.*)").unwrap().captures(url) {
-							if let Some(hash) = result.name("hash") {
-								Some(hash.as_str())
-							} else {
-								None
-							}
+							result.name("hash").map(|hash| hash.as_str())
 						} else {
 							None
 						}
@@ -139,7 +152,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .custom_id("input_title")
                             .required(true)
                             .label("Title")
-                            .max_length(100)
+                            .max_length(98)
                     })
                 });
                 c.create_action_row(|ar| {
@@ -454,6 +467,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     .unwrap();
                 thread_typing.stop();
             }
+            let db = &ctx.get_db().await;
+            db.add_title(i64::from(mci.id), &title.value).await.unwrap();
         }
         _ => (),
     }

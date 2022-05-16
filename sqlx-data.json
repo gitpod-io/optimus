@@ -1,0 +1,13 @@
+{
+  "db": "SQLite",
+  "fecb71b4f8feedaa7cc569a41f456edce9ff03d08176d8595c788e02136cb2f5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "insert into question_titles(id, context) values(?, ?)"
+  }
+}
