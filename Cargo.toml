@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 #wildmatch = "2.1.0"
 serde_json = "1.0.64"
+serde = { version = "1.0.137", features = ["derive"] }
 regex = "1.4.5"
 glob = "0.3.0"
 term_grid = "0.2.0"
@@ -17,6 +18,7 @@ thorne = { path = "thorne/" }
 #imgur = { path = "imgur/" }
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "sqlite", "offline"] }
 anyhow = "1.0.57"
+meilisearch-sdk = "0.17.0"
 
 [dependencies.reqwest]
 default-features = false

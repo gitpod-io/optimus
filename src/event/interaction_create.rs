@@ -1,6 +1,8 @@
 use super::*;
 use crate::db::{ClientContextExt, Db};
 use anyhow::Result;
+use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
+use serde::{Deserialize, Serialize};
 
 use serenity::{
     http::AttachmentType,
@@ -8,6 +10,15 @@ use serenity::{
     utils::MessageBuilder,
 };
 use urlencoding::encode;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Question {
+    id: u64,
+    guild_id: u64,
+    channel_id: u64,
+    title: String,
+    description: String,
+}
 
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
 const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
@@ -38,12 +49,31 @@ async fn safe_text(_ctx: &Context, _input: &String) -> String {
     .await
 }
 
-async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
+async fn save_and_fetch_links(
+    sites: &[&str],
+    thread_id: u64,
+    channel_id: u64,
+    guild_id: u64,
+    title: String,
+    description: String,
+) -> String {
     let mut links = String::new();
     let client = reqwest::Client::new();
+    let mclient = MeiliClient::new("http://localhost:7700", "optimus");
+    let msettings = Settings::new()
+        .with_searchable_attributes(["title", "description"])
+        .with_distinct_attribute("title");
+    mclient
+        .index("questions")
+        .set_settings(&msettings)
+        .await
+        .unwrap();
+    let questions = mclient.index("questions");
+
+    // Fetch matching links
     for site in sites.iter() {
         if let Ok(resp) = client
-		.get(format!("https://www.google.com/search?q=site:{} {}", encode(&site), encode(query)))
+		.get(format!("https://www.google.com/search?q=site:{} {}", encode(&site), encode(title.as_str())))
 		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
 		.send()
 		.await {
@@ -86,6 +116,39 @@ async fn google_site_search_fetch_links(sites: &[&str], query: &str) -> String {
 		}
     }
 
+    // Fetch matching discord questions
+    if let Ok(discord_questions) = questions
+        .search()
+        .with_query(format!("{} {}", title, description).as_str())
+        .with_limit(3)
+        .execute::<Question>()
+        .await
+    {
+        for ids in discord_questions.hits {
+            links.push_str(
+                format!(
+                    "• __[{}](https://discord.com/channels/{}/{}/{})__\n\n",
+                    ids.result.title, ids.result.guild_id, ids.result.channel_id, ids.result.id
+                )
+                .as_str(),
+            );
+        }
+    }
+
+    // Save the question to search engine
+    questions
+        .add_documents(
+            &[Question {
+                id: thread_id,
+                channel_id,
+                guild_id,
+                title,
+                description,
+            }],
+            Some("id"),
+        )
+        .await
+        .ok();
     links
 }
 
@@ -449,9 +512,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             questions_thread::responder(&ctx).await;
 
             let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
-            let relevant_links = google_site_search_fetch_links(
+            let relevant_links = save_and_fetch_links(
                 &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
-                &title.value,
+                *thread.id.as_u64(),
+                *mci.channel_id.as_u64(),
+                *mci.guild_id.unwrap().as_u64(),
+                (*title.value).to_string(),
+                (*description.value).to_string(),
             )
             .await;
             if !relevant_links.is_empty() {
@@ -467,8 +534,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     .unwrap();
                 thread_typing.stop();
             }
-            let db = &ctx.get_db().await;
-            db.add_title(i64::from(mci.id), &title.value).await.unwrap();
+            // let db = &ctx.get_db().await;
+            // db.add_title(i64::from(mci.id), &title.value).await.unwrap();
         }
         _ => (),
     }
