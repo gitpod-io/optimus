@@ -73,7 +73,7 @@ async fn save_and_fetch_links(
     // Fetch matching links
     for site in sites.iter() {
         if let Ok(resp) = client
-		.get(format!("https://www.google.com/search?q=site:{} {}", encode(&site), encode(title.as_str())))
+		.get(format!("https://www.google.com/search?q=site:{} {}", encode(site), encode(title.as_str())))
 		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
 		.send()
 		.await {
@@ -171,7 +171,7 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
 
     let thread_type = {
-        if _thread.name.contains("✅") || _thread.name.contains("❓") {
+        if _thread.name.contains('✅') || _thread.name.contains('❓') {
             "question"
         } else {
             "thread"
@@ -179,7 +179,7 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     };
 
     let thread_name = {
-        if _thread.name.contains("✅") || thread_type == "thread" {
+        if _thread.name.contains('✅') || thread_type == "thread" {
             _thread.name
         } else {
             format!("✅ {}", _thread.name.trim_start_matches("❓ "))
@@ -275,16 +275,16 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
     match interaction {
         Interaction::MessageComponent(mci) => {
             if mci.data.custom_id == "gitpod_create_issue" {
-                show_issue_form(&mci, &ctx).await;
+                show_issue_form(&mci, ctx).await;
             } else if mci.data.custom_id == "gitpod_close_issue" {
-                close_issue(&mci, &ctx).await;
+                close_issue(&mci, ctx).await;
             }
         }
         Interaction::ApplicationCommand(mci) => {
             if mci.data.name == "close" {
                 let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_type = {
-                    if _thread.name.contains("✅") || _thread.name.contains("❓") {
+                    if _thread.name.contains('✅') || _thread.name.contains('❓') {
                         "question"
                     } else {
                         "thread"
@@ -309,7 +309,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 //     .unwrap();
                 let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_name = {
-                    if thread_node.name.contains("✅") || thread_type == "thread" {
+                    if thread_node.name.contains('✅') || thread_type == "thread" {
                         thread_node.name
                     } else {
                         format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
@@ -442,10 +442,10 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-            let desc_safe = safe_text(&ctx, &description.value).await;
+            let desc_safe = safe_text(ctx, &description.value).await;
             thread
                 .send_message(&ctx.http, |m| {
-                    if &description.value.chars().count() < &1960 {
+                    if description.value.chars().count() < 1960 {
                         m.content(
                             MessageBuilder::new()
                                 .push_underline_line("**Description**")
@@ -509,7 +509,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-            questions_thread::responder(&ctx).await;
+            questions_thread::responder(ctx).await;
 
             let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
             let relevant_links = save_and_fetch_links(

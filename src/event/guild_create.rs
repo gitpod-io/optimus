@@ -33,14 +33,12 @@ pub async fn responder(_ctx: Context, _guild: Guild, _is_new: bool) {
         if _new_guild_syschan_id.is_some() {
             welcome_msg(&_ctx, &_new_guild_syschan_id.unwrap(), &_guild).await;
         } else {
-            for (_channel_id, _guild_channel) in &_guild.channels(&_ctx.http).await.unwrap() {
+            for _channel_id in _guild.channels(&_ctx.http).await.unwrap().keys() {
                 let _msgs = &_ctx.http.get_messages(*_channel_id.as_u64(), "").await;
 
-                if _msgs.is_ok() {
-                    if _msgs.as_ref().unwrap().iter().count() > 200 {
-                        welcome_msg(&_ctx, &_channel_id, &_guild).await;
-                        break;
-                    }
+                if _msgs.is_ok() && _msgs.as_ref().unwrap().iter().count() > 200 {
+                    welcome_msg(&_ctx, _channel_id, &_guild).await;
+                    break;
                 }
             }
         }

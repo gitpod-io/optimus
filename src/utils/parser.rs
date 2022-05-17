@@ -14,7 +14,7 @@ impl Parse {
 
             if Regex::new("[0-9]{18}+")
                 .unwrap()
-                .is_match(&to_return.to_string().as_str())
+                .is_match(to_return.to_string().as_str())
             {
                 to_return.parse::<u64>().unwrap()
             } else {

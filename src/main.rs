@@ -51,7 +51,7 @@ async fn main() {
         .configure(|c| {
             c.with_whitespace(true)
                 .on_mention(Some(bot_id))
-                .prefix("d")
+                .prefix("gp")
                 // In this case, if "," would be first, a message would never
                 // be delimited at ", ", forcing you to trim your arguments if you
                 // want to avoid whitespaces at the start of each.
@@ -109,10 +109,10 @@ async fn main() {
         // #name is turned all uppercase
         .help(&MY_HELP)
         .group(&GENERAL_GROUP)
-        .group(&NOTE_GROUP)
-        ////// .group(&EMOJI_GROUP)
-        ////// .group(&MATH_GROUP)
-        .group(&OWNER_GROUP);
+        .group(&NOTE_GROUP);
+    ////// .group(&EMOJI_GROUP)
+    ////// .group(&MATH_GROUP)
+    // .group(&OWNER_GROUP)
 
     let mut client = Client::builder(token)
         .application_id(application_id)

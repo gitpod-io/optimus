@@ -10,10 +10,8 @@ mod reaction_add;
 mod ready;
 mod thread_update;
 
-use crate::command::note::*;
 use crate::utils::{db::*, misc::vowel_gen, substr};
 
-use glob::*;
 use regex::Regex;
 use serde_json::json;
 
@@ -43,8 +41,6 @@ use std::{
     },
     time::Duration,
 };
-
-use reqwest;
 
 use thorne::english_gen;
 use tokio::{fs, process};
@@ -165,7 +161,7 @@ impl EventHandler for Listener {
                         for (_user_id, _member) in members {
                             // tokio::time::sleep(Duration::from_secs(2)).await;
                             dbnode_userid
-                                .save_user_info(&_user_id, _member.user.tag())
+                                .save_user_info(_user_id, _member.user.tag())
                                 .await;
                         }
                     }

@@ -1,10 +1,10 @@
-pub fn vowel_gen(sentense: &String) -> String {
+pub fn vowel_gen(sentense: &str) -> &str {
     let first_char = sentense.chars().next();
     let mut is_vowel = false;
 
-    if first_char.is_some() {
+    if let Some(first_char) = first_char {
         for vowel in ["a", "e", "i", "o", "u"].iter() {
-            let first_char_low = first_char.unwrap().to_lowercase().to_string();
+            let first_char_low = first_char.to_lowercase().to_string();
             let vowel_string = vowel.to_string();
 
             if first_char_low == vowel_string {
@@ -15,8 +15,8 @@ pub fn vowel_gen(sentense: &String) -> String {
     }
 
     if is_vowel {
-        "An".to_string()
+        "An"
     } else {
-        "A".to_string()
+        "A"
     }
 }

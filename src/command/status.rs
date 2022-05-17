@@ -28,7 +28,7 @@ use serenity::model::prelude::ActivityType;
 #[only_in(guilds)]
 #[description = "Pull the status of an user"]
 pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
-    let user = Parse::user(&_ctx, &_msg, &_args).await;
+    let user = Parse::user(_ctx, _msg, &_args).await;
     let guild_id = &_msg.guild_id.unwrap();
     let user_data = &_ctx
         .http

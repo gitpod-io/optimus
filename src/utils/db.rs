@@ -39,18 +39,14 @@ impl Database {
     }
 
     pub async fn remove_msg(&self, id: &MessageId) {
-        fs::remove_file(format!("{}/{}", &self.node_name, id.to_string()))
+        fs::remove_file(format!("{}/{}", &self.node_name, id))
             .await
             .unwrap();
     }
 
     pub async fn msg_exists(&self, id: &MessageId) -> bool {
         let _path = format!("{}/{}", &self.node_name, id);
-        if path::Path::new(&_path).exists() {
-            true
-        } else {
-            false
-        }
+        path::Path::new(&_path).exists()
     }
 
     pub async fn save_user_info(&self, id: &UserId, contents: String) {
@@ -79,7 +75,7 @@ impl Database {
 
     pub async fn get_user_info(&self, id: &String) -> String {
         let path = format!("{}/{}", &self.node_name, &id);
-        fs::read_to_string(&path).await.unwrap().to_string()
+        fs::read_to_string(&path).await.unwrap()
     }
 }
 

@@ -1,8 +1,8 @@
 mod about;
 mod am_i_admin;
-mod bash;
-// mod bashget;
 mod av;
+mod bash;
+mod config;
 mod editlog;
 mod emoji;
 mod invite;
@@ -12,31 +12,23 @@ pub mod note;
 mod owner_check;
 mod ping;
 mod say;
-mod slow_mode;
 mod some_long_command;
 mod status;
-mod upper;
 mod whois;
-// use crate::utils::db::*;
 
 // Import commands
 use about::*;
+use av::*;
+use bash::*;
+use config::*;
 use editlog::*;
-// use am_i_admin::*;
 use emoji::*;
+use invite::*;
 use latency::*;
 use math::*;
-use owner_check::*;
-// use ping::*;
-use bash::*;
-use say::*;
-use slow_mode::*;
-// use some_long_command::*;
-// use upper::*;
-// use bashget::*;
-use av::*;
-use invite::*;
 use note::*;
+use owner_check::*;
+use say::*;
 use status::*;
 use whois::*;
 
@@ -52,11 +44,7 @@ use serenity::{
         Args, CommandGroup, CommandOptions, CommandResult, Delimiter, DispatchError, HelpOptions,
         Reason,
     },
-    model::{
-        channel::{Channel, Message},
-        id::UserId,
-        permissions::Permissions,
-    },
+    model::{channel::Message, id::UserId, permissions::Permissions},
     utils::{content_safe, ContentSafeOptions},
 };
 use std::{
@@ -101,7 +89,7 @@ impl TypeMapKey for CommandCounter {
     status,
     invite,
     // some_long_command,
-    // upper_command
+    config
 )]
 struct General;
 
@@ -128,6 +116,18 @@ struct Emoji;
 struct Note;
 
 #[group]
+#[prefix = "config"]
+#[description = "Set bot configs for the server"]
+#[summary = "Bot config"]
+#[commands(
+    questions_channel,
+    introduction_channel,
+    getting_started,
+    subscriber_role
+)]
+struct Config;
+
+#[group]
 // Sets a single prefix for this group.
 // So one has to call commands in this group
 // via `~math` instead of just `~`.
@@ -135,14 +135,14 @@ struct Note;
 #[commands(multiply)]
 struct Math;
 
-#[group]
-#[owners_only]
-// Limit all commands to be guild-restricted.
-#[only_in(guilds)]
-// Summary only appears when listing multiple groups.
-#[summary = "Server admins only"]
-#[commands(slow_mode)]
-struct Owner;
+// #[group]
+// #[owners_only]
+// // Limit all commands to be guild-restricted.
+// #[only_in(guilds)]
+// // Summary only appears when listing multiple groups.
+// #[summary = "Server admins only"]
+// #[commands(slow_mode)]
+// struct Owner;
 
 // The framework provides two built-in help commands for you to use.
 // But you can also make your own customized help command that forwards

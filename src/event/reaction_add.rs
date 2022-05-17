@@ -80,14 +80,14 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
         "📩" => {
             if is_self_reacted {
                 let roles = &_added_reaction.member.unwrap().roles;
-                let is_owner = &_added_reaction
+                let is_owner = _added_reaction
                     .guild_id
                     .unwrap()
                     .to_partial_guild(&_ctx)
                     .await
                     .unwrap()
                     .owner_id
-                    == &reacted_user.id;
+                    == reacted_user.id;
                 let mut got_admin = false;
 
                 for role in roles {

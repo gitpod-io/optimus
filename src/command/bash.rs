@@ -42,8 +42,8 @@ async fn bash(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult 
                 .unwrap();
             let cmd_stdout = String::from_utf8_lossy(&cmd_output.stdout);
             let cmd_stderr = String::from_utf8_lossy(&cmd_output.stderr);
-            let stripped_cmd = &_args.rest().replace("\n", "; ");
-            let encoded_url = encode(&stripped_cmd);
+            let stripped_cmd = &_args.rest().replace('\n', "; ");
+            let encoded_url = encode(stripped_cmd);
             // println!("{}", &cmd_output.stderr);
             _msg.channel_id
                 .send_message(&_ctx.http, |m| {

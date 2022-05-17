@@ -13,11 +13,9 @@ impl Note {
 
     pub async fn get_contents(&self) -> String {
         let dbnode = Database::from("notes".to_string()).await;
-        String::from(
-            fs::read_to_string(format!("{}/{}", dbnode, &self.note_name))
-                .await
-                .unwrap(),
-        )
+        fs::read_to_string(format!("{}/{}", dbnode, &self.note_name))
+            .await
+            .unwrap()
     }
 
     pub async fn save_contents(&self, contents: String) {
