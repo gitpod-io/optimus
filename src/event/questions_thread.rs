@@ -1,17 +1,16 @@
 use serenity::utils::MessageBuilder;
 
+use crate::db::ClientContextExt;
+
 use super::*;
 
 pub async fn responder(_ctx: &Context) {
     // #questions, #selfhosted-questions, #openvscode-questions, #documentation
-    #[cfg(debug_assertions)]
-    let channel_ids: [u64; 2] = [947769443516284945, 947769443793141761];
+    let db = _ctx.get_db().await;
+    let channels = db.get_question_channels().await.unwrap();
 
-    #[cfg(not(debug_assertions))]
-    let channel_ids: [u64; 2] = [816246578594840586, 879915120510267412];
-
-    for channel_id in channel_ids.iter() {
-        let channel_id = ChannelId(*channel_id);
+    for channel_id in channels {
+        let channel_id = ChannelId(*channel_id.id.as_u64());
 
         // Might need to do this in the future for race conditions
         let last_msg_id = _ctx
