@@ -1,5 +1,15 @@
 {
   "db": "SQLite",
+  "0f0267efb389d354c0f8c0687c5bcf394d3b9ff6ea8a7f7da11d954d6bea8dcb": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "delete from pending_questions where user_id=? and channel_id=?"
+  },
   "2b04b15cee6a9d06e9f298196ecd769c972e670390e3a4e621ee33be2426b988": {
     "describe": {
       "columns": [

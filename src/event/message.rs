@@ -41,11 +41,8 @@ impl Db {
             user_id,
             channel_id
         )
-        .fetch_all(&self.sqlitedb)
+        .fetch_one(&self.sqlitedb)
         .await?
-        .into_iter()
-        .last()
-        .unwrap()
         .message_contents;
 
         Ok(q)
@@ -53,9 +50,18 @@ impl Db {
 
     pub async fn remove_pending_question(
         &self,
-        user_id: UserId,
-        channel_id: ChannelId,
+        user_id: &UserId,
+        channel_id: &ChannelId,
     ) -> Result<()> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        sqlx::query!(
+            "delete from pending_questions where user_id=? and channel_id=?",
+            user_id,
+            channel_id
+        )
+        .execute(&self.sqlitedb)
+        .await?;
         Ok(())
     }
 }

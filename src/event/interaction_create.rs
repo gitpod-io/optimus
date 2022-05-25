@@ -178,6 +178,9 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
             .get_pending_question_content(&mci.user.id, &mci.channel_id)
             .await
         {
+            db.remove_pending_question(&mci.user.id, &mci.channel_id)
+                .await
+                .ok();
             result
         } else {
             String::from("")
@@ -207,7 +210,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .label("Description")
                             .required(true)
                             .max_length(4000)
-							.value(desc)
+                            .value(desc)
                     })
                 });
                 c.create_action_row(|ar| {
