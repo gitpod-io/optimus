@@ -1,21 +1,66 @@
 use super::*;
+use crate::db::{ClientContextExt, Db};
+use serenity::model::id::UserId;
+use sqlx::Executor;
+use tokio::time::sleep;
 
-pub async fn responder(_ctx: Context, mut _msg: Message) {
-    // let map = json!({"name": "test"});
-    // let channel_id = _msg.channel_id.borrow().clone();
+pub struct PendingQuestions {
+    user_id: UserId,
+    channel_id: ChannelId,
+    message_contents: String,
+}
 
-    // let mut _webhook = &_ctx
-    //     .http
-    //     .create_webhook(u64::try_from(channel_id).unwrap(), &map)
-    //     .await;
+impl Db {
+    pub async fn add_pending_question(
+        &self,
+        user_id: &UserId,
+        channel_id: &ChannelId,
+        message_contents: &String,
+    ) -> Result<()> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        sqlx::query!(
+            "insert into pending_questions(user_id, channel_id, message_contents) values(?, ?, ?)",
+            user_id,
+            channel_id,
+            message_contents
+        )
+        .execute(&self.sqlitedb)
+        .await?;
+        Ok(())
+    }
+    pub async fn get_pending_question_content(
+        &self,
+        user_id: &UserId,
+        channel_id: &ChannelId,
+    ) -> Result<String> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        let q = sqlx::query!(
+            r#"select message_contents from pending_questions where user_id=? and channel_id=?"#,
+            user_id,
+            channel_id
+        )
+        .fetch_all(&self.sqlitedb)
+        .await?
+        .into_iter()
+        .last()
+        .unwrap()
+        .message_contents;
 
-    // let webhook_id = u64::try_from(&_webhook.map(|x| x.id).unwrap()).unwrap();
-    // // let webhook_token = format!("{:?}", _webhook.map(|x| x.token).unwrap()).as_str();
-    // let mut webhook = &_ctx.http.get_webhook_with_token(webhook_id, "").await;
-    // // _webhook.map(|x| x.token);
+        Ok(q)
+    }
 
-    // let user_date = _new_member.user.created_at().date().naive_utc();
+    pub async fn remove_pending_question(
+        &self,
+        user_id: UserId,
+        channel_id: ChannelId,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
 
+pub async fn responder(_ctx: Context, mut _msg: Message) -> Result<()> {
     //
     // Log messages
     //
@@ -43,13 +88,32 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
                 ),
             )
             .await;
+
+        // Pending questions logging
+        if !_msg.author.bot {
+            let db = &_ctx.get_db().await;
+            if let Ok(qc) = db.get_question_channels().await {
+                if qc.iter().any(|x| x.id == _msg.channel_id) {
+                    db.add_pending_question(&_msg.author.id, &_msg.channel_id, &_msg.content)
+                        .await?;
+                    _msg.delete(&_ctx.http).await?;
+                    let r = _msg
+                        .reply_mention(
+                            &_ctx.http,
+                            "☝️ Please click on **`💡 Ask a Question`** button above",
+                        )
+                        .await?;
+                    sleep(Duration::from_secs(15)).await;
+                    r.delete(&_ctx.http).await?;
+                }
+            }
+        }
     }
 
-	//
-	// Moderate "showcase" type channel
-	//
-
-	
+    Ok(())
+    //
+    // Moderate "showcase" type channel
+    //
 
     //
     // Auto respond on keywords
@@ -119,8 +183,7 @@ pub async fn responder(_ctx: Context, mut _msg: Message) {
     //             Err(e) => println!("{:?}", e),
     //         }
     //     }
-	// }
-
+    // }
 
     // let user_date = &_msg.author.created_at().naive_utc().date();
     // let user_time = &_msg.author.created_at().naive_utc().time();

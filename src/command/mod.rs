@@ -2,13 +2,13 @@ mod about;
 mod am_i_admin;
 mod av;
 mod bash;
-mod config;
+pub mod config;
 mod editlog;
 mod emoji;
 mod invite;
 mod latency;
 mod math;
-pub mod note;
+// pub mod note;
 mod owner_check;
 mod ping;
 mod say;
@@ -26,12 +26,13 @@ use emoji::*;
 use invite::*;
 use latency::*;
 use math::*;
-use note::*;
+// use note::*;
 use owner_check::*;
 use say::*;
 use status::*;
 use whois::*;
 
+use crate::db::{ClientContextExt, Db};
 use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
 use thorne::*;
 
@@ -54,8 +55,9 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::Result;
 use serenity::prelude::*;
-use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
+// use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
 use tokio::{fs, fs::symlink, process, sync::Mutex};
 
 // A container type is created for inserting into the Client's `data`, which
@@ -108,23 +110,24 @@ struct General;
 #[commands(cat, dog)]
 struct Emoji;
 
-#[group]
-#[prefix = "note"]
-#[description = "A group of commands providing notes keeping functionality"]
-#[summary = "Note autoresponder"]
-#[commands(add, remove, link, list)]
-struct Note;
+// #[group]
+// #[prefix = "note"]
+// #[description = "A group of commands providing notes keeping functionality"]
+// #[summary = "Note autoresponder"]
+// #[commands(add, remove, link, list)]
+// struct Note;
 
 #[group]
 #[prefix = "config"]
 #[description = "Set bot configs for the server"]
 #[summary = "Bot config"]
-#[commands(
-    questions_channel,
-    introduction_channel,
-    getting_started,
-    subscriber_role
-)]
+// #[commands(
+//     questions_channel,
+//     introduction_channel,
+//     getting_started,
+//     subscriber_role,
+//     default_role
+// )]
 struct Config;
 
 #[group]

@@ -109,7 +109,8 @@ async fn main() {
         // #name is turned all uppercase
         .help(&MY_HELP)
         .group(&GENERAL_GROUP)
-        .group(&NOTE_GROUP);
+        .group(&CONFIG_GROUP);
+    // .group(&NOTE_GROUP);
     ////// .group(&EMOJI_GROUP)
     ////// .group(&MATH_GROUP)
     // .group(&OWNER_GROUP)

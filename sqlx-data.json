@@ -1,13 +1,59 @@
 {
   "db": "SQLite",
-  "fecb71b4f8feedaa7cc569a41f456edce9ff03d08176d8595c788e02136cb2f5": {
+  "2b04b15cee6a9d06e9f298196ecd769c972e670390e3a4e621ee33be2426b988": {
+    "describe": {
+      "columns": [
+        {
+          "name": "question_channels",
+          "ordinal": 0,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "select question_channels from server_config"
+  },
+  "4cd38ac59910d5a6356f416f78091a2edc6957cb6d7d35a80bf3d8813984356b": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "insert into pending_questions(user_id, channel_id, message_contents) values(?, ?, ?)"
+  },
+  "7772de7a400a310c22b7fa80530396cba82b6523147c1fa5b92b5fd740a927ec": {
+    "describe": {
+      "columns": [
+        {
+          "name": "message_contents",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
         "Right": 2
       }
     },
-    "query": "insert into question_titles(id, context) values(?, ?)"
+    "query": "select message_contents from pending_questions where user_id=? and channel_id=?"
+  },
+  "7d0acaadaae96b249d489007351b4515864beac1eaba73756925fa687f8b3956": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "insert into server_config(question_channels) values(?)"
   }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::db::{ClientContextExt, Db};
+use crate::db::{self, ClientContextExt, Db};
 use anyhow::Result;
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use serde::{Deserialize, Serialize};
@@ -12,30 +12,16 @@ use serenity::{
 use urlencoding::encode;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Question {
+struct Thread {
     id: u64,
     guild_id: u64,
     channel_id: u64,
     title: String,
-    description: String,
+    history: String,
 }
 
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
 const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
-
-impl Db {
-    async fn add_title(&self, id: i64, title: &str) -> Result<()> {
-        sqlx::query!(
-            "insert into question_titles(id, context) values(?, ?)",
-            id,
-            title
-        )
-        .execute(&self.sqlitedb)
-        .await?
-        .last_insert_rowid();
-        Ok(())
-    }
-}
 
 async fn safe_text(_ctx: &Context, _input: &String) -> String {
     content_safe(
@@ -121,7 +107,7 @@ async fn save_and_fetch_links(
         .search()
         .with_query(format!("{} {}", title, description).as_str())
         .with_limit(3)
-        .execute::<Question>()
+        .execute::<Thread>()
         .await
     {
         for ids in discord_questions.hits {
@@ -138,12 +124,12 @@ async fn save_and_fetch_links(
     // Save the question to search engine
     questions
         .add_documents(
-            &[Question {
+            &[Thread {
                 id: thread_id,
                 channel_id,
                 guild_id,
                 title,
-                description,
+                history: description,
             }],
             Some("id"),
         )
@@ -153,23 +139,7 @@ async fn save_and_fetch_links(
 }
 
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
-    // let first_msg = mci
-    //     .channel_id
-    //     .messages(&ctx.http, |f| f.limit(5))
-    //     .await
-    //     .unwrap();
-    // // dbg!(&first_msg);
-    // mci.channel_id
-    //     .create_reaction(
-    //         &ctx.http,
-    //         &first_msg.first().unwrap().id,
-    //         ReactionType::Unicode("✅".to_string()),
-    //     )
-    //     .await
-    //     .unwrap();
-
     let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
-
     let thread_type = {
         if _thread.name.contains('✅') || _thread.name.contains('❓') {
             "question"
@@ -202,6 +172,18 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
 }
 
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
+    let db = &ctx.get_db().await;
+    let desc = {
+        if let Ok(result) = db
+            .get_pending_question_content(&mci.user.id, &mci.channel_id)
+            .await
+        {
+            result
+        } else {
+            String::from("")
+        }
+    };
+
     let channel_name = mci.channel_id.name(&ctx.cache).await.unwrap();
     mci.create_interaction_response(&ctx, |r| {
         r.kind(InteractionResponseType::Modal);
@@ -225,6 +207,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .label("Description")
                             .required(true)
                             .max_length(4000)
+							.value(desc)
                     })
                 });
                 c.create_action_row(|ar| {
@@ -298,15 +281,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 })
                 .await
                 .unwrap();
-                // let thread_id = u64::try_from(mci.channel_id).unwrap();
-                // ctx.http
-                //     .create_reaction(
-                //         QUESTIONS_CHANNEL_ID,
-                //         thread_id,
-                //         &ReactionType::Unicode("✅".to_string()),
-                //     )
-                //     .await
-                //     .unwrap();
                 let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_name = {
                     if thread_node.name.contains('✅') || thread_type == "thread" {

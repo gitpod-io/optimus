@@ -42,6 +42,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::Result;
 use thorne::english_gen;
 use tokio::{fs, process};
 
@@ -72,7 +73,7 @@ impl EventHandler for Listener {
     // events can be dispatched simultaneously.
 
     async fn message(&self, _ctx: Context, _msg: Message) {
-        message::responder(_ctx, _msg).await;
+        message::responder(_ctx, _msg).await.unwrap();
     }
 
     async fn message_delete(

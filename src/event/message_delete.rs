@@ -1,3 +1,5 @@
+use crate::db::ClientContextExt;
+
 use super::*;
 
 pub async fn responder(
@@ -6,8 +8,14 @@ pub async fn responder(
     _deleted_message_id: MessageId,
     _guild_id: Option<GuildId>,
 ) {
-    let dbnode = Database::from("msgcache".to_string()).await;
+    let db = &_ctx.get_db().await;
+    if let Ok(qc) = db.get_question_channels().await {
+        if qc.iter().any(|x| x.id == _channel_id) {
+            return;
+        }
+    }
 
+    let dbnode = Database::from("msgcache".to_string()).await;
     if !dbnode.msg_exists(&_deleted_message_id).await {
         return;
     }
