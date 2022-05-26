@@ -8,7 +8,13 @@ use serde::{Deserialize, Serialize};
 
 use serenity::{
     http::AttachmentType,
-    model::{channel::Embed, interactions::message_component::MessageComponentInteraction},
+    model::{
+        channel::Embed,
+        interactions::{
+            message_component::MessageComponentInteraction,
+            InteractionApplicationCommandCallbackDataFlags,
+        },
+    },
     utils::MessageBuilder,
 };
 use urlencoding::encode;
@@ -89,7 +95,7 @@ async fn save_and_fetch_links(
 								let text = if hash.is_none() {
 									title.to_string()
 								} else {
-									format!("[{} | {}]", title, hash.unwrap())
+									format!("{} | {}", title, hash.unwrap())
 								};
 								//links.push_str(format!("• __{}__\n\n", text).as_str());
 								links.insert(text, url.to_string());
@@ -186,7 +192,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                 .ok();
             result
         } else {
-            String::from("")
+            "".to_string()
         }
     };
 
@@ -262,13 +268,36 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
     let ctx = &ctx.clone();
 
     match interaction {
-        Interaction::MessageComponent(mci) => {
-            if mci.data.custom_id == "gitpod_create_issue" {
-                show_issue_form(&mci, ctx).await;
-            } else if mci.data.custom_id == "gitpod_close_issue" {
-                close_issue(&mci, ctx).await;
+        Interaction::MessageComponent(mci) => match mci.data.custom_id.as_str() {
+            "gitpod_create_issue" => show_issue_form(&mci, ctx).await,
+            "gitpod_close_issue" => close_issue(&mci, ctx).await,
+            _ => {
+                if mci.data.custom_id.starts_with("http") {
+                    mci.create_interaction_response(&ctx.http, |r| {
+                        r.kind(InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|d| {
+                                d.components(|c| {
+                                    c.create_action_row(|a| {
+                                        a.create_button(|b| {
+                                            b.label("Open link")
+                                                .url(&mci.data.custom_id)
+                                                .style(ButtonStyle::Link)
+                                        })
+                                    })
+                                })
+                                .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                            })
+                    })
+                    .await
+                    .unwrap();
+
+                    mci.message
+                        .react(&ctx.http, ReactionType::Unicode("🔎".to_string()))
+                        .await
+                        .unwrap();
+                }
             }
-        }
+        },
         Interaction::ApplicationCommand(mci) => {
             if mci.data.name == "close" {
                 let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
@@ -478,7 +507,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         c.create_action_row(|ar| {
                             ar.create_button(|button| {
                                 button
-                                    .style(ButtonStyle::Success)
+                                    .style(ButtonStyle::Danger)
                                     .label("Close")
                                     .custom_id("gitpod_close_issue")
                                     .emoji(ReactionType::Unicode("🔒".to_string()))
@@ -501,31 +530,26 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 (*description.value).to_string(),
             )
             .await;
-			if !&relevant_links.is_empty() {
-			thread.send_message(&ctx.http, |m| {
+            if !&relevant_links.is_empty() {
+                thread.send_message(&ctx.http, |m| {
 				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
-				
 					m.components(|c| {
 						loop {
 							let mut we_done = true;
-							dbg!(&relevant_links);
 							c.create_action_row(|a|
 								{
 									let mut i = 1;
 									for (mut title, mut url) in relevant_links.clone() {
+										relevant_links.remove(&title);
 										if i > 5 {
 											we_done = false;
 											break;
+										} else {
+											i += 1;
 										}
-										i += 1;
-									
 										title.truncate(80);
 										url.truncate(100);
-										relevant_links.remove(&title);
-										// relevant_links.remove("lol").unwrap();
-									
-										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Secondary));
-										
+										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Success));
 									}
 										a
 									}
@@ -534,14 +558,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 								if we_done {
 									break;
 								}
-
 						}
 							c
 						});
 						m
 					}
 				).await.unwrap();
-			}
+            }
             // if !relevant_links.is_empty() {
             //     thread
             //         .send_message(&ctx.http, |m| {
