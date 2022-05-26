@@ -1,3 +1,5 @@
+use std::{collections::HashMap, fmt::format};
+
 use super::*;
 use crate::db::{self, ClientContextExt, Db};
 use anyhow::Result;
@@ -42,19 +44,19 @@ async fn save_and_fetch_links(
     guild_id: u64,
     title: String,
     description: String,
-) -> String {
-    let mut links = String::new();
+) -> HashMap<String, String> {
+    let mut links: HashMap<String, String> = HashMap::new();
     let client = reqwest::Client::new();
     let mclient = MeiliClient::new("http://localhost:7700", "optimus");
     let msettings = Settings::new()
         .with_searchable_attributes(["title", "description"])
         .with_distinct_attribute("title");
     mclient
-        .index("questions")
+        .index("threads")
         .set_settings(&msettings)
         .await
         .unwrap();
-    let questions = mclient.index("questions");
+    let threads = mclient.index("threads");
 
     // Fetch matching links
     for site in sites.iter() {
@@ -85,11 +87,12 @@ async fn save_and_fetch_links(
 							for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
 								let title = &caps["title"];
 								let text = if hash.is_none() {
-									format!("[{}]({})", title, url)
+									title.to_string()
 								} else {
-									format!("[{} | {}]({})", title, hash.unwrap(), url)
+									format!("[{} | {}]", title, hash.unwrap())
 								};
-								links.push_str(format!("• __{}__\n\n", text).as_str());
+								//links.push_str(format!("• __{}__\n\n", text).as_str());
+								links.insert(text, url.to_string());
 							}
 						}
 					}
@@ -103,7 +106,7 @@ async fn save_and_fetch_links(
     }
 
     // Fetch matching discord questions
-    if let Ok(discord_questions) = questions
+    if let Ok(discord_questions) = threads
         .search()
         .with_query(format!("{} {}", title, description).as_str())
         .with_limit(3)
@@ -111,18 +114,18 @@ async fn save_and_fetch_links(
         .await
     {
         for ids in discord_questions.hits {
-            links.push_str(
+            links.insert(
+                ids.result.title,
                 format!(
-                    "• __[{}](https://discord.com/channels/{}/{}/{})__\n\n",
-                    ids.result.title, ids.result.guild_id, ids.result.channel_id, ids.result.id
-                )
-                .as_str(),
+                    "https://discord.com/channels/{}/{}/{}",
+                    ids.result.guild_id, ids.result.channel_id, ids.result.id
+                ),
             );
         }
     }
 
     // Save the question to search engine
-    questions
+    threads
         .add_documents(
             &[Thread {
                 id: thread_id,
@@ -489,7 +492,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             questions_thread::responder(ctx).await;
 
             let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
-            let relevant_links = save_and_fetch_links(
+            let mut relevant_links = save_and_fetch_links(
                 &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
                 *thread.id.as_u64(),
                 *mci.channel_id.as_u64(),
@@ -498,19 +501,60 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 (*description.value).to_string(),
             )
             .await;
-            if !relevant_links.is_empty() {
-                thread
-                    .send_message(&ctx.http, |m| {
-                        m.content(format!(
-                            "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
-                            &user_mention
-                        ))
-                        .embed(|e| e.description(relevant_links))
-                    })
-                    .await
-                    .unwrap();
-                thread_typing.stop();
-            }
+			if !&relevant_links.is_empty() {
+			thread.send_message(&ctx.http, |m| {
+				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
+				
+					m.components(|c| {
+						loop {
+							let mut we_done = true;
+							dbg!(&relevant_links);
+							c.create_action_row(|a|
+								{
+									let mut i = 1;
+									for (mut title, mut url) in relevant_links.clone() {
+										if i > 5 {
+											we_done = false;
+											break;
+										}
+										i += 1;
+									
+										title.truncate(80);
+										url.truncate(100);
+										relevant_links.remove(&title);
+										// relevant_links.remove("lol").unwrap();
+									
+										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Secondary));
+										
+									}
+										a
+									}
+								);
+
+								if we_done {
+									break;
+								}
+
+						}
+							c
+						});
+						m
+					}
+				).await.unwrap();
+			}
+            // if !relevant_links.is_empty() {
+            //     thread
+            //         .send_message(&ctx.http, |m| {
+            //             m.content(format!(
+            //                 "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
+            //                 &user_mention
+            //             ))
+            //             .embed(|e| e.description(relevant_links))
+            //         })
+            //         .await
+            //         .unwrap();
+            //     thread_typing.stop();
+            // }
             // let db = &ctx.get_db().await;
             // db.add_title(i64::from(mci.id), &title.value).await.unwrap();
         }

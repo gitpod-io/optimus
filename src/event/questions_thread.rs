@@ -1,8 +1,6 @@
-use serenity::utils::MessageBuilder;
-
-use crate::db::ClientContextExt;
-
 use super::*;
+use crate::db::ClientContextExt;
+use serenity::utils::MessageBuilder;
 
 pub async fn responder(_ctx: &Context) {
     // #questions, #selfhosted-questions, #openvscode-questions, #documentation
@@ -12,7 +10,6 @@ pub async fn responder(_ctx: &Context) {
     for channel_id in channels {
         let channel_id = ChannelId(*channel_id.id.as_u64());
 
-        // Might need to do this in the future for race conditions
         let last_msg_id = _ctx
             .http
             .get_messages(*channel_id.as_u64(), "")
@@ -24,6 +21,8 @@ pub async fn responder(_ctx: &Context) {
         if last_msg_id.is_some() && last_msg_id.unwrap().is_own(&_ctx.cache).await {
             continue;
         }
+
+        // Might need to do this in the future for race conditions
         // let last_msg_id2 = _ctx
         //     .http
         //     .get_channel(*channel_id.as_u64())

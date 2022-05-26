@@ -113,13 +113,13 @@ pub async fn responder(_ctx: Context, mut _msg: Message) -> Result<()> {
                     r.delete(&_ctx.http).await?;
                 }
             }
+            //
+            // Moderate "showcase" and "feedback" type channel
+            //
         }
     }
 
     Ok(())
-    //
-    // Moderate "showcase" type channel
-    //
 
     //
     // Auto respond on keywords

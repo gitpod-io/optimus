@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS server_config (
 	getting_started_channel INTEGER,
 	introduction_channel INTEGER,
+	feedback_channel INTEGER,
+	showcase_channel INTEGER,
 	question_channels INTEGER NOT NULL,
 	subscriber_role INTEGER
 );

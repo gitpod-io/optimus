@@ -42,7 +42,6 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
                 .unwrap()
                 .is_match(last_msg.content.as_str())
         {
-            
         } else {
             unarchival_action(_ctx, _thread).await;
         }

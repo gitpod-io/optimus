@@ -55,15 +55,5 @@
       }
     },
     "query": "select message_contents from pending_questions where user_id=? and channel_id=?"
-  },
-  "7d0acaadaae96b249d489007351b4515864beac1eaba73756925fa687f8b3956": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "insert into server_config(question_channels) values(?)"
   }
 }

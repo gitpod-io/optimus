@@ -1,3 +1,4 @@
+use crate::event::questions_thread;
 use serenity::model::id::ChannelId;
 
 use super::*;
@@ -7,12 +8,18 @@ pub struct QuestionChannels {
 }
 
 impl Db {
-    pub async fn question_channels(&self, id: ChannelId) -> Result<()> {
+    pub async fn set_watch_channels(
+        &self,
+        data_name: &str,
+        id: ChannelId,
+        ctx: &Context,
+    ) -> Result<()> {
         let id = id.0 as i64;
 
-        sqlx::query!("insert into server_config(question_channels) values(?)", id)
-            .execute(&self.sqlitedb)
-            .await?;
+        let q = format!("insert into server_config({}) values({})", data_name, id);
+        if sqlx::query(&q).execute(&self.sqlitedb).await.is_ok() {
+            questions_thread::responder(ctx).await;
+        }
         Ok(())
     }
     pub async fn get_question_channels(&self) -> Result<Vec<QuestionChannels>> {
@@ -51,8 +58,12 @@ async fn config(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let db = &ctx.get_db().await;
 
         match config.as_str() {
-            "question_channels" => {
-                db.question_channels(value.parse::<ChannelId>().unwrap())
+            "question_channels"
+            | "feedback_channel"
+            | "getting_started_channel"
+            | "introduction_channel"
+            | "showcase_channel" => {
+                db.set_watch_channels(config.as_str(), value.parse::<ChannelId>().unwrap(), ctx)
                     .await?
             }
             _ => {
