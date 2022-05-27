@@ -1,6 +1,6 @@
 use super::*;
 use crate::db::ClientContextExt;
-use serenity::utils::MessageBuilder;
+use serenity::{futures::StreamExt, utils::MessageBuilder};
 
 pub async fn responder(_ctx: &Context) {
     // #questions, #selfhosted-questions, #openvscode-questions, #documentation
@@ -95,4 +95,39 @@ pub async fn responder(_ctx: &Context) {
 			.await
 			.unwrap();
     }
+
+    let placeholder_text = "**Press the button below** 👇 to gain access to the server";
+
+    let mut t = GETTING_STARTED_CHANNEL.messages_iter(&_ctx.http).boxed();
+    while let Some(message_result) = t.next().await {
+        match message_result {
+            Ok(message) => {
+                if message.content == *placeholder_text {
+                    return;
+                }
+            }
+            Err(error) => {
+                eprintln!("Uh oh! Error: {}", error);
+                return;
+            }
+        }
+    }
+
+    GETTING_STARTED_CHANNEL
+        .send_message(&_ctx.http, |m| {
+            m.content(&placeholder_text);
+            m.components(|c| {
+                c.create_action_row(|a| {
+                    a.create_button(|b| {
+                        b.label("Let's go")
+                            .custom_id("getting_started_letsgo")
+                            .style(ButtonStyle::Primary)
+                            .emoji(ReactionType::Unicode("🙌".to_string()))
+                    })
+                })
+            });
+            m
+        })
+        .await
+        .unwrap();
 }

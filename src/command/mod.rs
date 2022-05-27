@@ -58,7 +58,7 @@ use std::{
 use anyhow::Result;
 use serenity::prelude::*;
 // use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
-use tokio::{fs, fs::symlink, process, sync::Mutex};
+use tokio::{process, sync::Mutex};
 
 // A container type is created for inserting into the Client's `data`, which
 // allows for data to be accessible across all events and framework commands, or

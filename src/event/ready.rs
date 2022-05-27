@@ -22,4 +22,6 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
     })
     .await
     .unwrap();
+
+    questions_thread::responder(_ctx).await;
 }

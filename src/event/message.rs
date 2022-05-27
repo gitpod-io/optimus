@@ -1,14 +1,7 @@
 use super::*;
 use crate::db::{ClientContextExt, Db};
-use serenity::model::id::UserId;
-use sqlx::Executor;
-use tokio::time::sleep;
-
-pub struct PendingQuestions {
-    user_id: UserId,
-    channel_id: ChannelId,
-    message_contents: String,
-}
+use serenity::{model::id::UserId, utils::MessageBuilder};
+use tokio::time::{sleep, Sleep};
 
 impl Db {
     pub async fn add_pending_question(
@@ -66,11 +59,11 @@ impl Db {
     }
 }
 
-pub async fn responder(_ctx: Context, mut _msg: Message) -> Result<()> {
+pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
     //
     // Log messages
     //
-    if !_msg.is_own(&_ctx.cache).await {
+    if !_msg.is_own(&ctx.cache).await {
         let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
         let attc = &_msg.attachments;
@@ -97,22 +90,78 @@ pub async fn responder(_ctx: Context, mut _msg: Message) -> Result<()> {
 
         // Pending questions logging
         if !_msg.author.bot {
-            let db = &_ctx.get_db().await;
+            let db = &ctx.get_db().await;
             if let Ok(qc) = db.get_question_channels().await {
                 if qc.iter().any(|x| x.id == _msg.channel_id) {
                     db.add_pending_question(&_msg.author.id, &_msg.channel_id, &_msg.content)
                         .await?;
-                    _msg.delete(&_ctx.http).await?;
+                    _msg.delete(&ctx.http).await?;
                     let r = _msg
                         .reply_mention(
-                            &_ctx.http,
-                            "☝️ Please click on **`💡 Ask a Question`** button above",
+                            &ctx.http,
+                            "☝️ Please click on **`💡 Ask a Question`** button to complete your question",
                         )
                         .await?;
                     sleep(Duration::from_secs(15)).await;
-                    r.delete(&_ctx.http).await?;
+                    r.delete(&ctx.http).await?;
                 }
             }
+
+            // Watch intro channel
+            if _msg.channel_id == INTRODUCTION_CHANNEL {
+                if let Ok(intro_msgs) = &ctx
+                    .http
+                    .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+                    .await
+                {
+                    let mut count = 0;
+                    intro_msgs.into_iter().for_each(|x| {
+                        if x.author == _msg.author {
+                            count += 1;
+                        }
+                    });
+
+                    if count <= 1 {
+                        let thread = _msg
+                            .channel_id
+                            .create_public_thread(&ctx.http, &_msg.id, |t| {
+                                t.auto_archive_duration(1440)
+                                    .name(format!("Welcome {}!", _msg.author.name))
+                            })
+                            .await
+                            .unwrap();
+                        thread
+                            .send_message(&ctx.http, |t| {
+                                let mut msg = MessageBuilder::new();
+
+                                msg.push_line(format!(
+                                    "Awesome, you made it {}!\n",
+                                    &_msg.author.name
+                                ))
+                                .push_bold_line("Here are the top 10 things you can do here:")
+                                .push_quote("• <channel> is for <purpose>")
+                                .push_bold_line("\nHere are a few useful links for future ;)")
+                                .push_line("<insert link buttons here + our core values>");
+                                t.content(msg);
+                                t
+                            })
+                            .await
+                            .unwrap();
+                    } else {
+                        let warn_msg = _msg
+                            .reply_mention(
+                                &ctx.http,
+                                "please reply in threads above instead of here",
+                            )
+                            .await
+                            .unwrap();
+                        sleep(Duration::from_secs(10)).await;
+                        warn_msg.delete(&ctx.http).await.unwrap();
+                        _msg.delete(&ctx.http).await.ok();
+                    }
+                }
+            }
+
             //
             // Moderate "showcase" and "feedback" type channel
             //

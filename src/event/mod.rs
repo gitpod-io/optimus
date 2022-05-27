@@ -1,3 +1,4 @@
+// mod getting_started;
 mod guild_create;
 mod guild_member_addition;
 mod guild_member_removal;
@@ -37,7 +38,6 @@ use std::{
     env, path,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
     },
     time::Duration,
 };
@@ -59,6 +59,9 @@ use serenity::{
 // static QUESTIONS_PLACEHOLDER_TEXT: &str = ">
 // > Ask or discuss about anything related with Gitpod
 // > ‎";
+
+const GETTING_STARTED_CHANNEL: ChannelId = ChannelId(947769444380336167);
+const INTRODUCTION_CHANNEL: ChannelId = ChannelId(947769443516284939);
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,
@@ -107,7 +110,6 @@ impl EventHandler for Listener {
     // In this case, just print what the current user's username is.
     async fn ready(&self, _ctx: Context, ready: Ready) {
         ready::responder(&_ctx, ready).await;
-        questions_thread::responder(&_ctx).await;
     }
 
     async fn guild_member_addition(&self, _ctx: Context, _guild_id: GuildId, _new_member: Member) {
@@ -130,12 +132,12 @@ impl EventHandler for Listener {
 
     // We use the cache_ready event just in case some cache operation is required in whatever use
     // case you have for this.
-    async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
+    async fn cache_ready(&self, _ctx: Context, _guilds: Vec<GuildId>) {
         println!("Cache built successfully!");
 
         // it's safe to clone Context, but Arc is cheaper for this use case.
         // Untested claim, just theoretically. :P
-        let ctx = Arc::new(ctx);
+        // let ctx = Arc::new(ctx);
 
         // We need to check that the loop is not already running when this event triggers,
         // as this event triggers every time the bot enters or leaves a guild, along every time the
@@ -145,36 +147,36 @@ impl EventHandler for Listener {
         // we don't have one due to self being an immutable reference.
         if !self.is_loop_running.load(Ordering::Relaxed) {
             // We have to clone the Arc, as it gets moved into the new thread.
-            let ctx1 = Arc::clone(&ctx);
+            // let ctx1 = Arc::clone(&ctx);
             // tokio::spawn creates a new green thread that can run in parallel with the rest of
             // the application.
-            tokio::spawn(async move {
-                loop {
-                    // We clone Context again here, because Arc is owned, so it moves to the
-                    // new function.
-                    // log_system_load(Arc::clone(&ctx1)).await;
-                    let dbnode_userid = Database::from("userid".to_string()).await;
-                    let guilds = &ctx.cache.guilds().await;
+            // tokio::spawn(async move {
+            //     loop {
+            //         // We clone Context again here, because Arc is owned, so it moves to the
+            //         // new function.
+            //         // log_system_load(Arc::clone(&ctx1)).await;
+            //         let dbnode_userid = Database::from("userid".to_string()).await;
+            //         let guilds = &ctx.cache.guilds().await;
 
-                    for guild in guilds.iter() {
-                        let members = &ctx1.cache.guild(guild).await.unwrap().members;
+            //         for guild in guilds.iter() {
+            //             let members = &ctx1.cache.guild(guild).await.unwrap().members;
 
-                        for (_user_id, _member) in members {
-                            // tokio::time::sleep(Duration::from_secs(2)).await;
-                            dbnode_userid
-                                .save_user_info(_user_id, _member.user.tag())
-                                .await;
-                        }
-                    }
+            //             for (_user_id, _member) in members {
+            //                 // tokio::time::sleep(Duration::from_secs(2)).await;
+            //                 dbnode_userid
+            //                     .save_user_info(_user_id, _member.user.tag())
+            //                     .await;
+            //             }
+            //         }
 
-                    // Workaround process uptime limit on free google server
-                    tokio::time::sleep(Duration::from_secs(3 * (24 * (60 * 60)))).await;
-                    std::process::Command::new(env::current_exe().unwrap())
-                        .spawn()
-                        .unwrap();
-                    std::process::exit(0);
-                }
-            });
+            //         // Workaround process uptime limit on free google server
+            //         // tokio::time::sleep(Duration::from_secs(3 * (24 * (60 * 60)))).await;
+            //         // std::process::Command::new(env::current_exe().unwrap())
+            //         //     .spawn()
+            //         //     .unwrap();
+            //         // std::process::exit(0);
+            //     }
+            // });
 
             // Now that the loop is running, we set the bool to true
             self.is_loop_running.swap(true, Ordering::Relaxed);
