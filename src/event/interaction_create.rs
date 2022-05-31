@@ -11,14 +11,16 @@ use serenity::{
     http::AttachmentType,
     model::{
         channel::Embed,
+        guild::{Emoji, Role},
         interactions::{
             message_component::MessageComponentInteraction,
             InteractionApplicationCommandCallbackDataFlags,
         },
         Permissions,
     },
-    utils::MessageBuilder,
+    utils::{read_image, MessageBuilder},
 };
+use tokio::time::sleep;
 use urlencoding::encode;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -50,6 +52,39 @@ async fn safe_text(_ctx: &Context, _input: &String) -> String {
             .clean_user(false),
     )
     .await
+}
+
+async fn get_role(mci: &MessageComponentInteraction, ctx: &Context, name: &str) -> Role {
+    let role = {
+        if let Some(result) = mci
+            .guild_id
+            .unwrap()
+            .to_partial_guild(&ctx.http)
+            .await
+            .unwrap()
+            .role_by_name(name)
+        {
+            result.clone()
+        } else {
+            let r = mci
+                .guild_id
+                .unwrap()
+                .create_role(&ctx.http, |r| {
+                    r.name(&name);
+                    r.mentionable(false);
+                    r.hoist(false);
+                    r
+                })
+                .await
+                .unwrap();
+            r.clone()
+        }
+    };
+    role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
+        .await
+        .unwrap();
+
+    role
 }
 
 async fn save_and_fetch_links(
@@ -434,7 +469,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         value: "Found: FromGoogle",
                                         label: "Google",
                                         description: "I found Gitpod from a Google search",
-                                        display_emoji: "🫂",
+                                        display_emoji: "🔎",
                                     },
                                     SelectMenuSpec {
                                         value: "Found: FromYouTube",
@@ -526,7 +561,16 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         .iter()
                                         .for_each(|x| role_choices.push(x.to_string()));
 
+                                    // Add the additional member role
+                                    additional_roles.push(SelectMenuSpec {
+                                        label: "Member",
+                                        value: "Member",
+                                        description: "",
+                                        display_emoji: "",
+                                    });
                                     let mut member = mci.member.clone().unwrap();
+
+                                    // Remove old roles
                                     if let Some(roles) = member.roles(&ctx.cache).await {
                                         // Remove all assignable roles first
                                         let mut all_assignable_roles: Vec<SelectMenuSpec> =
@@ -547,47 +591,140 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         }
                                     }
 
-                                    // Assign the roles
-                                    // Todo: Provide clear errors to the user if anything goes wrong
-                                    if role_choices.len() > 1
-                                        || !role_choices.iter().any(|x| x == "none")
+                                    // Add temp role for intro
+                                    let temp_role = get_role(&mci, ctx, "Temp").await;
+                                    member.add_role(&ctx.http, temp_role.id).await.unwrap();
+
+                                    // Wait for the submittion on INTRODUCTION_CHANNEL
+                                    if let Some(msg) = mci
+                                        .user
+                                        .await_reply(&ctx)
+                                        .timeout(Duration::from_secs((60 * 60) * 12))
+                                        .await
                                     {
-                                        // Is bigger than a single choice or doesnt contain none
-                                        for role_name in role_choices {
-                                            if role_name == "none" {
-                                                continue;
-                                            }
-                                            let role = {
-                                                if let Some(result) = mci
-                                                    .guild_id
-                                                    .unwrap()
-                                                    .to_partial_guild(&ctx.http)
-                                                    .await
-                                                    .unwrap()
-                                                    .role_by_name(role_name.as_str())
-                                                {
-                                                    result.clone()
-                                                } else {
-                                                    let r = mci
-                                                        .guild_id
+                                        // Watch intro channel
+                                        if msg.channel_id == INTRODUCTION_CHANNEL {
+                                            if let Ok(intro_msgs) = &ctx
+                                                .http
+                                                .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+                                                .await
+                                            {
+                                                let mut count = 0;
+                                                intro_msgs.iter().for_each(|x| {
+                                                    if x.author == msg.author {
+                                                        count += 1;
+                                                    }
+                                                });
+
+                                                if count <= 1 {
+                                                    let thread =
+                                                        msg.channel_id
+                                                            .create_public_thread(
+                                                                &ctx.http,
+                                                                &msg.id,
+                                                                |t| {
+                                                                    t.auto_archive_duration(1440)
+                                                                        .name(format!(
+                                                                            "Welcome {}!",
+                                                                            msg.author.name
+                                                                        ))
+                                                                },
+                                                            )
+                                                            .await
+                                                            .unwrap();
+
+                                                    let general_channel = if cfg!(debug_assertions) {
+                                                        ChannelId(947769443516284943)
+													} else {
+														ChannelId(839379835662368768)
+													};
+                                                    let offtopic_channel = if cfg!(debug_assertions) {
+                                                        ChannelId(947769443793141769)
+													} else {
+														ChannelId(972510491933032508)
+													};
+                                                    let db = &ctx.get_db().await;
+                                                    let questions_channel =
+                                                        db.get_question_channels().await.unwrap();
+                                                    let questions_channel = questions_channel
+                                                        .into_iter()
+                                                        .next()
                                                         .unwrap()
-                                                        .create_role(&ctx.http, |r| {
-                                                            r.name(&role_name);
-                                                            r.mentionable(false);
-                                                            r.hoist(false);
-                                                            r
+                                                        .id;
+
+                                                    let mut thread_msg =thread
+                                                        .send_message(&ctx.http, |t| {
+                                                            let mut prepared_msg = MessageBuilder::new();
+
+                                                        prepared_msg.push_line(format!(
+															"It’s awesome that you’re here, {}!",
+															&msg.author.name
+														)).push_line("Welcome to the Gitpod community 🙌\n")
+														.push_bold_line("Here are some channels that you should check out:")
+														.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", general_channel.mention()))
+														.push_quote_line(format!("• {} - for any random discussions ☕️", offtopic_channel.mention()))
+														.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", questions_channel.mention()))
+														.push_line("…And there’s more! Take your time to explore :)\n")
+														.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
+														.push_quote_line("• https://www.gitpod.io/community")
+														.push_quote_line("• https://www.gitpod.io/about");
+                                                            t.content(prepared_msg);
+                                                            t
                                                         })
                                                         .await
                                                         .unwrap();
-                                                    r.clone()
+                                                    thread_msg
+                                                        .suppress_embeds(&ctx.http)
+                                                        .await
+                                                        .unwrap();
+                                                } else {
+                                                    let warn_msg = msg
+													.reply_mention(
+														&ctx.http,
+														"Please reply in threads above instead of here",
+													)
+													.await
+													.unwrap();
+                                                    sleep(Duration::from_secs(10)).await;
+                                                    warn_msg.delete(&ctx.http).await.unwrap();
+                                                    msg.delete(&ctx.http).await.ok();
                                                 }
-                                            };
-                                            role.edit(&ctx.http, |r| {
-                                                r.permissions(Permissions::empty())
-                                            })
-                                            .await
-                                            .unwrap();
-                                            member.add_role(&ctx.http, role.id).await.unwrap();
+
+                                                // Assign the roles
+                                                // Todo: Provide clear errors to the user if anything goes wrong
+                                                if role_choices.len() > 1
+                                                    || !role_choices.iter().any(|x| x == "none")
+                                                {
+                                                    // Is bigger than a single choice or doesnt contain none
+                                                    for role_name in role_choices {
+                                                        if role_name == "none" {
+                                                            continue;
+                                                        }
+                                                        let role =
+                                                            get_role(&mci, ctx, role_name.as_str())
+                                                                .await;
+
+                                                        member
+                                                            .add_role(&ctx.http, role.id)
+                                                            .await
+                                                            .unwrap();
+                                                    }
+                                                }
+
+                                                // Remove the temp role from user
+                                                member
+                                                    .remove_role(&ctx.http, temp_role.id)
+                                                    .await
+                                                    .unwrap();
+
+                                                // Add the member role
+                                                let member_role =
+                                                    get_role(&mci, ctx, "Member").await;
+                                                member
+                                                    .add_role(&ctx.http, member_role.id)
+                                                    .await
+                                                    .unwrap();
+                                            }
                                         }
                                     }
 
@@ -862,20 +999,47 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             )
             .await;
             if !&relevant_links.is_empty() {
-                // let github_emoji = {
-                // 	if let Some(emoji) = &mci
-                //     .guild_id
-                //     .unwrap()
-                //     .emojis(&ctx.http)
-                //     .await
-                //     .unwrap()
-                //     .into_iter()
-                //     .find(|x| x.name == "github".to_string()) {
-                // 		emoji
-                // 	} else {
-                // 		let emoji = &mci.guild_id.unwrap().create_emoji(&ctx.http, "github", )
-                // 	}
-                // };
+                let mut prefix_emojis: HashMap<&str, Emoji> = HashMap::new();
+                let emoji_sources: HashMap<&str, &str> = HashMap::from([
+					("gitpod", "https://www.gitpod.io/images/media-kit/logo-mark.png"),
+					("github", "https://cdn.discordapp.com/attachments/981191970024210462/981192908780736573/github-transparent.png"),
+					("discord", "https://discord.com/assets/9f6f9cd156ce35e2d94c0e62e3eff462.png")
+				]);
+                let guild = &mci.guild_id.unwrap();
+                for source in ["gitpod", "github", "discord"].iter() {
+                    let emoji = {
+                        if let Some(emoji) = guild
+                            .emojis(&ctx.http)
+                            .await
+                            .unwrap()
+                            .into_iter()
+                            .find(|x| x.name == *source)
+                        {
+                            emoji
+                        } else {
+                            let dw_path = env::current_dir().unwrap().join(format!("{source}.png"));
+                            let dw_url = emoji_sources.get(source).unwrap().to_string();
+                            let client = reqwest::Client::new();
+                            let downloaded_bytes = client
+                                .get(dw_url)
+                                .timeout(Duration::from_secs(5))
+                                .send()
+                                .await
+                                .unwrap()
+                                .bytes()
+                                .await
+                                .unwrap();
+                            tokio::fs::write(&dw_path, &downloaded_bytes).await.unwrap();
+                            let emoji_image = read_image(dw_path).unwrap();
+                            let emoji_image = emoji_image.as_str();
+                            guild
+                                .create_emoji(&ctx.http, source, emoji_image)
+                                .await
+                                .unwrap()
+                        }
+                    };
+                    prefix_emojis.insert(source, emoji);
+                }
 
                 thread.send_message(&ctx.http, |m| {
 				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
@@ -895,7 +1059,23 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										}
 										title.truncate(80);
 										url.truncate(100);
-										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Success));
+										
+										let emoji = {
+											if url.starts_with("https://www.gitpod.io") {
+												prefix_emojis.get("gitpod").unwrap()
+											} else if url.starts_with("https://github.com") {
+												prefix_emojis.get("github").unwrap()
+											} else {
+												prefix_emojis.get("discord").unwrap()
+											}
+										};
+
+										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
+											id: emoji.id,
+											name: Some(emoji.name.clone()),
+											animated: false,
+										
+										}));
 									}
 										a
 									}

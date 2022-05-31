@@ -1,6 +1,6 @@
 use super::*;
 use crate::db::{ClientContextExt, Db};
-use serenity::{model::id::UserId, utils::MessageBuilder};
+use serenity::{model::id::UserId};
 use tokio::time::sleep;
 
 impl Db {
@@ -105,94 +105,6 @@ pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
                     sleep(Duration::from_secs(15)).await;
                     r.delete(&ctx.http).await?;
                 }
-            }
-
-            // Watch intro channel
-            if _msg.channel_id == INTRODUCTION_CHANNEL {
-                if let Ok(intro_msgs) = &ctx
-                    .http
-                    .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-                    .await
-                {
-                    let mut count = 0;
-                    intro_msgs.iter().for_each(|x| {
-                        if x.author == _msg.author {
-                            count += 1;
-                        }
-                    });
-
-                    if count <= 1 {
-                        let thread = _msg
-                            .channel_id
-                            .create_public_thread(&ctx.http, &_msg.id, |t| {
-                                t.auto_archive_duration(1440)
-                                    .name(format!("Welcome {}!", _msg.author.name))
-                            })
-                            .await
-                            .unwrap();
-                        let msg =thread
-                            .send_message(&ctx.http, |t| {
-                                let mut msg = MessageBuilder::new();
-
-                                msg.push_line(format!(
-                                    "Awesome, you made it {}!\n",
-                                    &_msg.author.name
-                                ))
-                                .push_bold_line("Here's some channels you could quickly check out")
-                                .push_quote("• #general is for discussions about programming, frameworks, tools and etc.")
-								.push_quote("• #off-topic is ford discussing about anything random")
-								.push_quote_line("• #questions is for asking anything about Gitpod")
-								.push_line("And there are more, just take your time to explore :)")
-                                .push_bold_line("Also, check out the following pages if you wanna learn more about Gitpod:")
-								.push_quote("• https://www.gitpod.io/community")
-								.push_quote("• https://www.gitpod.io/values");
-                                t.content(msg);
-                                t
-                            })
-                            .await
-                            .unwrap().suppress_embeds(&ctx.http).await.unwrap();
-                    } else {
-                        let warn_msg = _msg
-                            .reply_mention(
-                                &ctx.http,
-                                "please reply in threads above instead of here",
-                            )
-                            .await
-                            .unwrap();
-                        sleep(Duration::from_secs(10)).await;
-                        warn_msg.delete(&ctx.http).await.unwrap();
-                        _msg.delete(&ctx.http).await.ok();
-                    }
-                }
-                // Grant the member role
-                let member = &mut _msg.member(&ctx.http).await.unwrap();
-                let member_role = "Member";
-                let role = {
-                    if let Some(result) = _msg
-                        .guild_id
-                        .unwrap()
-                        .to_partial_guild(&ctx.http)
-                        .await
-                        .unwrap()
-                        .role_by_name(&member_role)
-                    {
-                        result.clone()
-                    } else {
-                        let r = _msg
-                            .guild_id
-                            .unwrap()
-                            .create_role(&ctx.http, |r| {
-                                r.name(&member_role);
-                                r.mentionable(false);
-                                r.hoist(false);
-                                r
-                            })
-                            .await
-                            .unwrap();
-                        r.clone()
-                    }
-                };
-                member.add_role(&ctx.http, role.id).await.unwrap();
             }
 
             //

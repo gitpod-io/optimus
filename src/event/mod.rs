@@ -58,8 +58,16 @@ use serenity::{
 // > Ask or discuss about anything related with Gitpod
 // > ‎";
 
-const GETTING_STARTED_CHANNEL: ChannelId = ChannelId(947769444380336167);
-const INTRODUCTION_CHANNEL: ChannelId = ChannelId(947769443516284939);
+const GETTING_STARTED_CHANNEL: ChannelId = if cfg!(debug_assertions) {
+    ChannelId(947769444380336167)
+} else {
+    ChannelId(833891696764518441)
+};
+const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
+    ChannelId(947769443516284939)
+} else {
+    ChannelId(816249489911185418)
+};
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,

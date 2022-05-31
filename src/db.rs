@@ -32,6 +32,7 @@ impl Db {
     }
 }
 
+
 #[async_trait]
 pub trait ClientContextExt {
     async fn get_db(&self) -> Arc<Db>;

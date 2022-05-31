@@ -54,24 +54,21 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
 
             let client_data = presence.client_status.unwrap();
 
-            match client_data {
-                ClientStatus {
+            let ClientStatus {
                     desktop,
                     mobile,
                     web,
-                } => {
-                    if desktop.is_some() {
-                        status_client.push_str("Desktop");
-                        // status_mode.push_str(get_online_status(&desktop.unwrap()).await.as_str());
-                    } else if mobile.is_some() {
-                        status_client.push_str("Mobile");
-                        // status_mode.push_str(get_online_status(&mobile.unwrap()).await.as_str());
-                    } else if web.is_some() {
-                        status_client.push_str("Web");
-                        // status_mode.push_str(get_online_status(&web.unwrap()).await.as_str());
-                    }
-                } // _ => {}
-            }
+                } = client_data;
+            if desktop.is_some() {
+                status_client.push_str("Desktop");
+                // status_mode.push_str(get_online_status(&desktop.unwrap()).await.as_str());
+            } else if mobile.is_some() {
+                status_client.push_str("Mobile");
+                // status_mode.push_str(get_online_status(&mobile.unwrap()).await.as_str());
+            } else if web.is_some() {
+                status_client.push_str("Web");
+                // status_mode.push_str(get_online_status(&web.unwrap()).await.as_str());
+            };
 
             for acti in one {
                 // status.push_str(&acti.emoji.unwrap().);
