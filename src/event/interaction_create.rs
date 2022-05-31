@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem};
+use std::{collections::HashMap};
 
 use super::*;
 use crate::db::ClientContextExt;
@@ -534,25 +534,28 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 									let mut status = true;
 									 if let Some(roles) = member.roles(&ctx.cache).await {
 										let member_role = get_role(&mci, ctx, "Member").await;
-										dbg!(&member_role);
-										status = dbg!(!roles.into_iter().any(|x|x == member_role));
+										status = !roles.into_iter().any(|x|x == member_role);
 
 									}
-									if let Ok(intro_msgs) = &ctx
-												   .http
-												   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-												   .await
-											   {
-												   let mut count = 0;
-												   intro_msgs.iter().for_each(|x| {
-													   if x.author == interaction.user {
-														   count += 1;
-													   }
-												   });
-												   
-												   status = count < 1;
-											   }
-											status
+									
+									if status {
+										if let Ok(intro_msgs) = &ctx
+													   .http
+													   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+													   .await
+										{
+											let mut count = 0;
+											intro_msgs.iter().for_each(|x| {
+												if x.author == interaction.user {
+													count += 1;
+												}
+											});
+											
+											status = count < 1;
+										}
+
+									}
+									status
 								 };
 
 
