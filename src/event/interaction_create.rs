@@ -346,8 +346,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                     for prog_role in [
                         "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
-                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Python", "Ruby", "Rust",
-                        "Ts",
+                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby", "Rust",
                     ]
                     .iter()
                     {
