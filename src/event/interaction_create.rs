@@ -224,6 +224,41 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
         .unwrap();
 }
 
+async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choices: Vec<String>, mut member: Member, temp_role: Role) {
+	if role_choices.len() > 1
+	|| !role_choices.iter().any(|x| x == "none")
+{
+	// Is bigger than a single choice or doesnt contain none
+	for role_name in role_choices {
+		if role_name == "none" {
+			continue;
+		}
+		let role =
+			get_role(mci, ctx, role_name.as_str())
+				.await;
+
+		member
+			.add_role(&ctx.http, role.id)
+			.await
+			.unwrap();
+	}
+}
+
+// Remove the temp role from user
+member
+	.remove_role(&ctx.http, temp_role.id)
+	.await
+	.unwrap();
+
+// Add the member role
+let member_role =
+	get_role(mci, ctx, "Member").await;
+member
+	.add_role(&ctx.http, member_role.id)
+	.await
+	.unwrap();
+}
+
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
     let db = &ctx.get_db().await;
     let desc = {
@@ -490,6 +525,10 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     },
                                 ]);
 
+								let mut member = mci.member.clone().unwrap();
+								let temp_role = get_role(&mci, ctx, "Temp").await;
+								member.add_role(&ctx.http, temp_role.id).await.unwrap();
+
                                 let followup_interaction = interaction
                                     .create_followup_message(&ctx.http, |f| {
                                         f.content("**[3/3]:** How did you find Gitpod?");
@@ -534,6 +573,24 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .await
                                     .unwrap();
 
+							
+     							let never_introduced = {
+
+									 if let Ok(intro_msgs) = &ctx
+												   .http
+												   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+												   .await
+											   {
+												   let mut count = 0;
+												   intro_msgs.iter().for_each(|x| {
+													   if x.author == interaction.user {
+														   count += 1;
+													   }
+												   });
+												   
+												   count <= 0
+											   } else { false }
+								 };
                                 if let Some(i) = interaction
                                     .get_followup_message(&ctx.http, followup_interaction.id)
                                     .await
@@ -542,14 +599,21 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .timeout(Duration::from_secs(60 * 5))
                                     .await
                                 {
+									let final_msg = {
+										if never_introduced {
+											format!(
+												"Thank you {}! Now, please go {} to unlock the server!",
+												interaction.user.mention(),
+												INTRODUCTION_CHANNEL.mention()
+											)
+										} else {
+											"Awesome, your server profile will be updated now!".to_owned()
+										}
+									};
                                     i.create_interaction_response(&ctx.http, |r| {
                                         r.kind(InteractionResponseType::UpdateMessage)
                                             .interaction_response_data(|d| {
-                                                d.content(format!(
-                                            "Thank you {}! Now, please go {} to unlock the server!",
-                                            interaction.user.mention(),
-                                            INTRODUCTION_CHANNEL.mention()
-                                        ))
+                                                d.content(final_msg)
                                                 .components(|c| c)
                                             })
                                     })
@@ -567,7 +631,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         description: "",
                                         display_emoji: "",
                                     });
-                                    let mut member = mci.member.clone().unwrap();
+                                  
 
                                     // Remove old roles
                                     if let Some(roles) = member.roles(&ctx.cache).await {
@@ -590,9 +654,12 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         }
                                     }
 
+							
+								
+									if never_introduced {
+
+									
                                     // Add temp role for intro
-                                    let temp_role = get_role(&mci, ctx, "Temp").await;
-                                    member.add_role(&ctx.http, temp_role.id).await.unwrap();
 
                                     // Wait for the submittion on INTRODUCTION_CHANNEL
                                     if let Some(msg) = mci
@@ -691,41 +758,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                                 // Assign the roles
                                                 // Todo: Provide clear errors to the user if anything goes wrong
-                                                if role_choices.len() > 1
-                                                    || !role_choices.iter().any(|x| x == "none")
-                                                {
-                                                    // Is bigger than a single choice or doesnt contain none
-                                                    for role_name in role_choices {
-                                                        if role_name == "none" {
-                                                            continue;
-                                                        }
-                                                        let role =
-                                                            get_role(&mci, ctx, role_name.as_str())
-                                                                .await;
-
-                                                        member
-                                                            .add_role(&ctx.http, role.id)
-                                                            .await
-                                                            .unwrap();
-                                                    }
-                                                }
-
-                                                // Remove the temp role from user
-                                                member
-                                                    .remove_role(&ctx.http, temp_role.id)
-                                                    .await
-                                                    .unwrap();
-
-                                                // Add the member role
-                                                let member_role =
-                                                    get_role(&mci, ctx, "Member").await;
-                                                member
-                                                    .add_role(&ctx.http, member_role.id)
-                                                    .await
-                                                    .unwrap();
+												assign_roles(&mci, ctx, role_choices, member, temp_role).await;
                                             }
                                         }
                                     }
+								} else {
+									assign_roles(&mci, ctx, role_choices, member, temp_role).await;
+								}
 
                                     break;
                                 }
