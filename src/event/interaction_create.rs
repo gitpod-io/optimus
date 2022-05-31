@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 use super::*;
 use crate::db::ClientContextExt;
@@ -529,6 +529,33 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 								let temp_role = get_role(&mci, ctx, "Temp").await;
 								member.add_role(&ctx.http, temp_role.id).await.unwrap();
 
+     							let never_introduced = {
+
+									let mut status = true;
+									 if let Some(roles) = member.roles(&ctx.cache).await {
+										let member_role = get_role(&mci, ctx, "Member").await;
+										dbg!(&member_role);
+										status = dbg!(!roles.into_iter().any(|x|x == member_role));
+
+									}
+									if let Ok(intro_msgs) = &ctx
+												   .http
+												   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+												   .await
+											   {
+												   let mut count = 0;
+												   intro_msgs.iter().for_each(|x| {
+													   if x.author == interaction.user {
+														   count += 1;
+													   }
+												   });
+												   
+												   status = count < 1;
+											   }
+											status
+								 };
+
+
                                 let followup_interaction = interaction
                                     .create_followup_message(&ctx.http, |f| {
                                         f.content("**[3/3]:** How did you find Gitpod?");
@@ -574,23 +601,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .unwrap();
 
 							
-     							let never_introduced = {
-
-									 if let Ok(intro_msgs) = &ctx
-												   .http
-												   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-												   .await
-											   {
-												   let mut count = 0;
-												   intro_msgs.iter().for_each(|x| {
-													   if x.author == interaction.user {
-														   count += 1;
-													   }
-												   });
-												   
-												   count <= 0
-											   } else { false }
-								 };
                                 if let Some(i) = interaction
                                     .get_followup_message(&ctx.http, followup_interaction.id)
                                     .await
