@@ -36,9 +36,7 @@ use std::convert::TryFrom;
 
 use std::{
     env, path,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
 

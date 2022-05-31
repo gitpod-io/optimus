@@ -11,11 +11,11 @@ use serenity::{
     http::AttachmentType,
     model::{
         channel::Embed,
-        id::RoleId,
         interactions::{
             message_component::MessageComponentInteraction,
             InteractionApplicationCommandCallbackDataFlags,
         },
+        Permissions,
     },
     utils::MessageBuilder,
 };
@@ -28,6 +28,13 @@ struct Thread {
     channel_id: u64,
     title: String,
     history: String,
+}
+#[derive(Clone, Copy)]
+struct SelectMenuSpec<'a> {
+    value: &'a str,
+    label: &'a str,
+    display_emoji: &'a str,
+    description: &'a str,
 }
 
 const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
@@ -270,90 +277,83 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
     let ctx = &ctx.clone();
 
     match interaction {
-        Interaction::MessageComponent(mci) => match mci.data.custom_id.as_str() {
-            "gitpod_create_issue" => show_issue_form(&mci, ctx).await,
-            "gitpod_close_issue" => close_issue(&mci, ctx).await,
-            "getting_started_letsgo" => {
-                let devx_role: RoleId = if cfg!(debg) {
-                    RoleId(979770102855647353)
-                } else {
-                    RoleId(0)
-                };
-                let selfhosted_role: RoleId = if cfg!(debug) { RoleId(024) } else { RoleId(1) };
-                let mobile_tablets_role: RoleId = if cfg!(debug) {
-                    RoleId(00)
-                } else {
-                    RoleId(1121)
-                };
+        Interaction::MessageComponent(mci) => {
+            match mci.data.custom_id.as_str() {
+                "gitpod_create_issue" => show_issue_form(&mci, ctx).await,
+                "gitpod_close_issue" => close_issue(&mci, ctx).await,
+                "getting_started_letsgo" => {
+                    let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
+                        SelectMenuSpec {
+                            value: "SelfHosted",
+                            description: "All about self hosted Gitpod!",
+                            label: "Self Hosted",
+                            display_emoji: "🏡",
+                        },
+                        SelectMenuSpec {
+                            value: "OnMobile",
+                            description: "Talk about using Gitpod on mobile devices",
+                            label: "Mobile and tablets",
+                            display_emoji: "📱",
+                        },
+                        SelectMenuSpec {
+                            value: "DevX",
+                            description: "All things about DevX",
+                            label: "Developer Experience",
+                            display_emoji: "✨",
+                        },
+                        SelectMenuSpec {
+                            value: "JetBrainsIDEs",
+                            description: "Discuss about Jetbrains IDEs for Gitpod!",
+                            label: "JetBrains (BETA)",
+                            display_emoji: "🧠",
+                        },
+                    ]);
 
-                let programming_lang_roles: HashMap<u64, &str> = if cfg!(debug) {
-                    HashMap::from([
-                        (2332, "sdfsd"),
-                        (947769443214303268, "CPP"),
-                        (979810413099249724, "Lua"),
-                        (947769443201736713, "GoLang"),
-                        (979810795200339978, "NimLang"),
-                        (947769443201736707, "RustLang"),
-                    ])
-                } else {
-                    HashMap::from([(979809924924194846, "C")])
-                };
+                    for prog_role in [
+                        "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
+                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Python", "Ruby", "Rust",
+                        "Ts",
+                    ]
+                    .iter()
+                    {
+                        additional_roles.push(SelectMenuSpec {
+                            label: prog_role,
+                            description: "Discussions",
+                            display_emoji: "📜",
+                            value: prog_role,
+                        });
+                    }
+                    let mut role_choices: Vec<String> = Vec::new();
 
-                mci.create_interaction_response(&ctx.http, |r| {
+                    mci.create_interaction_response(&ctx.http, |r| {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
-
                     r.interaction_response_data(|d| {
                         d.content(
-                            "**__[1/3]__:** Which optional channels would you like to have access to?",
+                            "**[1/3]:** Which additional channels would you like to have access to?",
                         );
                         d.components(|c| {
                             c.create_action_row(|a| {
                                 a.create_select_menu(|s| {
                                     s.placeholder("Select channels (Optional)");
                                     s.options(|o| {
+										for spec in &additional_roles {
+											o.create_option(|opt| {
+												opt.label(spec.label);
+												opt.description(spec.description);
+												opt.emoji(ReactionType::Unicode(spec.display_emoji.to_string()));
+												opt.value(spec.value)
+											});
+										}
                                         o.create_option(|opt| {
-                                            opt.label("Self hosted")
-                                                .description("All about self hosted Gitpod!");
-                                            opt.value(&selfhosted_role)
-                                                .emoji(ReactionType::Unicode("🏡".to_string()));
-                                            opt
-                                        });
-                                        o.create_option(|option| {
-                                            option
-                                                .label("Mobile and tablet")
-                                                .description("Talk about Gitpod on mobile devices");
-                                            option
-                                                .value(&mobile_tablets_role)
-                                                .emoji(ReactionType::Unicode("📱".to_string()));
-                                            option
-                                        });
-                                        o.create_option(|option| {
-                                            option
-                                                .label("Developer Experience")
-                                                .description("All things about DevX");
-                                            option
-                                                .value(&devx_role)
-                                                .emoji(ReactionType::Unicode("✨".to_string()));
-                                            option
-                                        });
-                                        o.create_option(|opt| {
-                                            opt.label("Jetbrains (BETA)").description(
-                                                "Discuss about Jetbrains IDEs for Gitpod!",
-                                            );
-                                            opt.value("jet")
-                                                .emoji(ReactionType::Unicode("🧠".to_string()));
-                                            opt
-                                        });
-                                        o.create_option(|opt| {
-                                            opt.label("[Skip] None of the above")
-                                                .description("I don't want access to any of these")
+                                            opt.label("[Skip] I don't want any!")
+                                                .description("Nopes, I ain't need more.")
                                                 .emoji(ReactionType::Unicode("⏭".to_string()))
                                                 .value("none");
                                             opt
                                         });
                                         o
                                     });
-                                    s.custom_id("channel_choice").max_values(5)
+                                    s.custom_id("channel_choice").max_values(24)
                                 });
                                 a
                             });
@@ -367,166 +367,268 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-                let mut interactions = mci
-                    .get_interaction_response(&ctx.http)
-                    .await
-                    .unwrap()
-                    .await_component_interactions(&ctx)
-                    .timeout(Duration::from_secs(60 * 5))
-                    .await
-                    .boxed();
+                    let mut interactions = mci
+                        .get_interaction_response(&ctx.http)
+                        .await
+                        .unwrap()
+                        .await_component_interactions(&ctx)
+                        .timeout(Duration::from_secs(60 * 5))
+                        .await;
 
-                while let Some(interaction) = interactions.next().await {
-                    match interaction.data.custom_id.as_str() {
-                        "channel_choice" => {
-                            interaction.data.values.iter().for_each(|x| println!("{x}"));
-                            interaction
-                                .create_interaction_response(&ctx.http, |r| {
-                                    r.kind(InteractionResponseType::UpdateMessage)
-                                        .interaction_response_data(|d| {
-                                            d.content("**__[2/3]__:** How did you find Gitpod?");
-                                            d.components(|c| {
-                                                c.create_action_row(|a| {
-                                                    a.create_select_menu(|s| {
-                                                        s.placeholder("Select sources (Optional)");
-                                                        s.options(|o| {
+                    while let Some(interaction) = interactions.next().await {
+                        match interaction.data.custom_id.as_str() {
+                            "channel_choice" => {
+                                interaction.create_interaction_response(&ctx.http, |r| {
+									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
+										d.content("**[2/3]:** Would you like to get notified for announcements and community events?");
+										d.components(|c| {
+											c.create_action_row(|a| {
+												a.create_button(|b|{
+													b.label("Yes!").custom_id("subscribed").style(ButtonStyle::Success)
+												});
+												a.create_button(|b|{
+													b.label("No, thank you!").custom_id("not_subscribed").style(ButtonStyle::Danger)
+												});
+												a
+											})
+										});
+										d
+									})
+								}).await.unwrap();
+
+                                // Save the choices of last interaction
+                                interaction
+                                    .data
+                                    .values
+                                    .iter()
+                                    .for_each(|x| role_choices.push(x.to_string()));
+                            }
+                            "subscribed" | "not_subscribed" => {
+                                interaction.create_interaction_response(&ctx.http, |r| {
+									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
+										d.content("**[2/3]**: You have personalized the server, congrats!").components(|c|c)
+									})
+								}).await.unwrap();
+
+                                // Save the choices of last interaction
+                                let subscribed_role = SelectMenuSpec {
+                                    label: "Subscribed",
+                                    description: "Subscribed to pings",
+                                    display_emoji: "",
+                                    value: "Subscriber",
+                                };
+                                if interaction.data.custom_id == "subscribed" {
+                                    role_choices.push(subscribed_role.value.to_string());
+                                }
+                                additional_roles.push(subscribed_role);
+
+                                let mut poll_entries: Vec<SelectMenuSpec> = Vec::from([
+                                    SelectMenuSpec {
+                                        value: "Found: FromFriend",
+                                        label: "Friend or colleague",
+                                        description:
+                                            "A friend or colleague of mine introduced Gitpod to me",
+                                        display_emoji: "🫂",
+                                    },
+                                    SelectMenuSpec {
+                                        value: "Found: FromGoogle",
+                                        label: "Google",
+                                        description: "I found Gitpod from a Google search",
+                                        display_emoji: "🫂",
+                                    },
+                                    SelectMenuSpec {
+                                        value: "Found: FromYouTube",
+                                        label: "YouTube",
+                                        description: "Saw Gitpod on a Youtube Video",
+                                        display_emoji: "📺",
+                                    },
+                                    SelectMenuSpec {
+                                        value: "Found: FromTwitter",
+                                        label: "Twitter",
+                                        description: "Saw people talking about Gitpod on a Tweet",
+                                        display_emoji: "🐦",
+                                    },
+                                    SelectMenuSpec {
+                                        value: "Found: FromGitRepo",
+                                        label: "Git Repository",
+                                        description: "Found Gitpod on a Git repository",
+                                        display_emoji: "✨",
+                                    },
+                                ]);
+
+                                let followup_interaction = interaction
+                                    .create_followup_message(&ctx.http, |f| {
+                                        f.content("**[3/3]:** How did you find Gitpod?");
+                                        f.components(|c| {
+                                            c.create_action_row(|a| {
+                                                a.create_select_menu(|s| {
+                                                    s.placeholder(
+                                                        "[Poll]: Select sources (Optional)",
+                                                    );
+                                                    s.options(|o| {
+                                                        for spec in &poll_entries {
                                                             o.create_option(|opt| {
-															opt.label("Friend or colleague").description(
-																"A friend or colleague of mine introduced Gitpod to me",
-															);
-															opt.value("friend").emoji(
-																ReactionType::Unicode("🫂".to_string()),
-															);
-															opt
-														});
-                                                            o.create_option(|opt| {
-                                                                opt.label("Google").description(
-																	"I found Gitpod from a Google search",
-																);
-                                                                opt.value("google").emoji(
-                                                                    ReactionType::Unicode(
-                                                                        "🔎".to_string(),
-                                                                    ),
-                                                                );
+                                                                opt.label(spec.label);
+                                                                opt.description(spec.description);
+                                                                opt.emoji(ReactionType::Unicode(
+                                                                    spec.display_emoji.to_string(),
+                                                                ));
+                                                                opt.value(spec.value);
                                                                 opt
                                                             });
-                                                            o.create_option(|option| {
-                                                                option
-                                                                    .label("YouTube")
-                                                                    .description(
-                                                                    "Saw Gitpod on a Youtube Video",
-                                                                );
-                                                                option.value("yt").emoji(
-                                                                    ReactionType::Unicode(
-                                                                        "📱".to_string(),
-                                                                    ),
-                                                                );
-                                                                option
-                                                            });
-                                                            o.create_option(|option| {
-                                                                option.label("GitHub").description(
-																	"Found Gitpod on a GitHub repository",
-																);
-                                                                option.value("gt").emoji(
-                                                                    ReactionType::Unicode(
-                                                                        "✨".to_string(),
-                                                                    ),
-                                                                );
-                                                                option
-                                                            });
-                                                            o.create_option(|opt| {
-                                                                opt.label(
-                                                                    "Other/prefer not to share",
-                                                                )
+                                                        }
+                                                        o.create_option(|opt| {
+                                                            opt.label("[Skip] Prefer not to share")
                                                                 .value("none")
                                                                 .emoji(ReactionType::Unicode(
                                                                     "⏭".to_string(),
                                                                 ));
-                                                                opt
-                                                            });
-                                                            o
+                                                            opt
                                                         });
-                                                        s.custom_id("found_gitpod_from")
-                                                            .max_values(4)
+                                                        o
                                                     });
-                                                    a
+                                                    s.custom_id("found_gitpod_from").max_values(5)
                                                 });
-                                                c
+                                                a
                                             });
-                                            d.custom_id("bruh").flags(
-												InteractionApplicationCommandCallbackDataFlags::EPHEMERAL,
-											)
+                                            c
+                                        });
+                                        f.flags(
+										InteractionApplicationCommandCallbackDataFlags::EPHEMERAL,
+									)
+                                    })
+                                    .await
+                                    .unwrap();
+
+                                if let Some(i) = interaction
+                                    .get_followup_message(&ctx.http, followup_interaction.id)
+                                    .await
+                                    .unwrap()
+                                    .await_component_interaction(&ctx)
+                                    .timeout(Duration::from_secs(60 * 5))
+                                    .await
+                                {
+                                    i.create_interaction_response(&ctx.http, |r| {
+                                        r.kind(InteractionResponseType::UpdateMessage)
+                                            .interaction_response_data(|d| {
+                                                d.content(format!(
+                                            "Thank you {}! Now, please go {} to unlock the server!",
+                                            interaction.user.mention(),
+                                            INTRODUCTION_CHANNEL.mention()
+                                        ))
+                                                .components(|c| c)
+                                            })
+                                    })
+                                    .await
+                                    .unwrap();
+                                    i.data
+                                        .values
+                                        .iter()
+                                        .for_each(|x| role_choices.push(x.to_string()));
+
+                                    let mut member = mci.member.clone().unwrap();
+                                    if let Some(roles) = member.roles(&ctx.cache).await {
+                                        // Remove all assignable roles first
+                                        let mut all_assignable_roles: Vec<SelectMenuSpec> =
+                                            Vec::new();
+                                        all_assignable_roles.append(&mut additional_roles);
+                                        all_assignable_roles.append(&mut poll_entries);
+
+                                        for role in roles {
+                                            if all_assignable_roles
+                                                .iter()
+                                                .any(|x| x.value == role.name)
+                                            {
+                                                member
+                                                    .remove_role(&ctx.http, role.id)
+                                                    .await
+                                                    .unwrap();
+                                            }
+                                        }
+                                    }
+
+                                    // Assign the roles
+                                    // Todo: Provide clear errors to the user if anything goes wrong
+                                    if role_choices.len() > 1
+                                        || !role_choices.iter().any(|x| x == "none")
+                                    {
+                                        // Is bigger than a single choice or doesnt contain none
+                                        for role_name in role_choices {
+                                            if role_name == "none" {
+                                                continue;
+                                            }
+                                            let role = {
+                                                if let Some(result) = mci
+                                                    .guild_id
+                                                    .unwrap()
+                                                    .to_partial_guild(&ctx.http)
+                                                    .await
+                                                    .unwrap()
+                                                    .role_by_name(role_name.as_str())
+                                                {
+                                                    result.clone()
+                                                } else {
+                                                    let r = mci
+                                                        .guild_id
+                                                        .unwrap()
+                                                        .create_role(&ctx.http, |r| {
+                                                            r.name(&role_name);
+                                                            r.mentionable(false);
+                                                            r.hoist(false);
+                                                            r
+                                                        })
+                                                        .await
+                                                        .unwrap();
+                                                    r.clone()
+                                                }
+                                            };
+                                            role.edit(&ctx.http, |r| {
+                                                r.permissions(Permissions::empty())
+                                            })
+                                            .await
+                                            .unwrap();
+                                            member.add_role(&ctx.http, role.id).await.unwrap();
+                                        }
+                                    }
+
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {
+                    // If a Question thread suggestion was clicked
+                    if mci.data.custom_id.starts_with("http") {
+                        mci.create_interaction_response(&ctx.http, |r| {
+                            r.kind(InteractionResponseType::ChannelMessageWithSource)
+                                .interaction_response_data(|d| {
+                                    d.components(|c| {
+                                        c.create_action_row(|a| {
+                                            a.create_button(|b| {
+                                                b.label("Open link")
+                                                    .url(&mci.data.custom_id)
+                                                    .style(ButtonStyle::Link)
+                                            })
                                         })
+                                    })
+                                    .flags(
+                                        InteractionApplicationCommandCallbackDataFlags::EPHEMERAL,
+                                    )
                                 })
-                                .await
-                                .unwrap();
-                        }
-                        "found_gitpod_from" => {
-                            interaction.create_interaction_response(&ctx.http, |r| {
-								r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
-									d.content("**__[3/3]__:** Would you like to get notified for announcements and community events?");
-									d.components(|c| {
-										c.create_action_row(|a| {
-											a.create_button(|b|{
-												b.label("Yes!").custom_id("subscribed").style(ButtonStyle::Success)
-											});
-											a.create_button(|b|{
-												b.label("No, thank you!").custom_id("not_subscribed").style(ButtonStyle::Danger)
-											});
-											a
-										})
-									});
-									d
-								})
-							}).await.unwrap();
-                        }
-                        "subscribed" | "not_subscribed" => {
-                            interaction
-                                .create_interaction_response(&ctx.http, |r| {
-                                    r.kind(InteractionResponseType::UpdateMessage)
-                                        .interaction_response_data(|d| {
-                                            d.content(format!(
-                                                "Thank you {}! Now, please go to {} and say hi!",
-                                                interaction.user.mention(),
-                                                INTRODUCTION_CHANNEL.mention()
-                                            ))
-                                            .components(|c| c)
-                                        })
-                                })
-                                .await
-                                .unwrap();
-                        }
-                        _ => {}
+                        })
+                        .await
+                        .unwrap();
+
+                        mci.message
+                            .react(&ctx.http, ReactionType::Unicode("🔎".to_string()))
+                            .await
+                            .unwrap();
                     }
                 }
             }
-            _ => {
-                if mci.data.custom_id.starts_with("http") {
-                    mci.create_interaction_response(&ctx.http, |r| {
-                        r.kind(InteractionResponseType::ChannelMessageWithSource)
-                            .interaction_response_data(|d| {
-                                d.components(|c| {
-                                    c.create_action_row(|a| {
-                                        a.create_button(|b| {
-                                            b.label("Open link")
-                                                .url(&mci.data.custom_id)
-                                                .style(ButtonStyle::Link)
-                                        })
-                                    })
-                                })
-                                .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
-                            })
-                    })
-                    .await
-                    .unwrap();
-
-                    mci.message
-                        .react(&ctx.http, ReactionType::Unicode("🔎".to_string()))
-                        .await
-                        .unwrap();
-                }
-            }
-        },
+        }
         Interaction::ApplicationCommand(mci) => {
             if mci.data.name == "close" {
                 let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
@@ -808,6 +910,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 						m
 					}
 				).await.unwrap();
+                thread_typing.stop().unwrap();
             }
             // if !relevant_links.is_empty() {
             //     thread
