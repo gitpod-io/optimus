@@ -80,9 +80,11 @@ async fn get_role(mci: &MessageComponentInteraction, ctx: &Context, name: &str) 
             r.clone()
         }
     };
-    role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
-        .await
-        .unwrap();
+	if role.name != "Member" {
+		role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
+			.await
+			.unwrap();
+	}
 
     role
 }
