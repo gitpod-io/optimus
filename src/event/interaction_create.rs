@@ -713,6 +713,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                             )
                                                             .await
                                                             .unwrap();
+													
+														msg.react(&ctx.http, ReactionType::Unicode("👋".to_string())).await.unwrap();
 
                                                     let general_channel = if cfg!(debug_assertions) {
                                                         ChannelId(947769443516284943)
