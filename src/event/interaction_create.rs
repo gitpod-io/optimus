@@ -355,10 +355,22 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 "gitpod_close_issue" => close_issue(&mci, ctx).await,
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
+						SelectMenuSpec {
+							value: "JetBrainsIDEs",
+							description: "Discuss about Jetbrains IDEs for Gitpod!",
+							label: "JetBrains (BETA)",
+							display_emoji: "🧠",
+						},
+						SelectMenuSpec {
+							value: "DevX",
+							description: "All things about DevX",
+							label: "Developer Experience",
+							display_emoji: "✨",
+						},
                         SelectMenuSpec {
                             value: "SelfHosted",
-                            description: "All about self hosted Gitpod!",
-                            label: "Self Hosted",
+                            description: "Do you selfhost Gitpod? Then you need this!",
+                            label: "Self Hosted Gitpod",
                             display_emoji: "🏡",
                         },
                         SelectMenuSpec {
@@ -366,18 +378,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             description: "Talk about using Gitpod on mobile devices",
                             label: "Mobile and tablets",
                             display_emoji: "📱",
-                        },
-                        SelectMenuSpec {
-                            value: "DevX",
-                            description: "All things about DevX",
-                            label: "Developer Experience",
-                            display_emoji: "✨",
-                        },
-                        SelectMenuSpec {
-                            value: "JetBrainsIDEs",
-                            description: "Discuss about Jetbrains IDEs for Gitpod!",
-                            label: "JetBrains (BETA)",
-                            display_emoji: "🧠",
                         },
                     ]);
 
@@ -400,7 +400,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
                     r.interaction_response_data(|d| {
                         d.content(
-                            "**[1/3]:** Which additional channels would you like to have access to?",
+                            "**[1/4]:** Which additional channels would you like to have access to?",
                         );
                         d.components(|c| {
                             c.create_action_row(|a| {
@@ -451,7 +451,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             "channel_choice" => {
                                 interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
-										d.content("**[2/3]:** Would you like to get notified for announcements and community events?");
+										d.content("**[2/4]:** Would you like to get notified for announcements and community events?");
 										d.components(|c| {
 											c.create_action_row(|a| {
 												a.create_button(|b|{
@@ -475,23 +475,55 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .for_each(|x| role_choices.push(x.to_string()));
                             }
                             "subscribed" | "not_subscribed" => {
-                                interaction.create_interaction_response(&ctx.http, |r| {
+								interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
-										d.content("**[2/3]**: You have personalized the server, congrats!").components(|c|c)
+										d.content("**[3/4]:** Why did you join our community?\nI will point you to the correct channels with this info.").components(|c| {
+											c.create_action_row(|a| {
+												a.create_button(|b|{
+													b.label("To hangout with others");
+													b.style(ButtonStyle::Secondary);
+													b.emoji(ReactionType::Unicode("🏄".to_string()));
+													b.custom_id("hangout")
+												});
+												a.create_button(|b|{
+													b.label("To get help with Gitpod.io");
+													b.style(ButtonStyle::Secondary);
+													b.emoji(ReactionType::Unicode("✌️".to_string()));
+													b.custom_id("gitpodio_help")
+												});
+												a.create_button(|b|{
+													b.label("To get help with my selfhosted installation");
+													b.style(ButtonStyle::Secondary);
+													b.emoji(ReactionType::Unicode("🏡".to_string()));
+													b.custom_id("selfhosted_help")
+												});
+												a
+											})
+										})
 									})
 								}).await.unwrap();
 
-                                // Save the choices of last interaction
-                                let subscribed_role = SelectMenuSpec {
-                                    label: "Subscribed",
-                                    description: "Subscribed to pings",
-                                    display_emoji: "",
-                                    value: "Subscriber",
-                                };
-                                if interaction.data.custom_id == "subscribed" {
-                                    role_choices.push(subscribed_role.value.to_string());
-                                }
-                                additional_roles.push(subscribed_role);
+								// Save the choices of last interaction
+								let subscribed_role = SelectMenuSpec {
+									label: "Subscribed",
+									description: "Subscribed to pings",
+									display_emoji: "",
+									value: "Subscriber",
+								};
+								if interaction.data.custom_id == "subscribed" {
+									role_choices.push(subscribed_role.value.to_string());
+								}
+								additional_roles.push(subscribed_role);
+							}
+							"hangout" | "gitpodio_help" | "selfhosted_help" => {
+                                interaction.create_interaction_response(&ctx.http, |r| {
+									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
+										d.content("**[3/4]**: You have personalized the server, congrats!").components(|c|c)
+									})
+								}).await.unwrap();
+
+								// Save join reason
+								let join_reason = &interaction.data.custom_id;
 
                                 let mut poll_entries: Vec<SelectMenuSpec> = Vec::from([
                                     SelectMenuSpec {
@@ -563,7 +595,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                 let followup_interaction = interaction
                                     .create_followup_message(&ctx.http, |f| {
-                                        f.content("**[3/3]:** How did you find Gitpod?");
+                                        f.content("**[4/4]:** How did you find Gitpod?");
                                         f.components(|c| {
                                             c.create_action_row(|a| {
                                                 a.create_select_menu(|s| {
@@ -735,24 +767,45 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                         .unwrap()
                                                         .id;
 
+													let selfhosted_questions_channel = if cfg!(debug_assertions) {
+														ChannelId(947769443793141761)
+													} else {
+														ChannelId(879915120510267412)
+													};
+
+													let mut prepared_msg = MessageBuilder::new();
+													prepared_msg.push_line(format!(
+														"Welcome to the Gitpod community {} 🙌\n",
+														&msg.author.mention()
+													));
+													match join_reason.as_str() {
+														"gitpodio_help" => {
+															prepared_msg.push_line(
+																format!("**You mentioned that** you need help with Gitpod.io, please ask in {}",
+																			&questions_channel.mention())
+															);
+														}
+														"selfhosted_help" => {
+															let selfhosted_role = get_role(&mci, ctx, "SelfHosted").await;
+															member.add_role(&ctx.http, selfhosted_role.id).await.unwrap();
+															prepared_msg.push_line(
+																format!("**You mentioned that** you need help with selfhosted, please ask in {}",
+																			&selfhosted_questions_channel.mention())
+															);	
+														}
+														_=> {}
+													}
+													prepared_msg.push_bold_line("\nHere are some channels that you should check out:")
+													.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
+													.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
+													.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
+													.push_line("…And there’s more! Take your time to explore :)\n")
+													.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
+													.push_quote_line("• https://www.gitpod.io/community")
+													.push_quote_line("• https://www.gitpod.io/about");
                                                     let mut thread_msg =thread
                                                         .send_message(&ctx.http, |t| {
-                                                            let mut prepared_msg = MessageBuilder::new();
-
-                                                        prepared_msg.push_line(format!(
-															"It’s awesome that you’re here, {}!",
-															&msg.author.name
-														)).push_line("Welcome to the Gitpod community 🙌\n")
-														.push_bold_line("Here are some channels that you should check out:")
-														.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", general_channel.mention()))
-														.push_quote_line(format!("• {} - for any random discussions ☕️", offtopic_channel.mention()))
-														.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", questions_channel.mention()))
-														.push_line("…And there’s more! Take your time to explore :)\n")
-														.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
-														.push_quote_line("• https://www.gitpod.io/community")
-														.push_quote_line("• https://www.gitpod.io/about");
-                                                            t.content(prepared_msg);
-                                                            t
+                                                            t.content(prepared_msg)
                                                         })
                                                         .await
                                                         .unwrap();
