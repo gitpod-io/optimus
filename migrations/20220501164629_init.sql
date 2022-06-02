@@ -9,11 +9,7 @@ CREATE TABLE IF NOT EXISTS server_config (
 
 CREATE TABLE IF NOT EXISTS user_profile (
 	user_id INTEGER PRIMARY KEY,
-	programming_langs TEXT,
-	spoken_langs TEXT,
-	subscribed INTEGER,
-	found_gitpod_from TEXT,
-	name_history TEXT
+	roles TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS pending_questions (

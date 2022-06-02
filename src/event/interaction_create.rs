@@ -1,7 +1,7 @@
 use std::{collections::HashMap};
 
 use super::*;
-use crate::db::ClientContextExt;
+use crate::db::{ClientContextExt};
 
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,11 @@ use serenity::{
             message_component::MessageComponentInteraction,
             InteractionApplicationCommandCallbackDataFlags,
         },
-        Permissions,
+        Permissions, id::RoleId,
     },
     utils::{read_image, MessageBuilder},
 };
-use tokio::time::sleep;
+
 use urlencoding::encode;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -230,6 +230,7 @@ async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choi
 	if role_choices.len() > 1
 	|| !role_choices.iter().any(|x| x == "none")
 {
+	let mut role_ids: Vec<RoleId> = Vec::new();
 	// Is bigger than a single choice or doesnt contain none
 	for role_name in role_choices {
 		if role_name == "none" {
@@ -243,7 +244,10 @@ async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choi
 			.add_role(&ctx.http, role.id)
 			.await
 			.unwrap();
+		role_ids.push(role.id);
 	}
+	let db = &ctx.get_db().await;
+	db.set_user_roles(mci.user.id, role_ids).await.unwrap();
 }
 
 // Remove the temp role from user
@@ -561,8 +565,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
 								let mut member = mci.member.clone().unwrap();
 								let temp_role = get_role(&mci, ctx, "Temp").await;
-								member.add_role(&ctx.http, temp_role.id).await.unwrap();
-
      							let never_introduced = {
 
 									let mut status = true;
@@ -572,23 +574,21 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										status = !roles.into_iter().any(|x|x == member_role || x == gitpodder_role);
 
 									}
-									
 									if status {
+									
+										let mut count = 0;
 										if let Ok(intro_msgs) = &ctx
 													   .http
 													   .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-													   .await
-										{
-											let mut count = 0;
-											intro_msgs.iter().for_each(|x| {
-												if x.author == interaction.user {
-													count += 1;
-												}
-											});
-											
-											status = count < 1;
+													   .await {
+														   intro_msgs.iter().for_each(|x| {
+															   if x.author == interaction.user {
+																   count += 1;
+															   }
+														   });
 										}
-
+										
+										status = count < 1;
 									}
 									status
 								 };
@@ -639,6 +639,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .unwrap();
 
 							
+								member.add_role(&ctx.http, temp_role.id).await.unwrap();
                                 if let Some(i) = interaction
                                     .get_followup_message(&ctx.http, followup_interaction.id)
                                     .await
@@ -667,48 +668,9 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     })
                                     .await
                                     .unwrap();
-                                    i.data
-                                        .values
-                                        .iter()
-                                        .for_each(|x| role_choices.push(x.to_string()));
-
-                                    // Add the additional member role
-                                    additional_roles.push(SelectMenuSpec {
-                                        label: "Member",
-                                        value: "Member",
-                                        description: "",
-                                        display_emoji: "",
-                                    });
-                                  
-
-                                    // Remove old roles
-                                    if let Some(roles) = member.roles(&ctx.cache).await {
-                                        // Remove all assignable roles first
-                                        let mut all_assignable_roles: Vec<SelectMenuSpec> =
-                                            Vec::new();
-                                        all_assignable_roles.append(&mut additional_roles);
-                                        all_assignable_roles.append(&mut poll_entries);
-
-                                        for role in roles {
-                                            if all_assignable_roles
-                                                .iter()
-                                                .any(|x| x.value == role.name)
-                                            {
-                                                member
-                                                    .remove_role(&ctx.http, role.id)
-                                                    .await
-                                                    .unwrap();
-                                            }
-                                        }
-                                    }
-
-							
+                                
 								
-									if never_introduced {
-
-									
-                                    // Add temp role for intro
-
+								if never_introduced {
                                     // Wait for the submittion on INTRODUCTION_CHANNEL
                                     if let Some(msg) = mci
                                         .user
@@ -718,126 +680,150 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     {
                                         // Watch intro channel
                                         if msg.channel_id == INTRODUCTION_CHANNEL {
-                                            if let Ok(intro_msgs) = &ctx
-                                                .http
-                                                .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-                                                .await
-                                            {
-                                                let mut count = 0;
-                                                intro_msgs.iter().for_each(|x| {
-                                                    if x.author == msg.author {
-                                                        count += 1;
-                                                    }
-                                                });
+											// let mut count = 0;
+											// intro_msgs.iter().for_each(|x| {
+											// 	if x.author == msg.author {
+											// 		count += 1;
+											// 	}
+											// });
 
-                                                if count <= 1 {
-                                                    let thread =
-                                                        msg.channel_id
-                                                            .create_public_thread(
-                                                                &ctx.http,
-                                                                &msg.id,
-                                                                |t| {
-                                                                    t.auto_archive_duration(1440)
-                                                                        .name(format!(
-                                                                            "Welcome {}!",
-                                                                            msg.author.name
-                                                                        ))
-                                                                },
-                                                            )
-                                                            .await
-                                                            .unwrap();
-													
-														msg.react(&ctx.http, ReactionType::Unicode("👋".to_string())).await.unwrap();
+											// if count <= 1 {
+												let thread =
+													msg.channel_id
+														.create_public_thread(
+															&ctx.http,
+															&msg.id,
+															|t| {
+																t.auto_archive_duration(1440)
+																	.name(format!(
+																		"Welcome {}!",
+																		msg.author.name
+																	))
+															},
+														)
+														.await
+														.unwrap();
+												
+													msg.react(&ctx.http, ReactionType::Unicode("👋".to_string())).await.unwrap();
 
-                                                    let general_channel = if cfg!(debug_assertions) {
-                                                        ChannelId(947769443516284943)
-													} else {
-														ChannelId(839379835662368768)
-													};
-                                                    let offtopic_channel = if cfg!(debug_assertions) {
-                                                        ChannelId(947769443793141769)
-													} else {
-														ChannelId(972510491933032508)
-													};
-                                                    let db = &ctx.get_db().await;
-                                                    let questions_channel =
-                                                        db.get_question_channels().await.unwrap();
-                                                    let questions_channel = questions_channel
-                                                        .into_iter()
-                                                        .next()
-                                                        .unwrap()
-                                                        .id;
+												let general_channel = if cfg!(debug_assertions) {
+													ChannelId(947769443516284943)
+												} else {
+													ChannelId(839379835662368768)
+												};
+												let offtopic_channel = if cfg!(debug_assertions) {
+													ChannelId(947769443793141769)
+												} else {
+													ChannelId(972510491933032508)
+												};
+												let db = &ctx.get_db().await;
+												let questions_channel =
+													db.get_question_channels().await.unwrap();
+												let questions_channel = questions_channel
+													.into_iter()
+													.next()
+													.unwrap()
+													.id;
 
-													let selfhosted_questions_channel = if cfg!(debug_assertions) {
-														ChannelId(947769443793141761)
-													} else {
-														ChannelId(879915120510267412)
-													};
+												let selfhosted_questions_channel = if cfg!(debug_assertions) {
+													ChannelId(947769443793141761)
+												} else {
+													ChannelId(879915120510267412)
+												};
 
-													let mut prepared_msg = MessageBuilder::new();
-													prepared_msg.push_line(format!(
-														"Welcome to the Gitpod community {} 🙌\n",
-														&msg.author.mention()
-													));
-													match join_reason.as_str() {
-														"gitpodio_help" => {
-															prepared_msg.push_line(
-																format!("**You mentioned that** you need help with Gitpod.io, please ask in {}",
-																			&questions_channel.mention())
-															);
-														}
-														"selfhosted_help" => {
-															let selfhosted_role = get_role(&mci, ctx, "SelfHosted").await;
-															member.add_role(&ctx.http, selfhosted_role.id).await.unwrap();
-															prepared_msg.push_line(
-																format!("**You mentioned that** you need help with selfhosted, please ask in {}",
-																			&selfhosted_questions_channel.mention())
-															);	
-														}
-														_=> {}
+												let mut prepared_msg = MessageBuilder::new();
+												prepared_msg.push_line(format!(
+													"Welcome to the Gitpod community {} 🙌\n",
+													&msg.author.mention()
+												));
+												match join_reason.as_str() {
+													"gitpodio_help" => {
+														prepared_msg.push_line(
+															format!("**You mentioned that** you need help with Gitpod.io, please ask in {}\n",
+																		&questions_channel.mention())
+														);
 													}
-													prepared_msg.push_bold_line("\nHere are some channels that you should check out:")
-													.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
-													.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
-													.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
-													.push_line("…And there’s more! Take your time to explore :)\n")
-													.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
-													.push_quote_line("• https://www.gitpod.io/community")
-													.push_quote_line("• https://www.gitpod.io/about");
-                                                    let mut thread_msg =thread
-                                                        .send_message(&ctx.http, |t| {
-                                                            t.content(prepared_msg)
-                                                        })
-                                                        .await
-                                                        .unwrap();
-                                                    thread_msg
-                                                        .suppress_embeds(&ctx.http)
-                                                        .await
-                                                        .unwrap();
-                                                } else {
-                                                    let warn_msg = msg
-													.reply_mention(
-														&ctx.http,
-														"Please reply in threads above instead of here",
-													)
+													"selfhosted_help" => {
+														let selfhosted_role = get_role(&mci, ctx, "SelfHosted").await;
+														member.add_role(&ctx.http, selfhosted_role.id).await.unwrap();
+														prepared_msg.push_line(
+															format!("**You mentioned that** you need help with selfhosted, please ask in {}\n",
+																		&selfhosted_questions_channel.mention())
+														);	
+													}
+													_=> {}
+												}
+												prepared_msg.push_bold_line("Here are some channels that you should check out:")
+												.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
+												.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
+												.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
+												.push_line("…And there’s more! Take your time to explore :)\n")
+												.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
+												.push_quote_line("• https://www.gitpod.io/community")
+												.push_quote_line("• https://www.gitpod.io/about");
+												let mut thread_msg =thread
+													.send_message(&ctx.http, |t| {
+														t.content(prepared_msg)
+													})
 													.await
 													.unwrap();
-                                                    sleep(Duration::from_secs(10)).await;
-                                                    warn_msg.delete(&ctx.http).await.unwrap();
-                                                    msg.delete(&ctx.http).await.ok();
-                                                }
+												thread_msg
+													.suppress_embeds(&ctx.http)
+													.await
+													.unwrap();
+											// } else {
+											// 	let warn_msg = msg
+											// 	.reply_mention(
+											// 		&ctx.http,
+											// 		"Please reply in threads above instead of here",
+											// 	)
+											// 	.await
+											// 	.unwrap();
+											// 	sleep(Duration::from_secs(10)).await;
+											// 	warn_msg.delete(&ctx.http).await.unwrap();
+											// 	msg.delete(&ctx.http).await.ok();
+											// }
 
-                                                // Assign the roles
-                                                // Todo: Provide clear errors to the user if anything goes wrong
-												assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
+							
+										
+                                        }
+                                    }
+								}
+									i.data
+									.values
+									.iter()
+									.for_each(|x| role_choices.push(x.to_string()));
+
+									// Remove old roles
+									if let Some(roles) = member.roles(&ctx.cache).await {
+										// Remove all assignable roles first
+                                        let mut all_assignable_roles: Vec<SelectMenuSpec> =
+										Vec::new();
+                                        all_assignable_roles.append(&mut additional_roles);
+                                        all_assignable_roles.append(&mut poll_entries);
+										
+                                        for role in roles {
+											if all_assignable_roles
+											.iter()
+											.any(|x| x.value == role.name)
+                                            {
+												member
+												.remove_role(&ctx.http, role.id)
+												.await
+												.unwrap();
                                             }
                                         }
                                     }
-								} else {
-									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
-								}
 
-									member.remove_role(&ctx.http, &temp_role.id).await.unwrap();
+									// Add the additional member role
+									additional_roles.push(SelectMenuSpec {
+										label: "Member",
+										value: "Member",
+										description: "",
+										display_emoji: "",
+									});
+							  
+									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
                                     break;
                                 }
                             }

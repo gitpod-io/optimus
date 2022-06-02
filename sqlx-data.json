@@ -10,6 +10,16 @@
     },
     "query": "delete from pending_questions where user_id=? and channel_id=?"
   },
+  "107d8b6c30bdeac2d87b3a0686b70e7578f8f2ecd0c7397ab31433937981f7b4": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "insert into user_profile (user_id, roles) values (?1, ?2) on conflict(user_id) do update set roles=?2"
+  },
   "2b04b15cee6a9d06e9f298196ecd769c972e670390e3a4e621ee33be2426b988": {
     "describe": {
       "columns": [
@@ -37,6 +47,30 @@
       }
     },
     "query": "insert into pending_questions(user_id, channel_id, message_contents) values(?, ?, ?)"
+  },
+  "6773e151b3d1ef02167e6656fe049995f6d81e24143e1e3370f0b345383a6fb1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "roles",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select * from user_profile where user_id=?"
   },
   "7772de7a400a310c22b7fa80530396cba82b6523147c1fa5b92b5fd740a927ec": {
     "describe": {
