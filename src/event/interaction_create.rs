@@ -226,7 +226,7 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
         .unwrap();
 }
 
-async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choices: Vec<String>, mut member: Member, temp_role: Role) {
+async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choices: Vec<String>, member: &mut Member, temp_role: &Role) {
 	if role_choices.len() > 1
 	|| !role_choices.iter().any(|x| x == "none")
 {
@@ -713,7 +713,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     if let Some(msg) = mci
                                         .user
                                         .await_reply(&ctx)
-                                        .timeout(Duration::from_secs((60 * 60) * 12))
+                                        .timeout(Duration::from_secs(60 * 30))
                                         .await
                                     {
                                         // Watch intro channel
@@ -829,14 +829,15 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                                 // Assign the roles
                                                 // Todo: Provide clear errors to the user if anything goes wrong
-												assign_roles(&mci, ctx, role_choices, member, temp_role).await;
+												assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
                                             }
                                         }
                                     }
 								} else {
-									assign_roles(&mci, ctx, role_choices, member, temp_role).await;
+									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
 								}
 
+									member.remove_role(&ctx.http, &temp_role.id).await.unwrap();
                                     break;
                                 }
                             }
