@@ -568,7 +568,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 									let mut status = true;
 									 if let Some(roles) = member.roles(&ctx.cache).await {
 										let member_role = get_role(&mci, ctx, "Member").await;
-										status = !roles.into_iter().any(|x|x == member_role);
+										let gitpodder_role = get_role(&mci, ctx, "Gitpodders").await;
+										status = !roles.into_iter().any(|x|x == member_role || x == gitpodder_role);
 
 									}
 									
