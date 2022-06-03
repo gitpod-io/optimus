@@ -11,7 +11,7 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
     }
     let react_data = &_added_reaction.message(&_ctx.http).await.unwrap();
 
-    let is_self_msg = &react_data.is_own(&_ctx.cache).await;
+    let is_self_msg = &react_data.is_own(&_ctx.cache);
     // let reactions_count = react_data.reactions.iter().count();
     let reactions = &react_data.reactions;
 
@@ -93,7 +93,6 @@ pub async fn responder(_ctx: Context, _added_reaction: Reaction) {
                 for role in roles {
                     if role
                         .to_role_cached(&_ctx.cache)
-                        .await
                         .map_or(false, |r| r.has_permission(Permissions::ADMINISTRATOR))
                     {
                         got_admin = true;

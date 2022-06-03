@@ -20,8 +20,8 @@ pub async fn editlog(_ctx: &Context, _msg: &Message) -> CommandResult {
                     .await
                     .replace("---MSG_TYPE---", "Edited:"),
                 &settings,
-            )
-            .await;
+                &[],
+            );
 
             ref_msg
                 .as_ref()

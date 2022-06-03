@@ -21,7 +21,6 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
         let user_data = &_ctx
             .cache
             .guild(guid)
-            .await
             .unwrap()
             .member(&_ctx.http, user)
             .await

@@ -39,7 +39,6 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
     let user_status = _ctx
         .cache
         .guild(*guild_id.as_u64())
-        .await
         .unwrap()
         .presences;
 

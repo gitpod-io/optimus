@@ -1,6 +1,6 @@
 use super::*;
 use crate::db::{ClientContextExt, Db};
-use serenity::{model::id::UserId};
+use serenity::model::id::UserId;
 use tokio::time::sleep;
 
 impl Db {
@@ -63,7 +63,7 @@ pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
     //
     // Log messages
     //
-    if !_msg.is_own(&ctx.cache).await {
+    if !_msg.is_own(&ctx.cache) {
         let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
         let attc = &_msg.attachments;
@@ -75,18 +75,18 @@ pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
         }
 
         // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
-        dbnode_msgcache
-            .save_msg(
-                &_msg.id,
-                format!(
-                    "{}{}\n> ---MSG_TYPE--- {} `||` At: {}",
-                    &_msg.content,
-                    &_attachments,
-                    &_msg.author,
-                    &_msg.timestamp.format("%H:%M:%S %p")
-                ),
-            )
-            .await;
+        // dbnode_msgcache
+        //     .save_msg(
+        //         &_msg.id,
+        //         format!(
+        //             "{}{}\n> ---MSG_TYPE--- {} `||` At: {}",
+        //             &_msg.content,
+        //             &_attachments,
+        //             &_msg.author,
+        //             &_msg.timestamp.format("%H:%M:%S %p")
+        //         ),
+        //     )
+        //     .await;
 
         // Pending questions logging
         if !_msg.author.bot {

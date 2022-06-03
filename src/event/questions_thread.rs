@@ -18,7 +18,7 @@ pub async fn responder(_ctx: &Context) {
 
         let last_msg_id = last_msg_id.first();
 
-        if last_msg_id.is_some() && last_msg_id.unwrap().is_own(&_ctx.cache).await {
+        if last_msg_id.is_some() && last_msg_id.unwrap().is_own(&_ctx.cache) {
             continue;
         }
 

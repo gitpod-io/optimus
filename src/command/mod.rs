@@ -1,5 +1,5 @@
 mod about;
-mod am_i_admin;
+// mod am_i_admin;
 mod av;
 mod bash;
 pub mod config;
@@ -14,7 +14,7 @@ mod ping;
 mod say;
 mod some_long_command;
 mod status;
-mod whois;
+// mod whois;
 
 // Import commands
 use about::*;
@@ -30,7 +30,7 @@ use math::*;
 use owner_check::*;
 use say::*;
 use status::*;
-use whois::*;
+// use whois::*;
 
 use crate::db::{ClientContextExt, Db};
 use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
@@ -86,7 +86,7 @@ impl TypeMapKey for CommandCounter {
     // bashget,
     // ping,
     latency,
-    whois,
+    // whois,
     av,
     status,
     invite,

@@ -38,7 +38,7 @@ pub async fn responder(
         .await
         .unwrap();
 
-    let gg = &_ctx.cache.guild(_guild_id.unwrap()).await.unwrap();
+    let gg = &_ctx.cache.guild(_guild_id.unwrap()).unwrap();
 
     let nqn_exists = &gg.member(&_ctx.http, 559426966151757824).await;
 
@@ -124,7 +124,7 @@ pub async fn responder(
         // }
         // End alert
 
-        let mut content = content_safe(&_ctx.cache, &deleted_message, &settings).await;
+        let mut content = content_safe(&_ctx.cache, &deleted_message, &settings, &[]);
 
         let mut proxied_content_attachments = Vec::new();
         let mut content_attachments = Vec::new();

@@ -1,11 +1,11 @@
 // mod getting_started;
 mod guild_create;
-mod guild_member_addition;
+// mod guild_member_addition;
 mod guild_member_removal;
 mod interaction_create;
 mod message;
 mod message_delete;
-mod message_update;
+// mod message_update;
 pub mod questions_thread;
 mod reaction_add;
 mod ready;
@@ -95,15 +95,15 @@ impl EventHandler for Listener {
         message_delete::responder(_ctx, _channel_id, _deleted_message_id, _guild_id).await;
     }
 
-    async fn message_update(
-        &self,
-        _ctx: Context,
-        _old_if_available: Option<Message>,
-        _new: Option<Message>,
-        _event: MessageUpdateEvent,
-    ) {
-        message_update::responder(_ctx, _old_if_available, _new, _event).await;
-    }
+    // async fn message_update(
+    //     &self,
+    //     _ctx: Context,
+    //     _old_if_available: Option<Message>,
+    //     _new: Option<Message>,
+    //     _event: MessageUpdateEvent,
+    // ) {
+    //     message_update::responder(_ctx, _old_if_available, _new, _event).await;
+    // }
 
     async fn thread_create(&self, _ctx: Context, _thread: GuildChannel) {
         _thread.id.join_thread(&_ctx.http).await.unwrap();
@@ -118,9 +118,9 @@ impl EventHandler for Listener {
         ready::responder(&_ctx, ready).await;
     }
 
-    async fn guild_member_addition(&self, _ctx: Context, _guild_id: GuildId, _new_member: Member) {
-        guild_member_addition::responder(_ctx, _guild_id, _new_member).await;
-    }
+    // async fn guild_member_addition(&self, _ctx: Context, _guild_id: GuildId, _new_member: Member) {
+    //     guild_member_addition::responder(_ctx, _guild_id, _new_member).await;
+    // }
 
     async fn guild_member_removal(
         &self,

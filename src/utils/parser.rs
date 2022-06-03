@@ -21,7 +21,6 @@ impl Parse {
                 let userid_byname = _ctx
                     .cache
                     .guild(*_message.guild_id.unwrap().as_u64())
-                    .await
                     .unwrap()
                     .member_named(&to_return)
                     .unwrap()
