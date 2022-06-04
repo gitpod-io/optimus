@@ -1,7 +1,8 @@
 use std::{collections::HashMap};
 
 use super::*;
-use crate::db::{ClientContextExt};
+use crate::db::ClientContextExt;
+use substr::StringUtils;
 
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use serde::{Deserialize, Serialize};
@@ -1147,7 +1148,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 							c.create_action_row(|a|
 								{
 									let mut i = 1;
-									for (mut title, mut url) in relevant_links.clone() {
+									for (title, url) in relevant_links.clone() {
 										relevant_links.remove(&title);
 										if i > 5 {
 											we_done = false;
@@ -1155,8 +1156,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										} else {
 											i += 1;
 										}
-										title.truncate(80);
-										url.truncate(100);
+					
 										
 										let emoji = {
 											if url.starts_with("https://www.gitpod.io") {
@@ -1168,7 +1168,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 											}
 										};
 
-										a.create_button(|b|b.label(&title).custom_id(&url).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
+										a.create_button(|b|b.label(&title.as_str().substring(0, 80)).custom_id(&url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
 											id: emoji.id,
 											name: Some(emoji.name.clone()),
 											animated: false,

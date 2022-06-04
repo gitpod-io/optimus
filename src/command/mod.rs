@@ -34,7 +34,7 @@ use status::*;
 
 use crate::db::{ClientContextExt, Db};
 use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
-use thorne::*;
+// use thorne::*;
 
 use serenity::{
     client::bridge::gateway::{ShardId, ShardManager},
