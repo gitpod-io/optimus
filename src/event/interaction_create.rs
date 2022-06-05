@@ -225,43 +225,41 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
         .unwrap();
 }
 
-async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, role_choices: Vec<String>, member: &mut Member, temp_role: &Role) {
+async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, mut role_choices: Vec<String>, member: &mut Member, temp_role: &Role, member_role: &Role) {
 	if role_choices.len() > 1
 	|| !role_choices.iter().any(|x| x == "none")
-{
-	let mut role_ids: Vec<RoleId> = Vec::new();
-	// Is bigger than a single choice or doesnt contain none
-	for role_name in role_choices {
-		if role_name == "none" {
-			continue;
+	{ // Is bigger than a single choice or doesnt contain none
+		
+		let mut role_ids: Vec<RoleId> = Vec::new();
+		for role_name in role_choices {
+			if role_name == "none" {
+				continue;
+			}
+			let role =
+				get_role(mci, ctx, role_name.as_str())
+					.await;
+			role_ids.push(role.id);
 		}
-		let role =
-			get_role(mci, ctx, role_name.as_str())
-				.await;
-
 		member
-			.add_role(&ctx.http, role.id)
+				.add_roles(&ctx.http, &role_ids)
+				.await
+				.unwrap();
+		let db = &ctx.get_db().await;
+		db.set_user_roles(mci.user.id, role_ids).await.unwrap();
+	}
+
+	// Remove the temp role from user
+	if member.roles.iter().any(|x| x == &temp_role.id ) {
+		member
+			.remove_role(&ctx.http, temp_role.id)
 			.await
 			.unwrap();
-		role_ids.push(role.id);
 	}
-	let db = &ctx.get_db().await;
-	db.set_user_roles(mci.user.id, role_ids).await.unwrap();
-}
+	// Add member role if missing
+	if !member.roles.iter().any(|x| x == &member_role.id) {
+		member.add_role(&ctx.http, member_role.id).await.unwrap();
+	}
 
-// Remove the temp role from user
-member
-	.remove_role(&ctx.http, temp_role.id)
-	.await
-	.unwrap();
-
-// Add the member role
-let member_role =
-	get_role(mci, ctx, "Member").await;
-member
-	.add_role(&ctx.http, member_role.id)
-	.await
-	.unwrap();
 }
 
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
@@ -563,11 +561,11 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 								join_reason.push_str(interaction.data.custom_id.as_str());
 								
 								let mut member = mci.member.clone().unwrap();
+								let member_role = get_role(&mci, ctx, "Member").await;
 								let never_introduced = {
 									
 									let mut status = true;
 									if let Some(roles) = member.roles(&ctx.cache) {
-										let member_role = get_role(&mci, ctx, "Member").await;
 										let gitpodder_role = get_role(&mci, ctx, "Gitpodders").await;
 										status = !roles.into_iter().any(|x|x == member_role || x == gitpodder_role);
 										
@@ -800,33 +798,28 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 									// Remove old roles
 									if let Some(roles) = member.roles(&ctx.cache) {
 										// Remove all assignable roles first
-										let mut all_assignable_roles: Vec<SelectMenuSpec> =
-										Vec::new();
+										let mut all_assignable_roles: Vec<SelectMenuSpec> = Vec::new();
 										all_assignable_roles.append(&mut additional_roles);
 										all_assignable_roles.append(&mut poll_entries);
+										let mut removeable_roles: Vec<RoleId> = Vec::new();
 										
 										for role in roles {
 											if all_assignable_roles
 											.iter()
 											.any(|x| x.value == role.name)
 											{
-												member
-												.remove_role(&ctx.http, role.id)
+												removeable_roles.push(role.id);
+											}
+										}
+										if !removeable_roles.is_empty() {
+											member
+												.remove_roles(&ctx.http, &removeable_roles)
 												.await
 												.unwrap();
-											}
 										}
 									}
 
-									// Add the additional member role
-									additional_roles.push(SelectMenuSpec {
-										label: "Member",
-										value: "Member",
-										description: "",
-										display_emoji: "",
-									});
-								
-									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role).await;
+									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role, &member_role).await;
 									break;
                             }
                             _ => {}
@@ -1156,8 +1149,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										} else {
 											i += 1;
 										}
-					
-										
+		
 										let emoji = {
 											if url.starts_with("https://www.gitpod.io") {
 												prefix_emojis.get("gitpod").unwrap()
