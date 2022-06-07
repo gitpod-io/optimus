@@ -1144,14 +1144,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
 					m.components(|c| {
 						loop {
-							let mut we_done = true;
+							let mut we_done = false;
 							c.create_action_row(|a|
 								{
 									let mut i = 1;
 									for (title, url) in relevant_links.clone() {
 										relevant_links.remove(&title);
 										if i > 5 {
-											we_done = false;
+											we_done = true;
 											break;
 										} else {
 											i += 1;
