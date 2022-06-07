@@ -36,11 +36,7 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
         .await
         .unwrap();
 
-    let user_status = _ctx
-        .cache
-        .guild(*guild_id.as_u64())
-        .unwrap()
-        .presences;
+    let user_status = _ctx.cache.guild(*guild_id.as_u64()).unwrap().presences;
 
     let mut status_content = String::new();
     let mut status_type = String::new();
@@ -54,10 +50,10 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
             let client_data = presence.client_status.unwrap();
 
             let ClientStatus {
-                    desktop,
-                    mobile,
-                    web,
-                } = client_data;
+                desktop,
+                mobile,
+                web,
+            } = client_data;
             if desktop.is_some() {
                 status_client.push_str("Desktop");
                 // status_mode.push_str(get_online_status(&desktop.unwrap()).await.as_str());

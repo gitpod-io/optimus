@@ -33,7 +33,7 @@ use status::*;
 // use whois::*;
 
 use crate::db::{ClientContextExt, Db};
-use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
+use crate::utils::{db::*, parser::Parse, substr::*};
 // use thorne::*;
 
 use serenity::{
@@ -45,7 +45,7 @@ use serenity::{
         Args, CommandGroup, CommandOptions, CommandResult, Delimiter, DispatchError, HelpOptions,
         Reason,
     },
-    model::{channel::Message, id::UserId, permissions::Permissions},
+    model::{channel::Message, id::UserId},
     utils::{content_safe, ContentSafeOptions},
 };
 use std::{

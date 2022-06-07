@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use super::*;
 use crate::db::ClientContextExt;
@@ -11,13 +11,16 @@ use serenity::{
     futures::StreamExt,
     // http::AttachmentType,
     model::{
-        channel::{Embed, AttachmentType},
+        self,
+        channel::{AttachmentType, Embed},
         guild::{Emoji, Role},
+        id::RoleId,
         interactions::{
             message_component::MessageComponentInteraction,
             InteractionApplicationCommandCallbackDataFlags,
         },
-        Permissions, id::RoleId, self, prelude::interaction::MessageFlags,
+        prelude::interaction::MessageFlags,
+        Permissions,
     },
     utils::{read_image, MessageBuilder},
 };
@@ -51,11 +54,15 @@ async fn safe_text(_ctx: &Context, _input: &String) -> String {
             .clean_channel(false)
             .clean_role(true)
             .clean_user(false),
-    &[])
-   
+        &[],
+    )
 }
 
-async fn get_role(mci: &model::application::interaction::message_component::MessageComponentInteraction, ctx: &Context, name: &str) -> Role {
+async fn get_role(
+    mci: &model::application::interaction::message_component::MessageComponentInteraction,
+    ctx: &Context,
+    name: &str,
+) -> Role {
     let role = {
         if let Some(result) = mci
             .guild_id
@@ -80,11 +87,11 @@ async fn get_role(mci: &model::application::interaction::message_component::Mess
             r.clone()
         }
     };
-	if role.name != "Member" && role.name != "Gitpodders" && !role.permissions.is_empty() {
-		role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
-			.await
-			.unwrap();
-	}
+    if role.name != "Member" && role.name != "Gitpodders" && !role.permissions.is_empty() {
+        role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
+            .await
+            .unwrap();
+    }
     role
 }
 
@@ -225,41 +232,38 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
         .unwrap();
 }
 
-async fn assign_roles(mci:&MessageComponentInteraction, ctx: &Context, mut role_choices: Vec<String>, member: &mut Member, temp_role: &Role, member_role: &Role) {
-	if role_choices.len() > 1
-	|| !role_choices.iter().any(|x| x == "none")
-	{ // Is bigger than a single choice or doesnt contain none
-		
-		let mut role_ids: Vec<RoleId> = Vec::new();
-		for role_name in role_choices {
-			if role_name == "none" {
-				continue;
-			}
-			let role =
-				get_role(mci, ctx, role_name.as_str())
-					.await;
-			role_ids.push(role.id);
-		}
-		member
-				.add_roles(&ctx.http, &role_ids)
-				.await
-				.unwrap();
-		let db = &ctx.get_db().await;
-		db.set_user_roles(mci.user.id, role_ids).await.unwrap();
-	}
+async fn assign_roles(
+    mci: &MessageComponentInteraction,
+    ctx: &Context,
+    mut role_choices: Vec<String>,
+    member: &mut Member,
+    temp_role: &Role,
+    member_role: &Role,
+) {
+    if role_choices.len() > 1 || !role_choices.iter().any(|x| x == "none") {
+        // Is bigger than a single choice or doesnt contain none
 
-	// Remove the temp role from user
-	if member.roles.iter().any(|x| x == &temp_role.id ) {
-		member
-			.remove_role(&ctx.http, temp_role.id)
-			.await
-			.unwrap();
-	}
-	// Add member role if missing
-	if !member.roles.iter().any(|x| x == &member_role.id) {
-		member.add_role(&ctx.http, member_role.id).await.unwrap();
-	}
+        let mut role_ids: Vec<RoleId> = Vec::new();
+        for role_name in role_choices {
+            if role_name == "none" {
+                continue;
+            }
+            let role = get_role(mci, ctx, role_name.as_str()).await;
+            role_ids.push(role.id);
+        }
+        member.add_roles(&ctx.http, &role_ids).await.unwrap();
+        let db = &ctx.get_db().await;
+        db.set_user_roles(mci.user.id, role_ids).await.unwrap();
+    }
 
+    // Remove the temp role from user
+    if member.roles.iter().any(|x| x == &temp_role.id) {
+        member.remove_role(&ctx.http, temp_role.id).await.unwrap();
+    }
+    // Add member role if missing
+    if !member.roles.iter().any(|x| x == &member_role.id) {
+        member.add_role(&ctx.http, member_role.id).await.unwrap();
+    }
 }
 
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
@@ -356,18 +360,18 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 "gitpod_close_issue" => close_issue(&mci, ctx).await,
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
-						SelectMenuSpec {
-							value: "JetBrainsIDEs",
-							description: "Discuss about Jetbrains IDEs for Gitpod!",
-							label: "JetBrains (BETA)",
-							display_emoji: "🧠",
-						},
-						SelectMenuSpec {
-							value: "DevX",
-							description: "All things about DevX",
-							label: "Developer Experience",
-							display_emoji: "✨",
-						},
+                        SelectMenuSpec {
+                            value: "JetBrainsIDEs",
+                            description: "Discuss about Jetbrains IDEs for Gitpod!",
+                            label: "JetBrains (BETA)",
+                            display_emoji: "🧠",
+                        },
+                        SelectMenuSpec {
+                            value: "DevX",
+                            description: "All things about DevX",
+                            label: "Developer Experience",
+                            display_emoji: "✨",
+                        },
                         SelectMenuSpec {
                             value: "SelfHosted",
                             description: "Do you selfhost Gitpod? Then you need this!",
@@ -382,43 +386,43 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         },
                     ]);
 
-					let mut poll_entries: Vec<SelectMenuSpec> = Vec::from([
-						SelectMenuSpec {
-							value: "Found: FromFriend",
-							label: "Friend or colleague",
-							description:
-								"A friend or colleague of mine introduced Gitpod to me",
-							display_emoji: "🫂",
-						},
-						SelectMenuSpec {
-							value: "Found: FromGoogle",
-							label: "Google",
-							description: "I found Gitpod from a Google search",
-							display_emoji: "🔎",
-						},
-						SelectMenuSpec {
-							value: "Found: FromYouTube",
-							label: "YouTube",
-							description: "Saw Gitpod on a Youtube Video",
-							display_emoji: "📺",
-						},
-						SelectMenuSpec {
-							value: "Found: FromTwitter",
-							label: "Twitter",
-							description: "Saw people talking about Gitpod on a Tweet",
-							display_emoji: "🐦",
-						},
-						SelectMenuSpec {
-							value: "Found: FromGitRepo",
-							label: "Git Repository",
-							description: "Found Gitpod on a Git repository",
-							display_emoji: "✨",
-						},
-					]);
+                    let mut poll_entries: Vec<SelectMenuSpec> = Vec::from([
+                        SelectMenuSpec {
+                            value: "Found: FromFriend",
+                            label: "Friend or colleague",
+                            description: "A friend or colleague of mine introduced Gitpod to me",
+                            display_emoji: "🫂",
+                        },
+                        SelectMenuSpec {
+                            value: "Found: FromGoogle",
+                            label: "Google",
+                            description: "I found Gitpod from a Google search",
+                            display_emoji: "🔎",
+                        },
+                        SelectMenuSpec {
+                            value: "Found: FromYouTube",
+                            label: "YouTube",
+                            description: "Saw Gitpod on a Youtube Video",
+                            display_emoji: "📺",
+                        },
+                        SelectMenuSpec {
+                            value: "Found: FromTwitter",
+                            label: "Twitter",
+                            description: "Saw people talking about Gitpod on a Tweet",
+                            display_emoji: "🐦",
+                        },
+                        SelectMenuSpec {
+                            value: "Found: FromGitRepo",
+                            label: "Git Repository",
+                            description: "Found Gitpod on a Git repository",
+                            display_emoji: "✨",
+                        },
+                    ]);
 
                     for prog_role in [
                         "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
-                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby", "Rust",
+                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
+                        "Rust",
                     ]
                     .iter()
                     {
@@ -430,7 +434,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         });
                     }
                     let mut role_choices: Vec<String> = Vec::new();
-					let mut join_reason = String::new();
+                    let mut join_reason = String::new();
 
                     mci.create_interaction_response(&ctx.http, |r| {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
@@ -479,7 +483,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         .await
                         .unwrap()
                         .await_component_interactions(&ctx)
-                        .timeout(Duration::from_secs(60 * 5)).build();
+                        .timeout(Duration::from_secs(60 * 5))
+                        .build();
 
                     while let Some(interaction) = interactions.next().await {
                         match interaction.data.custom_id.as_str() {
@@ -510,7 +515,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .for_each(|x| role_choices.push(x.to_string()));
                             }
                             "subscribed" | "not_subscribed" => {
-								interaction.create_interaction_response(&ctx.http, |r| {
+                                interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
 										d.content("**[3/4]:** Why did you join our community?\nI will point you to the correct channels with this info.").components(|c| {
 											c.create_action_row(|a| {
@@ -538,102 +543,110 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 									})
 								}).await.unwrap();
 
-								// Save the choices of last interaction
-								let subscribed_role = SelectMenuSpec {
-									label: "Subscribed",
-									description: "Subscribed to pings",
-									display_emoji: "",
-									value: "Subscriber",
-								};
-								if interaction.data.custom_id == "subscribed" {
-									role_choices.push(subscribed_role.value.to_string());
-								}
-								additional_roles.push(subscribed_role);
-							}
-							"hangout" | "gitpodio_help" | "selfhosted_help" => {		
-								interaction.create_interaction_response(&ctx.http, |r| {
+                                // Save the choices of last interaction
+                                let subscribed_role = SelectMenuSpec {
+                                    label: "Subscribed",
+                                    description: "Subscribed to pings",
+                                    display_emoji: "",
+                                    value: "Subscriber",
+                                };
+                                if interaction.data.custom_id == "subscribed" {
+                                    role_choices.push(subscribed_role.value.to_string());
+                                }
+                                additional_roles.push(subscribed_role);
+                            }
+                            "hangout" | "gitpodio_help" | "selfhosted_help" => {
+                                interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
 										d.content("**[3/4]**: You have personalized the server, congrats!").components(|c|c)
 									})
 								}).await.unwrap();
-								
-								// Save join reason
-								join_reason.push_str(interaction.data.custom_id.as_str());
-								
-								let mut member = mci.member.clone().unwrap();
-								let member_role = get_role(&mci, ctx, "Member").await;
-								let never_introduced = {
-									
-									let mut status = true;
-									if let Some(roles) = member.roles(&ctx.cache) {
-										let gitpodder_role = get_role(&mci, ctx, "Gitpodders").await;
-										status = !roles.into_iter().any(|x|x == member_role || x == gitpodder_role);
-										
-									}
-									if status {
-										
-										let mut count = 0;
-										if let Ok(intro_msgs) = &ctx
-										.http
-										.get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-										.await {
-											intro_msgs.iter().for_each(|x| {
-												if x.author == interaction.user {
-													count += 1;
-												}
-											});
-										}
-										
-										status = count < 1;
-									}
-									status
-								};
-								
-								let followup = interaction.create_followup_message(&ctx.http, |d| {
-									d.content("**[4/4]:** How did you find Gitpod?");
-									d.components(|c| {
-										c.create_action_row(|a| {
-											a.create_select_menu(|s| {
-												s.placeholder(
-													"[Poll]: Select sources (Optional)",
-												);
-												s.options(|o| {
-													for spec in &poll_entries {
-														o.create_option(|opt| {
-															opt.label(spec.label);
-															opt.description(spec.description);
-															opt.emoji(ReactionType::Unicode(
-																spec.display_emoji.to_string(),
-															));
-															opt.value(spec.value);
-															opt
-														});
-													}
-													o.create_option(|opt| {
-														opt.label("[Skip] Prefer not to share")
-															.value("none")
-															.emoji(ReactionType::Unicode(
-																"⏭".to_string(),
-															));
-														opt
-													});
-													o
-												});
-												s.custom_id("found_gitpod_from").max_values(5)
-											});
-											a
-										});
-										c
-									});
-									d.flags(MessageFlags::EPHEMERAL)
-								}).await.unwrap();
 
-								let temp_role = get_role(&mci, ctx, "Temp").await;
-								let followup_results = match followup.await_component_interaction(&ctx).timeout(Duration::from_secs(60 * 5)).await {
-									Some(ci) => {
-										member.add_role(&ctx.http, temp_role.id).await.unwrap();
-										let final_msg = {
-											if never_introduced {
+                                // Save join reason
+                                join_reason.push_str(interaction.data.custom_id.as_str());
+
+                                let mut member = mci.member.clone().unwrap();
+                                let member_role = get_role(&mci, ctx, "Member").await;
+                                let never_introduced = {
+                                    let mut status = true;
+                                    if let Some(roles) = member.roles(&ctx.cache) {
+                                        let gitpodder_role =
+                                            get_role(&mci, ctx, "Gitpodders").await;
+                                        status = !roles
+                                            .into_iter()
+                                            .any(|x| x == member_role || x == gitpodder_role);
+                                    }
+                                    if status {
+                                        let mut count = 0;
+                                        if let Ok(intro_msgs) = &ctx
+                                            .http
+                                            .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+                                            .await
+                                        {
+                                            intro_msgs.iter().for_each(|x| {
+                                                if x.author == interaction.user {
+                                                    count += 1;
+                                                }
+                                            });
+                                        }
+
+                                        status = count < 1;
+                                    }
+                                    status
+                                };
+
+                                let followup = interaction
+                                    .create_followup_message(&ctx.http, |d| {
+                                        d.content("**[4/4]:** How did you find Gitpod?");
+                                        d.components(|c| {
+                                            c.create_action_row(|a| {
+                                                a.create_select_menu(|s| {
+                                                    s.placeholder(
+                                                        "[Poll]: Select sources (Optional)",
+                                                    );
+                                                    s.options(|o| {
+                                                        for spec in &poll_entries {
+                                                            o.create_option(|opt| {
+                                                                opt.label(spec.label);
+                                                                opt.description(spec.description);
+                                                                opt.emoji(ReactionType::Unicode(
+                                                                    spec.display_emoji.to_string(),
+                                                                ));
+                                                                opt.value(spec.value);
+                                                                opt
+                                                            });
+                                                        }
+                                                        o.create_option(|opt| {
+                                                            opt.label("[Skip] Prefer not to share")
+                                                                .value("none")
+                                                                .emoji(ReactionType::Unicode(
+                                                                    "⏭".to_string(),
+                                                                ));
+                                                            opt
+                                                        });
+                                                        o
+                                                    });
+                                                    s.custom_id("found_gitpod_from").max_values(5)
+                                                });
+                                                a
+                                            });
+                                            c
+                                        });
+                                        d.flags(MessageFlags::EPHEMERAL)
+                                    })
+                                    .await
+                                    .unwrap();
+
+                                let temp_role = get_role(&mci, ctx, "Temp").await;
+                                let followup_results = match followup
+                                    .await_component_interaction(&ctx)
+                                    .timeout(Duration::from_secs(60 * 5))
+                                    .await
+                                {
+                                    Some(ci) => {
+                                        member.add_role(&ctx.http, temp_role.id).await.unwrap();
+                                        let final_msg = {
+                                            if never_introduced {
                                                 MessageBuilder::new()
 												.push_line(format!(
 													"Thank you {}! To unlock the server, drop by {} :wave:",
@@ -645,26 +658,24 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 												.push_quote_line("🛑 what blocks you most in your daily dev workflow")
 												.push_quote_line("🌈 your favourite Gitpod feature")
 												.push_quote_line("✨ your favourite emoji").build()
-											
-											} else {
-												"Awesome, your server profile will be updated now!".to_owned()
-											}
-										};
-										ci.create_interaction_response(&ctx.http, |r| {
-											r.kind(InteractionResponseType::UpdateMessage)
-												.interaction_response_data(|d| {
-													d.content(final_msg)
-													.components(|c| c)
-												})
-										})
-										.await
-										.unwrap();
-										ci
-									}
-									None => return,
-								};
-								
-					
+                                            } else {
+                                                "Awesome, your server profile will be updated now!"
+                                                    .to_owned()
+                                            }
+                                        };
+                                        ci.create_interaction_response(&ctx.http, |r| {
+                                            r.kind(InteractionResponseType::UpdateMessage)
+                                                .interaction_response_data(|d| {
+                                                    d.content(final_msg).components(|c| c)
+                                                })
+                                        })
+                                        .await
+                                        .unwrap();
+                                        ci
+                                    }
+                                    None => return,
+                                };
+
                                 // if let Some(interaction) = interaction
                                 //     .get_interaction_response(&ctx.http)
                                 //     .await
@@ -673,91 +684,101 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                 //     .timeout(Duration::from_secs(60 * 5))
                                 //     .await
                                 // {
-									 
-								if never_introduced {
+
+                                if never_introduced {
                                     // Wait for the submittion on INTRODUCTION_CHANNEL
                                     if let Some(msg) = mci
                                         .user
                                         .await_reply(&ctx)
                                         .timeout(Duration::from_secs(60 * 30))
                                         .await
-								{
-									// Watch intro channel
-									if msg.channel_id == INTRODUCTION_CHANNEL {
-										// let mut count = 0;
-										// intro_msgs.iter().for_each(|x| {
-										// 	if x.author == msg.author {
-										// 		count += 1;
-										// 	}
-										// });
+                                    {
+                                        // Watch intro channel
+                                        if msg.channel_id == INTRODUCTION_CHANNEL {
+                                            // let mut count = 0;
+                                            // intro_msgs.iter().for_each(|x| {
+                                            // 	if x.author == msg.author {
+                                            // 		count += 1;
+                                            // 	}
+                                            // });
 
-										// if count <= 1 {
-											let thread =
-												msg.channel_id
-													.create_public_thread(
-														&ctx.http,
-														&msg.id,
-														|t| {
-															t.auto_archive_duration(1440)
-																.name(format!(
-																	"Welcome {}!",
-																	msg.author.name
-																))
-														},
-													)
-													.await
-													.unwrap();
-											
-												msg.react(&ctx.http, ReactionType::Unicode("👋".to_string())).await.unwrap();
+                                            // if count <= 1 {
+                                            let thread = msg
+                                                .channel_id
+                                                .create_public_thread(&ctx.http, &msg.id, |t| {
+                                                    t.auto_archive_duration(1440).name(format!(
+                                                        "Welcome {}!",
+                                                        msg.author.name
+                                                    ))
+                                                })
+                                                .await
+                                                .unwrap();
 
-											let general_channel = if cfg!(debug_assertions) {
-												ChannelId(947769443516284943)
-											} else {
-												ChannelId(839379835662368768)
-											};
-											let offtopic_channel = if cfg!(debug_assertions) {
-												ChannelId(947769443793141769)
-											} else {
-												ChannelId(972510491933032508)
-											};
-											let db = &ctx.get_db().await;
-											let questions_channel =
-												db.get_question_channels().await.unwrap();
-											let questions_channel = questions_channel
-												.into_iter()
-												.next()
-												.unwrap()
-												.id;
+                                            if words_count::count(&msg.content).words > 5 {
+                                                msg.react(
+                                                    &ctx.http,
+                                                    ReactionType::Unicode("🔥".to_string()),
+                                                )
+                                                .await
+                                                .unwrap();
+                                            }
+                                            msg.react(
+                                                &ctx.http,
+                                                ReactionType::Unicode("👋".to_string()),
+                                            )
+                                            .await
+                                            .unwrap();
 
-											let selfhosted_questions_channel = if cfg!(debug_assertions) {
-												ChannelId(947769443793141761)
-											} else {
-												ChannelId(879915120510267412)
-											};
+                                            let general_channel = if cfg!(debug_assertions) {
+                                                ChannelId(947769443516284943)
+                                            } else {
+                                                ChannelId(839379835662368768)
+                                            };
+                                            let offtopic_channel = if cfg!(debug_assertions) {
+                                                ChannelId(947769443793141769)
+                                            } else {
+                                                ChannelId(972510491933032508)
+                                            };
+                                            let db = &ctx.get_db().await;
+                                            let questions_channel =
+                                                db.get_question_channels().await.unwrap();
+                                            let questions_channel =
+                                                questions_channel.into_iter().next().unwrap().id;
 
-											let mut prepared_msg = MessageBuilder::new();
-											prepared_msg.push_line(format!(
-												"Welcome to the Gitpod community {} 🙌\n",
-												&msg.author.mention()
-											));
-											match join_reason.as_str() {
-												"gitpodio_help" => {
-													prepared_msg.push_line(
+                                            let selfhosted_questions_channel =
+                                                if cfg!(debug_assertions) {
+                                                    ChannelId(947769443793141761)
+                                                } else {
+                                                    ChannelId(879915120510267412)
+                                                };
+
+                                            let mut prepared_msg = MessageBuilder::new();
+                                            prepared_msg.push_line(format!(
+                                                "Welcome to the Gitpod community {} 🙌\n",
+                                                &msg.author.mention()
+                                            ));
+                                            match join_reason.as_str() {
+                                                "gitpodio_help" => {
+                                                    prepared_msg.push_line(
 														format!("**You mentioned that** you need help with Gitpod.io, please ask in {}\n",
 																	&questions_channel.mention())
 													);
-												}
-												"selfhosted_help" => {
-													let selfhosted_role = get_role(&mci, ctx, "SelfHosted").await;
-													member.add_role(&ctx.http, selfhosted_role.id).await.unwrap();
-													prepared_msg.push_line(
+                                                }
+                                                "selfhosted_help" => {
+                                                    let selfhosted_role =
+                                                        get_role(&mci, ctx, "SelfHosted").await;
+                                                    member
+                                                        .add_role(&ctx.http, selfhosted_role.id)
+                                                        .await
+                                                        .unwrap();
+                                                    prepared_msg.push_line(
 														format!("**You mentioned that** you need help with selfhosted, please ask in {}\n",
 																	&selfhosted_questions_channel.mention())
-													);	
-												}
-												_=> {}
-											}
-											prepared_msg.push_bold_line("Here are some channels that you should check out:")
+													);
+                                                }
+                                                _ => {}
+                                            }
+                                            prepared_msg.push_bold_line("Here are some channels that you should check out:")
 											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
 											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
 											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
@@ -765,69 +786,69 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
 											.push_quote_line("• https://www.gitpod.io/community")
 											.push_quote_line("• https://www.gitpod.io/about");
-											let mut thread_msg =thread
-												.send_message(&ctx.http, |t| {
-													t.content(prepared_msg)
-												})
-												.await
-												.unwrap();
-											thread_msg
-												.suppress_embeds(&ctx.http)
-												.await
-												.unwrap();
-										// } else {
-										// 	let warn_msg = msg
-										// 	.reply_mention(
-										// 		&ctx.http,
-										// 		"Please reply in threads above instead of here",
-										// 	)
-										// 	.await
-										// 	.unwrap();
-										// 	sleep(Duration::from_secs(10)).await;
-										// 	warn_msg.delete(&ctx.http).await.unwrap();
-										// 	msg.delete(&ctx.http).await.ok();
-										// }
+                                            let mut thread_msg = thread
+                                                .send_message(&ctx.http, |t| {
+                                                    t.content(prepared_msg)
+                                                })
+                                                .await
+                                                .unwrap();
+                                            thread_msg.suppress_embeds(&ctx.http).await.unwrap();
+                                            // } else {
+                                            // 	let warn_msg = msg
+                                            // 	.reply_mention(
+                                            // 		&ctx.http,
+                                            // 		"Please reply in threads above instead of here",
+                                            // 	)
+                                            // 	.await
+                                            // 	.unwrap();
+                                            // 	sleep(Duration::from_secs(10)).await;
+                                            // 	warn_msg.delete(&ctx.http).await.unwrap();
+                                            // 	msg.delete(&ctx.http).await.ok();
+                                            // }
+                                        }
+                                        // }
+                                    }
+                                }
 
-						
-									
-									}
-								// }
-							}
-							
-								}
+                                // save the found from data
+                                followup_results
+                                    .data
+                                    .values
+                                    .iter()
+                                    .for_each(|x| role_choices.push(x.to_string()));
 
-									// save the found from data
-									followup_results.data
-									.values
-									.iter()
-									.for_each(|x| role_choices.push(x.to_string()));
+                                // Remove old roles
+                                if let Some(roles) = member.roles(&ctx.cache) {
+                                    // Remove all assignable roles first
+                                    let mut all_assignable_roles: Vec<SelectMenuSpec> = Vec::new();
+                                    all_assignable_roles.append(&mut additional_roles);
+                                    all_assignable_roles.append(&mut poll_entries);
+                                    let mut removeable_roles: Vec<RoleId> = Vec::new();
 
-									// Remove old roles
-									if let Some(roles) = member.roles(&ctx.cache) {
-										// Remove all assignable roles first
-										let mut all_assignable_roles: Vec<SelectMenuSpec> = Vec::new();
-										all_assignable_roles.append(&mut additional_roles);
-										all_assignable_roles.append(&mut poll_entries);
-										let mut removeable_roles: Vec<RoleId> = Vec::new();
-										
-										for role in roles {
-											if all_assignable_roles
-											.iter()
-											.any(|x| x.value == role.name)
-											{
-												removeable_roles.push(role.id);
-											}
-										}
-										if !removeable_roles.is_empty() {
-											member
-												.remove_roles(&ctx.http, &removeable_roles)
-												.await
-												.unwrap();
-										}
-									}
+                                    for role in roles {
+                                        if all_assignable_roles.iter().any(|x| x.value == role.name)
+                                        {
+                                            removeable_roles.push(role.id);
+                                        }
+                                    }
+                                    if !removeable_roles.is_empty() {
+                                        member
+                                            .remove_roles(&ctx.http, &removeable_roles)
+                                            .await
+                                            .unwrap();
+                                    }
+                                }
 
-									assign_roles(&mci, ctx, role_choices, &mut member, &temp_role, &member_role).await;
-									break;
+                                assign_roles(
+                                    &mci,
+                                    ctx,
+                                    role_choices,
+                                    &mut member,
+                                    &temp_role,
+                                    &member_role,
+                                )
+                                .await;
+                                break;
                             }
                             _ => {}
                         }
@@ -969,15 +990,11 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     hook.delete(&ctx).await.unwrap();
                 }
             }
-	
-			let img_url = reqwest::Url::parse(&mci.user.face().replace(".webp", ".png")).unwrap();
+
+            let img_url = reqwest::Url::parse(&mci.user.face().replace(".webp", ".png")).unwrap();
             let webhook = mci
                 .channel_id
-                .create_webhook_with_avatar(
-                    &ctx,
-                    &user_name,
-                    AttachmentType::Image(img_url),
-                )
+                .create_webhook_with_avatar(&ctx, &user_name, AttachmentType::Image(img_url))
                 .await
                 .unwrap();
 
@@ -1156,7 +1173,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										} else {
 											i += 1;
 										}
-		
 										let emoji = {
 											if url.starts_with("https://www.gitpod.io") {
 												prefix_emojis.get("gitpod").unwrap()
@@ -1171,7 +1187,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 											id: emoji.id,
 											name: Some(emoji.name.clone()),
 											animated: false,
-										
 										}));
 									}
 										a

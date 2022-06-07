@@ -84,7 +84,7 @@ async fn bash(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult 
                 })
                 .await
                 .unwrap();
-            typing.stop();
+            typing.stop().unwrap();
         }
     } else {
         _msg.reply(&_ctx.http, "Not available for you")
