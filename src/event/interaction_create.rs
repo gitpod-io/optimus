@@ -1009,7 +1009,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .unwrap();
             msg.suppress_embeds(&ctx.http).await.unwrap();
             webhook.delete(&ctx.http).await.unwrap();
-            typing.stop();
+            typing.stop().unwrap();
             if mci.data.custom_id == "gitpod_help_button_press" {
                 if let Some(msg) = mci.message {
                     msg.delete(&ctx.http).await.ok();
