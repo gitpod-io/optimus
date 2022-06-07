@@ -634,11 +634,18 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										member.add_role(&ctx.http, temp_role.id).await.unwrap();
 										let final_msg = {
 											if never_introduced {
-												format!(
-													"Thank you {}! Now, please go {} to unlock the server!",
+                                                MessageBuilder::new()
+												.push_line(format!(
+													"Thank you {}! To unlock the server, drop by {} :wave:",
 													interaction.user.mention(),
 													INTRODUCTION_CHANNEL.mention()
-												)
+												))
+												.push_line("\nWe’d love to get to know you better and hear about:")
+												.push_quote_line("🔧 what you’re working on!")
+												.push_quote_line("🛑 what blocks you most in your daily dev workflow")
+												.push_quote_line("🌈 your favourite Gitpod feature")
+												.push_quote_line("✨ your favourite emoji").build()
+											
 											} else {
 												"Awesome, your server profile will be updated now!".to_owned()
 											}
