@@ -1157,21 +1157,23 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     prefix_emojis.insert(source, emoji);
                 }
 
+                let mut suggested_count = 1;
                 thread.send_message(&ctx.http, |m| {
 				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
 					m.components(|c| {
 						loop {
-							let mut we_done = false;
+							if suggested_count > 10 || relevant_links.is_empty() {
+								break;
+							}
 							c.create_action_row(|a|
 								{
 									let mut i = 1;
 									for (title, url) in relevant_links.clone() {
-										relevant_links.remove(&title);
 										if i > 5 {
-											we_done = true;
 											break;
 										} else {
 											i += 1;
+											relevant_links.remove(&title);
 										}
 										let emoji = {
 											if url.starts_with("https://www.gitpod.io") {
@@ -1192,10 +1194,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										a
 									}
 								);
-
-								if we_done {
-									break;
-								}
+								suggested_count += 1;
 						}
 							c
 						});
