@@ -125,14 +125,15 @@ async fn save_and_fetch_links(
 		.await {
 			if let Ok(result) = resp.text().await {
 				let mut times = 1;
+				// [^:~] avoids the google hyperlinks
 				for caps in
-					Regex::new(format!("\"(?P<url>{}/.*?)\"", &site).as_str())
+					Regex::new(format!("\"(?P<url>{}/.[^:~]*?)\"", &site).as_str())
 						.unwrap()
 						.captures_iter(&result)
 				{
 					let url = &caps["url"];
 					let hash = {
-						if let Some(result) = Regex::new(r"(?P<hash>#.*)").unwrap().captures(url) {
+						if let Some(result) = Regex::new(r"(?P<hash>#[^:~].*)").unwrap().captures(url) {
 							result.name("hash").map(|hash| hash.as_str())
 						} else {
 							None
@@ -142,6 +143,7 @@ async fn save_and_fetch_links(
 					.send()
 					.await {
 						if let Ok(result) = resp.text().await {
+							let result = html_escape::decode_html_entities(&result).to_string();
 							for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
 								let title = &caps["title"];
 								let text = if hash.is_none() {
