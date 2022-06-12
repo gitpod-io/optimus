@@ -14,7 +14,7 @@ async fn exec(ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
 
         let client = piston_rs::Client::new();
         let executor = piston_rs::Executor::new()
-            .set_language(lang)
+            .set_language(&lang)
             .set_version("*")
             .add_file(piston_rs::File::default().set_content(code));
 
@@ -39,7 +39,13 @@ async fn exec(ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
             _msg.reply_ping(&ctx.http, "Error: No output received")
                 .await?;
         } else {
-            _msg.reply_ping(&ctx.http, final_msg).await?;
+            _msg.channel_id
+                .send_message(&ctx.http, |m| {
+                    m.reference_message(_msg).embed(|e| {
+                        e.description(format!("```{}\n{}```", lang, final_msg.substring(0, 4070)))
+                    })
+                })
+                .await?;
         }
     } else {
         let final_msg = MessageBuilder::new()
