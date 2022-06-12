@@ -5,7 +5,7 @@ use crate::db::ClientContextExt;
 use substr::StringUtils;
 
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use serenity::{
     futures::StreamExt,
@@ -16,10 +16,10 @@ use serenity::{
         guild::{Emoji, Role},
         id::RoleId,
         interactions::{
-            message_component::MessageComponentInteraction,
+            message_component::{ComponentType, MessageComponentInteraction},
             InteractionApplicationCommandCallbackDataFlags,
         },
-        prelude::interaction::MessageFlags,
+        prelude::{component::Button, interaction::MessageFlags},
         Permissions,
     },
     utils::{read_image, MessageBuilder},
@@ -857,10 +857,30 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 _ => {
                     // If a Question thread suggestion was clicked
                     if mci.data.custom_id.starts_with("http") {
+                        let button_label = &mci
+                            .message
+                            .components
+                            .get(0)
+                            .unwrap()
+                            .components
+                            .iter()
+                            .find_map(|x| {
+                                let button: Button =
+                                    serde_json::from_value(serde_json::to_value(x).unwrap())
+                                        .unwrap();
+                                if button.custom_id.unwrap() == mci.data.custom_id {
+                                    Some(button.label.unwrap())
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap();
+
                         mci.create_interaction_response(&ctx.http, |r| {
                             r.kind(InteractionResponseType::ChannelMessageWithSource)
                                 .interaction_response_data(|d| {
-                                    d.components(|c| {
+                                    d.content(format!("{}: {button_label}", &mci.user.mention())).
+                                    components(|c| {
                                         c.create_action_row(|a| {
                                             a.create_button(|b| {
                                                 b.label("Open link")
