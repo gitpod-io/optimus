@@ -16,6 +16,7 @@ anyhow = "1.0.57"
 meilisearch-sdk = "0.17.0"
 words-count = "0.1.3"
 html-escape = "0.2.11"
+piston_rs = "0.4.2"
 
 [dependencies.reqwest]
 default-features = false

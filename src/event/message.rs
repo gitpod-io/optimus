@@ -64,15 +64,15 @@ pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
     // Log messages
     //
     if !_msg.is_own(&ctx.cache) {
-        let dbnode_msgcache = Database::from("msgcache".to_string()).await;
+        // let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
-        let attc = &_msg.attachments;
-        let mut _attachments = String::new();
+        // let attc = &_msg.attachments;
+        // let mut _attachments = String::new();
 
-        for var in attc.iter() {
-            let url = &var.url;
-            _attachments.push_str(format!("\n{}", url).as_str());
-        }
+        // for var in attc.iter() {
+        //     let url = &var.url;
+        //     _attachments.push_str(format!("\n{}", url).as_str());
+        // }
 
         // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
         // dbnode_msgcache

@@ -31,6 +31,8 @@ use owner_check::*;
 use say::*;
 use status::*;
 // use whois::*;
+mod exec;
+use exec::*;
 
 use crate::db::{ClientContextExt, Db};
 use crate::utils::{db::*, parser::Parse, substr::*};
@@ -83,6 +85,7 @@ impl TypeMapKey for CommandCounter {
     say,
     commands,
     bash,
+	exec,
     // bashget,
     // ping,
     latency,

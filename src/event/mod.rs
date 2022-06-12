@@ -11,24 +11,25 @@ mod reaction_add;
 mod ready;
 mod thread_update;
 
-use crate::utils::{db::*, misc::vowel_gen, substr};
+use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
 
 use regex::Regex;
 use serde_json::json;
 
-use serenity::model::channel::GuildChannel;
-use serenity::model::interactions::message_component::{ActionRowComponent, InputTextStyle};
-use serenity::model::interactions::Interaction;
+use serenity::model::{
+    application::{
+        component::{ActionRowComponent, InputTextStyle},
+        interaction::Interaction,
+    },
+    channel::{GuildChannel, Message, Reaction},
+    // event::MessageUpdateEvent,
+    gateway::{Activity, Ready},
+    guild::{Guild, Member},
+    id::{ChannelId, GuildId, MessageId},
+    prelude::User,
+};
 use serenity::{
     async_trait,
-    model::{
-        channel::{Message, Reaction},
-        event::MessageUpdateEvent,
-        gateway::{Activity, Ready},
-        guild::{Guild, Member},
-        id::{ChannelId, GuildId, MessageId},
-        prelude::User,
-    },
     prelude::*,
     utils::{content_safe, ContentSafeOptions},
 };
@@ -49,8 +50,8 @@ use tokio::{fs, process};
 use serenity::{
     client::{Context, EventHandler},
     model::{
+        application::{component::ButtonStyle, interaction::InteractionResponseType},
         channel::ReactionType,
-        interactions::{message_component::ButtonStyle, InteractionResponseType},
     },
 };
 

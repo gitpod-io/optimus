@@ -5,21 +5,18 @@ use crate::db::ClientContextExt;
 use substr::StringUtils;
 
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use serenity::{
     futures::StreamExt,
     // http::AttachmentType,
     model::{
         self,
+        application::interaction::{message_component::MessageComponentInteraction, MessageFlags},
         channel::{AttachmentType, Embed},
         guild::{Emoji, Role},
         id::RoleId,
-        interactions::{
-            message_component::{ComponentType, MessageComponentInteraction},
-            InteractionApplicationCommandCallbackDataFlags,
-        },
-        prelude::{component::Button, interaction::MessageFlags},
+        prelude::component::Button,
         Permissions,
     },
     utils::{read_image, MessageBuilder},
@@ -237,7 +234,7 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
 async fn assign_roles(
     mci: &MessageComponentInteraction,
     ctx: &Context,
-    mut role_choices: Vec<String>,
+    role_choices: Vec<String>,
     member: &mut Member,
     temp_role: &Role,
     member_role: &Role,
@@ -473,7 +470,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             c
                         });
                         d.custom_id("bruh")
-                            .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                            .flags(MessageFlags::EPHEMERAL)
                     });
                     r
                 })
@@ -881,19 +878,17 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         mci.create_interaction_response(&ctx.http, |r| {
                             r.kind(InteractionResponseType::ChannelMessageWithSource)
                                 .interaction_response_data(|d| {
-                                    d.content(format!("{}: {button_label}", &mci.user.mention())).
-                                    components(|c| {
-                                        c.create_action_row(|a| {
-                                            a.create_button(|b| {
-                                                b.label("Open link")
-                                                    .url(&mci.data.custom_id)
-                                                    .style(ButtonStyle::Link)
+                                    d.content(format!("{}: {button_label}", &mci.user.mention()))
+                                        .components(|c| {
+                                            c.create_action_row(|a| {
+                                                a.create_button(|b| {
+                                                    b.label("Open link")
+                                                        .url(&mci.data.custom_id)
+                                                        .style(ButtonStyle::Link)
+                                                })
                                             })
                                         })
-                                    })
-                                    .flags(
-                                        InteractionApplicationCommandCallbackDataFlags::EPHEMERAL,
-                                    )
+                                        .flags(MessageFlags::EPHEMERAL)
                                 })
                         })
                         .await
