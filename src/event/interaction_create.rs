@@ -933,7 +933,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     .await
                     .unwrap();
             }
-            "say" => {
+            "nothing_to_see_here" => {
                 let input = mci
                     .data
                     .options

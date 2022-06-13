@@ -22,14 +22,14 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
             command.name("close").description("Close a question")
         });
         commands.create_application_command(|c| {
-            c.name("say")
-                .description("Make the bot say something")
+            c.name("nothing_to_see_here")
+                .description("Nope :P")
                 .kind(CommandType::ChatInput)
                 .default_member_permissions(Permissions::ADMINISTRATOR)
                 .create_option(|opt| {
                     opt.kind(CommandOptionType::String)
                         .name("value")
-                        .description("What do you want me to say ;-;")
+                        .description(";-;")
                         .required(true)
                 })
         });
