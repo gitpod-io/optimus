@@ -14,7 +14,7 @@ async fn exec(ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
 
         let client = piston_rs::Client::new();
         let executor = piston_rs::Executor::new()
-            .set_language(&lang)
+            .set_language(lang)
             .set_version("*")
             .add_file(piston_rs::File::default().set_content(code));
 

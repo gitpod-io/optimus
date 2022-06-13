@@ -902,8 +902,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 }
             }
         }
-        Interaction::ApplicationCommand(mci) => {
-            if mci.data.name == "close" {
+        Interaction::ApplicationCommand(mci) => match mci.data.name.as_str() {
+            "close" => {
                 let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_type = {
                     if _thread.name.contains('✅') || _thread.name.contains('❓') {
@@ -933,7 +933,39 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     .await
                     .unwrap();
             }
-        }
+            "say" => {
+                let input = mci
+                    .data
+                    .options
+                    .get(0)
+                    .expect("Expected input")
+                    .value
+                    .as_ref()
+                    .unwrap();
+                mci.create_interaction_response(&ctx.http, |r| {
+                    r.kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|d| {
+                            d.content("Posted message on this channel")
+                                .flags(MessageFlags::EPHEMERAL)
+                        })
+                })
+                .await
+                .unwrap();
+
+                mci.channel_id
+                    .send_message(&ctx.http, |m| {
+                        m.content(
+                            input
+                                .to_string()
+                                .trim_start_matches('"')
+                                .trim_end_matches('"'),
+                        )
+                    })
+                    .await
+                    .unwrap();
+            }
+            _ => {}
+        },
         Interaction::ModalSubmit(mci) => {
             let typing = mci.channel_id.start_typing(&ctx.http).unwrap();
             let title = match mci

@@ -1,3 +1,8 @@
+use serenity::model::{
+    prelude::command::{CommandOptionType, CommandType},
+    Permissions,
+};
+
 use super::*;
 
 pub async fn responder(_ctx: &Context, ready: Ready) {
@@ -12,16 +17,35 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
             .expect("GUILD_ID must be an integer"),
     );
 
-    let _commands = GuildId::set_application_commands(&guild_id, &_ctx.http, |commands| {
-        // commands.create_application_command(|command| {
-        //     command.name("ask").description("Ask a question")
-        // });
+    let commands = GuildId::set_application_commands(&guild_id, &_ctx.http, |commands| {
         commands.create_application_command(|command| {
             command.name("close").description("Close a question")
-        })
+        });
+        commands.create_application_command(|c| {
+            c.name("say")
+                .description("Make the bot say something")
+                .kind(CommandType::ChatInput)
+                .default_member_permissions(Permissions::ADMINISTRATOR)
+                .create_option(|opt| {
+                    opt.kind(CommandOptionType::String)
+                        .name("value")
+                        .description("What do you want me to say ;-;")
+                        .required(true)
+                })
+        });
+
+        commands
     })
     .await
     .unwrap();
+
+    println!(
+        "Now I have these application commands: {}",
+        commands
+            .into_iter()
+            .map(|x| format!("{} ", x.name))
+            .collect::<String>()
+    );
 
     questions_thread::responder(_ctx).await;
 }
