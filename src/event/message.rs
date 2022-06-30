@@ -1,118 +1,189 @@
 use super::*;
+use crate::db::{ClientContextExt, Db};
+use serenity::model::id::UserId;
+use tokio::time::sleep;
 
-pub async fn responder(_ctx: Context, mut _msg: Message) {
-    // let map = json!({"name": "test"});
-    // let channel_id = _msg.channel_id.borrow().clone();
+impl Db {
+    pub async fn add_pending_question(
+        &self,
+        user_id: &UserId,
+        channel_id: &ChannelId,
+        message_contents: &String,
+    ) -> Result<()> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        sqlx::query!(
+            "insert into pending_questions(user_id, channel_id, message_contents) values(?, ?, ?)",
+            user_id,
+            channel_id,
+            message_contents
+        )
+        .execute(&self.sqlitedb)
+        .await?;
+        Ok(())
+    }
+    pub async fn get_pending_question_content(
+        &self,
+        user_id: &UserId,
+        channel_id: &ChannelId,
+    ) -> Result<String> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        let q = sqlx::query!(
+            r#"select message_contents from pending_questions where user_id=? and channel_id=?"#,
+            user_id,
+            channel_id
+        )
+        .fetch_one(&self.sqlitedb)
+        .await?
+        .message_contents;
 
-    // let mut _webhook = &_ctx
-    //     .http
-    //     .create_webhook(u64::try_from(channel_id).unwrap(), &map)
-    //     .await;
+        Ok(q)
+    }
 
-    // let webhook_id = u64::try_from(&_webhook.map(|x| x.id).unwrap()).unwrap();
-    // // let webhook_token = format!("{:?}", _webhook.map(|x| x.token).unwrap()).as_str();
-    // let mut webhook = &_ctx.http.get_webhook_with_token(webhook_id, "").await;
-    // // _webhook.map(|x| x.token);
+    pub async fn remove_pending_question(
+        &self,
+        user_id: &UserId,
+        channel_id: &ChannelId,
+    ) -> Result<()> {
+        let user_id = user_id.0 as i64;
+        let channel_id = channel_id.0 as i64;
+        sqlx::query!(
+            "delete from pending_questions where user_id=? and channel_id=?",
+            user_id,
+            channel_id
+        )
+        .execute(&self.sqlitedb)
+        .await?;
+        Ok(())
+    }
+}
 
-    // let user_date = _new_member.user.created_at().date().naive_utc();
-
+pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
     //
     // Log messages
     //
-    if !_msg.is_own(&_ctx.cache).await {
-        let dbnode_msgcache = Database::from("msgcache".to_string()).await;
+    if !_msg.is_own(&ctx.cache) {
+        // let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
-        let attc = &_msg.attachments;
-        let mut _attachments = String::new();
+        // let attc = &_msg.attachments;
+        // let mut _attachments = String::new();
 
-        for var in attc.iter() {
-            let url = &var.url;
-            _attachments.push_str(format!("\n{}", url).as_str());
-        }
+        // for var in attc.iter() {
+        //     let url = &var.url;
+        //     _attachments.push_str(format!("\n{}", url).as_str());
+        // }
 
         // let v: Value = serde_json::from_str(&_msg.attachments.iter().map(|x| x.proxy_url.as_str())).unwrap();
-        dbnode_msgcache
-            .save_msg(
-                &_msg.id,
-                format!(
-                    "{}{}\n> ---MSG_TYPE--- {} `||` At: {}",
-                    &_msg.content,
-                    &_attachments,
-                    &_msg.author,
-                    &_msg.timestamp.format("%H:%M:%S %p")
-                ),
-            )
-            .await;
+        // dbnode_msgcache
+        //     .save_msg(
+        //         &_msg.id,
+        //         format!(
+        //             "{}{}\n> ---MSG_TYPE--- {} `||` At: {}",
+        //             &_msg.content,
+        //             &_attachments,
+        //             &_msg.author,
+        //             &_msg.timestamp.format("%H:%M:%S %p")
+        //         ),
+        //     )
+        //     .await;
+
+        // Pending questions logging
+        if !_msg.author.bot {
+            let db = &ctx.get_db().await;
+            if let Ok(qc) = db.get_question_channels().await {
+                if qc.iter().any(|x| x.id == _msg.channel_id) {
+                    db.add_pending_question(&_msg.author.id, &_msg.channel_id, &_msg.content)
+                        .await?;
+                    _msg.delete(&ctx.http).await?;
+                    let r = _msg
+                        .reply_mention(
+                            &ctx.http,
+                            "☝️ Please click on **`💡 Ask a Question`** button to complete your question",
+                        )
+                        .await?;
+                    sleep(Duration::from_secs(15)).await;
+                    r.delete(&ctx.http).await?;
+                }
+            }
+
+            //
+            // Moderate "showcase" and "feedback" type channel
+            //
+        }
     }
+
+    Ok(())
 
     //
     // Auto respond on keywords
     //
-    let dbnode_notes = Database::from("notes".to_string()).await;
-    let ref_msg = &_msg.referenced_message;
 
-    let options = MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
-    if !_msg.author.bot && !_msg.content.contains("dnote ") {
-        for entry in glob_with(format!("{}/*", dbnode_notes).as_str(), options).unwrap() {
-            match entry {
-                Ok(path) => {
-                    let note = path.file_name().unwrap().to_string_lossy().to_string();
+    // let dbnode_notes = Database::from("notes".to_string()).await;
+    // let ref_msg = &_msg.referenced_message;
 
-                    if _msg
-                        .content
-                        .to_lowercase()
-                        .contains(&note.as_str().to_lowercase())
-                    {
-                        let typing = _ctx
-                            .http
-                            .start_typing(u64::try_from(_msg.channel_id).unwrap())
-                            .unwrap();
+    // let options = MatchOptions {
+    //     case_sensitive: false,
+    //     require_literal_separator: false,
+    //     require_literal_leading_dot: false,
+    // };
+    // if !_msg.author.bot && !_msg.content.contains("dnote ") {
+    //     for entry in glob_with(format!("{}/*", dbnode_notes).as_str(), options).unwrap() {
+    //         match entry {
+    //             Ok(path) => {
+    //                 let note = path.file_name().unwrap().to_string_lossy().to_string();
 
-                        // Use contentsafe options
-                        let settings = {
-                            ContentSafeOptions::default()
-                                .clean_channel(false)
-                                .clean_role(true)
-                                .clean_user(false)
-                                .clean_everyone(true)
-                                .clean_here(true)
-                        };
+    //                 if _msg
+    //                     .content
+    //                     .to_lowercase()
+    //                     .contains(&note.as_str().to_lowercase())
+    //                 {
+    //                     let typing = _ctx
+    //                         .http
+    //                         .start_typing(u64::try_from(_msg.channel_id).unwrap())
+    //                         .unwrap();
 
-                        let content = content_safe(
-                            &_ctx.cache,
-                            Note::from(&note).await.get_contents().await,
-                            &settings,
-                        )
-                        .await;
-                        if ref_msg.is_some() {
-                            ref_msg
-                                .as_ref()
-                                .map(|x| x.reply_ping(&_ctx.http, &content))
-                                .unwrap()
-                                .await
-                                .unwrap()
-                                .react(&_ctx.http, '❎')
-                                .await
-                                .unwrap();
-                        } else {
-                            _msg.reply(&_ctx.http, &content)
-                                .await
-                                .unwrap()
-                                .react(&_ctx.http, '❎')
-                                .await
-                                .unwrap();
-                        }
-                        typing.stop();
-                    }
-                }
-                Err(e) => println!("{:?}", e),
-            }
-        }
-    }
+    //                     // Use contentsafe options
+    //                     let settings = {
+    //                         ContentSafeOptions::default()
+    //                             .clean_channel(false)
+    //                             .clean_role(true)
+    //                             .clean_user(false)
+    //                             .clean_everyone(true)
+    //                             .clean_here(true)
+    //                     };
+
+    //                     let content = content_safe(
+    //                         &_ctx.cache,
+    //                         Note::from(&note).await.get_contents().await,
+    //                         &settings,
+    //                     )
+    //                     .await;
+    //                     if ref_msg.is_some() {
+    //                         ref_msg
+    //                             .as_ref()
+    //                             .map(|x| x.reply_ping(&_ctx.http, &content))
+    //                             .unwrap()
+    //                             .await
+    //                             .unwrap()
+    //                             .react(&_ctx.http, '❎')
+    //                             .await
+    //                             .unwrap();
+    //                     } else {
+    //                         _msg.reply(&_ctx.http, &content)
+    //                             .await
+    //                             .unwrap()
+    //                             .react(&_ctx.http, '❎')
+    //                             .await
+    //                             .unwrap();
+    //                     }
+    //                     typing.stop();
+    //                 }
+    //             }
+    //             Err(e) => println!("{:?}", e),
+    //         }
+    //     }
+    // }
 
     // let user_date = &_msg.author.created_at().naive_utc().date();
     // let user_time = &_msg.author.created_at().naive_utc().time();

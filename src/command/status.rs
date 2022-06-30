@@ -28,7 +28,7 @@ use serenity::model::prelude::ActivityType;
 #[only_in(guilds)]
 #[description = "Pull the status of an user"]
 pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
-    let user = Parse::user(&_ctx, &_msg, &_args).await;
+    let user = Parse::user(_ctx, _msg, &_args).await;
     let guild_id = &_msg.guild_id.unwrap();
     let user_data = &_ctx
         .http
@@ -36,12 +36,7 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
         .await
         .unwrap();
 
-    let user_status = _ctx
-        .cache
-        .guild(*guild_id.as_u64())
-        .await
-        .unwrap()
-        .presences;
+    let user_status = _ctx.cache.guild(*guild_id.as_u64()).unwrap().presences;
 
     let mut status_content = String::new();
     let mut status_type = String::new();
@@ -54,24 +49,21 @@ pub async fn status(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandR
 
             let client_data = presence.client_status.unwrap();
 
-            match client_data {
-                ClientStatus {
-                    desktop,
-                    mobile,
-                    web,
-                } => {
-                    if desktop.is_some() {
-                        status_client.push_str("Desktop");
-                        // status_mode.push_str(get_online_status(&desktop.unwrap()).await.as_str());
-                    } else if mobile.is_some() {
-                        status_client.push_str("Mobile");
-                        // status_mode.push_str(get_online_status(&mobile.unwrap()).await.as_str());
-                    } else if web.is_some() {
-                        status_client.push_str("Web");
-                        // status_mode.push_str(get_online_status(&web.unwrap()).await.as_str());
-                    }
-                } // _ => {}
-            }
+            let ClientStatus {
+                desktop,
+                mobile,
+                web,
+            } = client_data;
+            if desktop.is_some() {
+                status_client.push_str("Desktop");
+                // status_mode.push_str(get_online_status(&desktop.unwrap()).await.as_str());
+            } else if mobile.is_some() {
+                status_client.push_str("Mobile");
+                // status_mode.push_str(get_online_status(&mobile.unwrap()).await.as_str());
+            } else if web.is_some() {
+                status_client.push_str("Web");
+                // status_mode.push_str(get_online_status(&web.unwrap()).await.as_str());
+            };
 
             for acti in one {
                 // status.push_str(&acti.emoji.unwrap().);

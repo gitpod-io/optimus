@@ -14,14 +14,13 @@ impl Parse {
 
             if Regex::new("[0-9]{18}+")
                 .unwrap()
-                .is_match(&to_return.to_string().as_str())
+                .is_match(to_return.to_string().as_str())
             {
                 to_return.parse::<u64>().unwrap()
             } else {
                 let userid_byname = _ctx
                     .cache
                     .guild(*_message.guild_id.unwrap().as_u64())
-                    .await
                     .unwrap()
                     .member_named(&to_return)
                     .unwrap()

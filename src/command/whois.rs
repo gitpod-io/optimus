@@ -12,7 +12,7 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
 
         let dbnode = Database::from("userid".to_string()).await;
 
-        let user = Parse::user(&_ctx, &_msg, &_args).await;
+        let user = Parse::user(_ctx, _msg, &_args).await;
 
         let guid = &_msg.guild_id.unwrap();
 
@@ -21,7 +21,6 @@ pub async fn whois(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandRe
         let user_data = &_ctx
             .cache
             .guild(guid)
-            .await
             .unwrap()
             .member(&_ctx.http, user)
             .await

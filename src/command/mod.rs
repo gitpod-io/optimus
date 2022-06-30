@@ -1,47 +1,42 @@
 mod about;
-mod am_i_admin;
-mod bash;
-// mod bashget;
+// mod am_i_admin;
 mod av;
+mod bash;
+pub mod config;
 mod editlog;
 mod emoji;
 mod invite;
 mod latency;
 mod math;
-pub mod note;
+// pub mod note;
 mod owner_check;
 mod ping;
 mod say;
-mod slow_mode;
 mod some_long_command;
 mod status;
-mod upper;
-mod whois;
-// use crate::utils::db::*;
+// mod whois;
 
 // Import commands
 use about::*;
+use av::*;
+use bash::*;
+use config::*;
 use editlog::*;
-// use am_i_admin::*;
 use emoji::*;
+use invite::*;
 use latency::*;
 use math::*;
+// use note::*;
 use owner_check::*;
-// use ping::*;
-use bash::*;
 use say::*;
-use slow_mode::*;
-// use some_long_command::*;
-// use upper::*;
-// use bashget::*;
-use av::*;
-use invite::*;
-use note::*;
 use status::*;
-use whois::*;
+// use whois::*;
+mod exec;
+use exec::*;
 
-use crate::utils::{db::*, misc::vowel_gen, parser::Parse, substr::*};
-use thorne::*;
+use crate::db::{ClientContextExt, Db};
+use crate::utils::{db::*, parser::Parse, substr::*};
+// use thorne::*;
 
 use serenity::{
     client::bridge::gateway::{ShardId, ShardManager},
@@ -52,11 +47,7 @@ use serenity::{
         Args, CommandGroup, CommandOptions, CommandResult, Delimiter, DispatchError, HelpOptions,
         Reason,
     },
-    model::{
-        channel::{Channel, Message},
-        id::UserId,
-        permissions::Permissions,
-    },
+    model::{channel::Message, id::UserId},
     utils::{content_safe, ContentSafeOptions},
 };
 use std::{
@@ -66,9 +57,10 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::Result;
 use serenity::prelude::*;
-use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
-use tokio::{fs, fs::symlink, process, sync::Mutex};
+// use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
+use tokio::{process, sync::Mutex};
 
 // A container type is created for inserting into the Client's `data`, which
 // allows for data to be accessible across all events and framework commands, or
@@ -93,15 +85,16 @@ impl TypeMapKey for CommandCounter {
     say,
     commands,
     bash,
+	exec,
     // bashget,
     // ping,
     latency,
-    whois,
+    // whois,
     av,
     status,
     invite,
     // some_long_command,
-    // upper_command
+    config
 )]
 struct General;
 
@@ -120,12 +113,25 @@ struct General;
 #[commands(cat, dog)]
 struct Emoji;
 
+// #[group]
+// #[prefix = "note"]
+// #[description = "A group of commands providing notes keeping functionality"]
+// #[summary = "Note autoresponder"]
+// #[commands(add, remove, link, list)]
+// struct Note;
+
 #[group]
-#[prefix = "note"]
-#[description = "A group of commands providing notes keeping functionality"]
-#[summary = "Note autoresponder"]
-#[commands(add, remove, link, list)]
-struct Note;
+#[prefix = "config"]
+#[description = "Set bot configs for the server"]
+#[summary = "Bot config"]
+// #[commands(
+//     questions_channel,
+//     introduction_channel,
+//     getting_started,
+//     subscriber_role,
+//     default_role
+// )]
+struct Config;
 
 #[group]
 // Sets a single prefix for this group.
@@ -135,14 +141,14 @@ struct Note;
 #[commands(multiply)]
 struct Math;
 
-#[group]
-#[owners_only]
-// Limit all commands to be guild-restricted.
-#[only_in(guilds)]
-// Summary only appears when listing multiple groups.
-#[summary = "Server admins only"]
-#[commands(slow_mode)]
-struct Owner;
+// #[group]
+// #[owners_only]
+// // Limit all commands to be guild-restricted.
+// #[only_in(guilds)]
+// // Summary only appears when listing multiple groups.
+// #[summary = "Server admins only"]
+// #[commands(slow_mode)]
+// struct Owner;
 
 // The framework provides two built-in help commands for you to use.
 // But you can also make your own customized help command that forwards

@@ -1,3 +1,5 @@
+use crate::db::ClientContextExt;
+
 use super::*;
 
 pub async fn responder(
@@ -6,8 +8,14 @@ pub async fn responder(
     _deleted_message_id: MessageId,
     _guild_id: Option<GuildId>,
 ) {
-    let dbnode = Database::from("msgcache".to_string()).await;
+    let db = &_ctx.get_db().await;
+    if let Ok(qc) = db.get_question_channels().await {
+        if qc.iter().any(|x| x.id == _channel_id) {
+            return;
+        }
+    }
 
+    let dbnode = Database::from("msgcache".to_string()).await;
     if !dbnode.msg_exists(&_deleted_message_id).await {
         return;
     }
@@ -30,7 +38,7 @@ pub async fn responder(
         .await
         .unwrap();
 
-    let gg = &_ctx.cache.guild(_guild_id.unwrap()).await.unwrap();
+    let gg = &_ctx.cache.guild(_guild_id.unwrap()).unwrap();
 
     let nqn_exists = &gg.member(&_ctx.http, 559426966151757824).await;
 
@@ -60,7 +68,7 @@ pub async fn responder(
     parsed_last_msg = re0.replace_all(&parsed_last_msg, "").to_string();
     parsed_last_msg = re2.replace_all(&parsed_last_msg, "").to_string();
 
-    let mut parsed_deleted_msg = re0.replace_all(&deleted_message.as_str(), "").to_string();
+    let mut parsed_deleted_msg = re0.replace_all(deleted_message.as_str(), "").to_string();
     parsed_deleted_msg = re.replace_all(&parsed_deleted_msg, "").to_string();
     parsed_deleted_msg = re2.replace_all(&parsed_deleted_msg, "").to_string();
     parsed_deleted_msg = re3.replace_all(&parsed_deleted_msg, "").to_string();
@@ -69,14 +77,7 @@ pub async fn responder(
         if nqn_exists.is_err() {
             false
         } else if is_valid_member.is_err() {
-            if parsed_last_msg.contains(&parsed_deleted_msg)
-            // if dbg!(parsed_last_msg).contains(dbg!(&parsed_deleted_msg))
-            {
-                // dbg!("hmm");
-                true
-            } else {
-                false
-            }
+            parsed_last_msg.contains(&parsed_deleted_msg)
         } else {
             false
         }
@@ -93,16 +94,16 @@ pub async fn responder(
     if !msg_is_nqnbot
         && !Regex::new(r"^.react")
             .unwrap()
-            .is_match(&deleted_message.as_str())
+            .is_match(deleted_message.as_str())
         && !Regex::new(r"^dsay ")
             .unwrap()
-            .is_match(&deleted_message.as_str())
+            .is_match(deleted_message.as_str())
         // && !Regex::new(r":*:")
         //     .unwrap()
         //     .is_match(&deleted_message.as_str())
         && !Regex::new(r"^.delete")
             .unwrap()
-            .is_match(&deleted_message.as_str())
+            .is_match(deleted_message.as_str())
     {
         let settings = {
             ContentSafeOptions::default()
@@ -123,14 +124,14 @@ pub async fn responder(
         // }
         // End alert
 
-        let mut content = content_safe(&_ctx.cache, &deleted_message, &settings).await;
+        let mut content = content_safe(&_ctx.cache, &deleted_message, &settings, &[]);
 
         let mut proxied_content_attachments = Vec::new();
         let mut content_attachments = Vec::new();
 
         for caps in Regex::new(r"(?P<url>https://cdn.discordapp.com/attachments/.*/.*)")
             .unwrap()
-            .captures_iter(&content.as_str())
+            .captures_iter(content.as_str())
         {
             let url = &caps["url"];
 
@@ -174,7 +175,7 @@ pub async fn responder(
                     // let link = caps_next["link"];
 
                     proxied_content_attachments
-                        .push(caps_next["link"].to_string().replace("\"", ""));
+                        .push(caps_next["link"].to_string().replace('"', ""));
 
                     // println!("{}", link);
 
@@ -191,7 +192,7 @@ pub async fn responder(
 
                 process::Command::new("curl")
                     .current_dir(&current_dir)
-                    .args(&["-s", "-o", &file_name, &url])
+                    .args(&["-s", "-o", &file_name, url])
                     .status()
                     .await
                     .unwrap();
@@ -228,7 +229,7 @@ pub async fn responder(
                     // let link = caps_next["link"];
 
                     proxied_content_attachments
-                        .push(caps_next["link"].to_string().replace("\"", ""));
+                        .push(caps_next["link"].to_string().replace('"', ""));
 
                     // content_urls_new.push_str(&Regex::new(r#"""#).unwrap().replace(&link, ""));
                 }
@@ -278,7 +279,8 @@ pub async fn responder(
             last_msg
                 .as_ref()
                 .map(|x| async move {
-                    if let Err(_) = x.react(&_ctx.http, '📩').await {
+                    if (x.react(&_ctx.http, '📩').await).is_err() {
+                        // In case someone blocked the bot
                         _channel_id
                             .say(&_ctx, &content.replace("---MSG_TYPE---", "Deleted:"))
                             .await

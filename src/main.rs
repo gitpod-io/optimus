@@ -2,14 +2,13 @@ mod command;
 mod event;
 mod utils;
 use command::*;
+mod db;
+use db::Db;
 use std::env;
 
+use serenity::framework::standard::{buckets::LimitedFor, StandardFramework};
 use serenity::http::Http;
 use serenity::prelude::*;
-use serenity::{
-    client::bridge::gateway::GatewayIntents,
-    framework::standard::{buckets::LimitedFor, StandardFramework},
-};
 use std::{
     collections::{HashMap, HashSet},
     sync::{atomic::AtomicBool, Arc},
@@ -22,7 +21,11 @@ async fn main() {
         .expect("Expected APPLICATION_ID")
         .parse()
         .expect("Unable to parse");
-    let http = Http::new_with_token(&token);
+    let http = Http::new(&token);
+
+    // Init sqlite database
+    let db = Db::new().await.expect("Can't init database");
+    db.run_migrations().await.unwrap();
 
     // We will fetch your bot's owners and id
     let (owners, bot_id) = match http.get_current_application_info().await {
@@ -45,7 +48,7 @@ async fn main() {
         .configure(|c| {
             c.with_whitespace(true)
                 .on_mention(Some(bot_id))
-                .prefix("d")
+                .prefix("gp")
                 // In this case, if "," would be first, a message would never
                 // be delimited at ", ", forcing you to trim your arguments if you
                 // want to avoid whitespaces at the start of each.
@@ -78,7 +81,7 @@ async fn main() {
         // Set a function that's called whenever a command's execution didn't complete for one
         // reason or another. For example, when a user has exceeded a rate-limit or a command
         // can only be performed by the bot owner.
-        .on_dispatch_error(dispatch_error)
+        // .on_dispatch_error(dispatch_error)
         // Can't be used more than once per 5 seconds:
         .bucket("emoji", |b| b.delay(5))
         .await
@@ -103,12 +106,13 @@ async fn main() {
         // #name is turned all uppercase
         .help(&MY_HELP)
         .group(&GENERAL_GROUP)
-        .group(&NOTE_GROUP)
-        ////// .group(&EMOJI_GROUP)
-        ////// .group(&MATH_GROUP)
-        .group(&OWNER_GROUP);
+        .group(&CONFIG_GROUP);
+    // .group(&NOTE_GROUP);
+    ////// .group(&EMOJI_GROUP)
+    ////// .group(&MATH_GROUP)
+    // .group(&OWNER_GROUP)
 
-    let mut client = Client::builder(token)
+    let mut client = Client::builder(token, GatewayIntents::default())
         .application_id(application_id)
         .event_handler(event::Listener {
             is_loop_running: AtomicBool::new(false),
@@ -122,6 +126,7 @@ async fn main() {
         let mut data = client.data.write().await;
         data.insert::<CommandCounter>(HashMap::default());
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
+        data.insert::<Db>(Arc::new(db));
     }
 
     if let Err(why) = client.start().await {
