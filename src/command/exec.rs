@@ -22,7 +22,7 @@ async fn exec(ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult {
         match client.execute(&executor).await {
             Ok(response) => {
                 if let Some(c) = response.compile {
-                    if c.code != 0 {
+                    if c.code != Some(0) {
                         final_msg.push_str(c.output.as_str());
                     }
                 }

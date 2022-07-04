@@ -859,19 +859,18 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         let button_label = &mci
                             .message
                             .components
-                            .get(0)
-                            .unwrap()
-                            .components
                             .iter()
-                            .find_map(|x| {
-                                let button: Button =
-                                    serde_json::from_value(serde_json::to_value(x).unwrap())
-                                        .unwrap();
-                                if button.custom_id.unwrap() == mci.data.custom_id {
-                                    Some(button.label.unwrap())
-                                } else {
-                                    None
-                                }
+                            .find_map(|a| {
+                                a.components.iter().find_map(|x| {
+                                    let button: Button =
+                                        serde_json::from_value(serde_json::to_value(x).unwrap())
+                                            .unwrap();
+                                    if button.custom_id.unwrap() == mci.data.custom_id {
+                                        Some(button.label.unwrap())
+                                    } else {
+                                        None
+                                    }
+                                })
                             })
                             .unwrap();
 
@@ -1254,7 +1253,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             }
             // if !relevant_links.is_empty() {
             //     thread
-            //         .send_message(&ctx.http, |m| {
+            //         .send_message(&ctx.http, |m| 
             //             m.content(format!(
             //                 "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
             //                 &user_mention
