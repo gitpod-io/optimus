@@ -360,27 +360,27 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
                         SelectMenuSpec {
-                            value: "JetBrainsIDEs",
-                            description: "Discuss about Jetbrains IDEs for Gitpod!",
-                            label: "JetBrains (BETA)",
+                            value: "Developer",
+                            description: "Develop on Shimmer/IOTA!",
+                            label: "Develop",
                             display_emoji: "🧠",
                         },
                         SelectMenuSpec {
-                            value: "DevX",
-                            description: "All things about DevX",
-                            label: "Developer Experience",
+                            value: "Speculator",
+                            description: "All things about markets",
+                            label: "Speculation/Degen Stuff",
                             display_emoji: "✨",
                         },
                         SelectMenuSpec {
-                            value: "SelfHosted",
-                            description: "Do you selfhost Gitpod? Then you need this!",
-                            label: "Self Hosted Gitpod",
+                            value: "NodeOp",
+                            description: "Do you selfhost a node? Then you need this!",
+                            label: "Self Hosted Node",
                             display_emoji: "🏡",
                         },
                         SelectMenuSpec {
-                            value: "OnMobile",
-                            description: "Talk about using Gitpod on mobile devices",
-                            label: "Mobile and tablets",
+                            value: "User",
+                            description: "Learn about ecosystem dApps/projects and hangout with likeminded people",
+                            label: "Pioneer",
                             display_emoji: "📱",
                         },
                     ]);
@@ -418,20 +418,20 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         },
                     ]);
 
-                    for prog_role in [
-                        "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
-                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
-                        "Rust",
-                    ]
-                    .iter()
-                    {
-                        additional_roles.push(SelectMenuSpec {
-                            label: prog_role,
-                            description: "Discussions",
-                            display_emoji: "📜",
-                            value: prog_role,
-                        });
-                    }
+                    //for prog_role in [
+                    //    "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
+                    //    "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
+                    //    "Rust",
+                    //]
+                    //.iter()
+                    //{
+                    //    additional_roles.push(SelectMenuSpec {
+                    //        label: prog_role,
+                    //        description: "Discussions",
+                    //        display_emoji: "📜",
+                    //        value: prog_role,
+                    //    });
+                    //}
                     let mut role_choices: Vec<String> = Vec::new();
                     let mut join_reason = String::new();
 
@@ -463,7 +463,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         });
                                         o
                                     });
-                                    s.custom_id("channel_choice").max_values(24)
+                                    s.custom_id("channel_choice").max_values(additional_roles.len)
                                 });
                                 a
                             });
