@@ -887,7 +887,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 })
                                             })
                                         })
-                                        .flags(MessageFlags::EPHEMERAL)
+                                    // .flags(MessageFlags::EPHEMERAL)
                                 })
                         })
                         .await
@@ -1253,7 +1253,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             }
             // if !relevant_links.is_empty() {
             //     thread
-            //         .send_message(&ctx.http, |m| 
+            //         .send_message(&ctx.http, |m|
             //             m.content(format!(
             //                 "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
             //                 &user_mention
