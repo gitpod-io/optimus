@@ -1,6 +1,9 @@
-use serenity::model::{
-    prelude::command::{CommandOptionType, CommandType},
-    Permissions,
+use serenity::{
+    futures::StreamExt,
+    model::{
+        prelude::command::{CommandOptionType, CommandType},
+        Permissions,
+    },
 };
 
 use super::*;
@@ -47,5 +50,22 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
             .collect::<String>()
     );
 
-    questions_thread::responder(_ctx).await;
+    // questions_thread::responder(_ctx).await;
+
+    let mut messages = ChannelId(816249489911185418)
+        .messages_iter(&_ctx.http)
+        .boxed();
+    let mut count = 1;
+    while let Some(message_result) = messages.next().await {
+        if let Ok(message) = message_result {
+            // println!("{} said \"{}\".", message.author.name, message.content,);
+            let thread = ChannelId(*message.id.as_u64());
+            thread
+                .edit_thread(&_ctx.http, |t| t.archived(true))
+                .await
+                .ok();
+            count += 1;
+        }
+    }
+    dbg!(count);
 }
