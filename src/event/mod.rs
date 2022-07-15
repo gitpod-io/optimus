@@ -190,9 +190,9 @@ impl EventHandler for Listener {
         }
     }
 
-    async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
-        thread_update::responder(_ctx, _thread).await;
-    }
+    // async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
+    //     thread_update::responder(_ctx, _thread).await;
+    // }
 
     async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {
         guild_create::responder(_ctx, _guild, _is_new).await;

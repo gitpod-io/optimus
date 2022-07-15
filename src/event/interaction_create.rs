@@ -1066,20 +1066,17 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
             let user_mention = mci.user.mention();
 
-            let thread_auto_archive_dur = {
-                if cfg!(debug_assertions) {
-                    1440 // 1 day
-                } else {
-                    4320 // 3 days
-                }
-            };
+            // let thread_auto_archive_dur = {
+            //     if cfg!(debug_assertions) {
+            //         1440 // 1 day
+            //     } else {
+            //         10080 // 7 days
+            //     }
+            // };
 
             let thread = mci
                 .channel_id
-                .create_public_thread(&ctx, msg.id, |e| {
-                    e.name(format!("❓ {}", &title.value))
-                        .auto_archive_duration(thread_auto_archive_dur)
-                })
+                .create_public_thread(&ctx, msg.id, |e| e.name(format!("❓ {}", &title.value)))
                 .await
                 .unwrap();
 
