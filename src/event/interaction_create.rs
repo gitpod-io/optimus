@@ -306,41 +306,6 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .max_length(4000)
                             .value(desc)
                     })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_workspace")
-                                .label("Workspace affected")
-                                .required(false)
-                                .max_length(100)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_config_yaml")
-                                .label("Your config.yaml contents")
-                                .required(false)
-                                .max_length(1000)
-                        }
-                    })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_example_repo")
-                                .label("Example repo")
-                                .required(false)
-                                .max_length(100)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_kubectl_result")
-                                .label("Result of `kubectl get pods -n <namespace>`")
-                                .required(false)
-                                .max_length(1000)
-                                .value(SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER)
-                        }
-                    })
                 })
             })
         })
@@ -991,30 +956,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 ActionRowComponent::InputText(it) => it,
                 _ => return,
             };
-            let optional_one = match mci
-                .data
-                .components
-                .get(2)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
-            let optional_two = match mci
-                .data
-                .components
-                .get(3)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
 
             mci.create_interaction_response(ctx, |r| {
                 if mci.data.custom_id == "gitpod_help_button_press" {
@@ -1096,36 +1037,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         );
                     } else {
                         m.add_embed(|e| e.title("Description").description(desc_safe));
-                    }
-                    if channel_name != SELF_HOSTED_TEXT {
-                        if !optional_one.value.is_empty() || !optional_two.value.is_empty() {
-                            m.add_embed(|e| {
-                                if !optional_one.value.is_empty() {
-                                    e.field("Workspace affected", &optional_one.value, false);
-                                }
-                                if !optional_two.value.is_empty() {
-                                    e.field("Example Repository", &optional_two.value, false);
-                                }
-                                e
-                            });
-                        }
-                    } else if channel_name == SELF_HOSTED_TEXT {
-                        if !optional_one.value.is_empty() {
-                            m.add_embed(|e| {
-                                e.title("config.yaml contents")
-                                    .description(format!("```yaml\n{}\n```", &optional_one.value))
-                            });
-                        }
-                        if optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
-                            && !optional_two.value.is_empty()
-                        {
-                            m.add_embed(|e| {
-                                e.title("Result of kubectl").description(format!(
-                                    "```javascript\n{}\n```",
-                                    &optional_two.value
-                                ))
-                            });
-                        }
                     }
 
                     m
