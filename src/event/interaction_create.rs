@@ -428,7 +428,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         });
                                         o
                                     });
-                                    s.custom_id("channel_choice").max_values(additional_roles.len())
+                                    s.custom_id("channel_choice").max_values(additional_roles.len().try_into().unwrap())
                                 });
                                 a
                             });
