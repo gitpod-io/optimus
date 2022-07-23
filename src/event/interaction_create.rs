@@ -490,13 +490,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													b.custom_id("hangout")
 												});
 												a.create_button(|b|{
-													b.label("To get help with Gitpod.io");
+													b.label("To get help with IOTA/Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("✌️".to_string()));
 													b.custom_id("gitpodio_help")
 												});
 												a.create_button(|b|{
-													b.label("To get help with my selfhosted installation");
+													b.label("To develop on IOTA/Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("🏡".to_string()));
 													b.custom_id("selfhosted_help")
@@ -618,10 +618,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													INTRODUCTION_CHANNEL.mention()
 												))
 												.push_line("\nWe’d love to get to know you better and hear about:")
-												.push_quote_line("🔧 what you’re working on!")
-												.push_quote_line("🛑 what blocks you most in your daily dev workflow")
-												.push_quote_line("🌈 your favourite Gitpod feature")
-												.push_quote_line("✨ your favourite emoji").build()
+                                                .push_quote_line("🌈 your favourite IOTA/Shimmer feature")
+												.push_quote_line("🔧 what you’re working on!").build()
                                             } else {
                                                 "Awesome, your server profile will be updated now!"
                                                     .to_owned()
@@ -696,12 +694,12 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                             let general_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443516284943)
                                             } else {
-                                                ChannelId(839379835662368768)
+                                                ChannelId(970953101894889523)
                                             };
                                             let offtopic_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443793141769)
                                             } else {
-                                                ChannelId(972510491933032508)
+                                                ChannelId(970953101894889529)
                                             };
                                             let db = &ctx.get_db().await;
                                             let questions_channel =
@@ -718,7 +716,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                             let mut prepared_msg = MessageBuilder::new();
                                             prepared_msg.push_line(format!(
-                                                "Welcome to the Gitpod community {} 🙌\n",
+                                                "Welcome to the IOTA/Shimmer community {} 🙌\n",
                                                 &msg.author.mention()
                                             ));
                                             match join_reason.as_str() {
@@ -743,13 +741,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 _ => {}
                                             }
                                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
-											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
+											.push_quote_line(format!("• {} - for anything IOTA/Shimmer related", &general_channel.mention()))
 											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
-											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
+											.push_quote_line(format!("• {} - have a question or need help? This is the place to ask! ❓\n", &questions_channel.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
-											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
-											.push_quote_line("• https://www.gitpod.io/community")
-											.push_quote_line("• https://www.gitpod.io/about");
+											.push_bold_line("Feel free to check out the following pages to learn more about IOTA/Shimmer:")
+											.push_quote_line("• https://www.iota.org")
+                                            .push_quote_line("• https://shimmer.network")
+											.push_quote_line("• https://wiki.iota.org");
                                             let mut thread_msg = thread
                                                 .send_message(&ctx.http, |t| {
                                                     t.content(prepared_msg)
