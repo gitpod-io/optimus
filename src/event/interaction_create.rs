@@ -354,31 +354,31 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         SelectMenuSpec {
                             value: "Found: FromFriend",
                             label: "Friend or colleague",
-                            description: "A friend or colleague of mine introduced Gitpod to me",
+                            description: "A friend or colleague of mine introduced IOTA/Shimmer to me",
                             display_emoji: "🫂",
                         },
                         SelectMenuSpec {
                             value: "Found: FromGoogle",
                             label: "Google",
-                            description: "I found Gitpod from a Google search",
+                            description: "I found IOTA/Shimmer from a Google search",
                             display_emoji: "🔎",
                         },
                         SelectMenuSpec {
                             value: "Found: FromYouTube",
                             label: "YouTube",
-                            description: "Saw Gitpod on a Youtube Video",
+                            description: "Saw IOTA/Shimmer on a Youtube Video",
                             display_emoji: "📺",
                         },
                         SelectMenuSpec {
                             value: "Found: FromTwitter",
                             label: "Twitter",
-                            description: "Saw people talking about Gitpod on a Tweet",
+                            description: "Saw people talking about IOTA/Shimmer on a Tweet",
                             display_emoji: "🐦",
                         },
                         SelectMenuSpec {
                             value: "Found: FromGitRepo",
                             label: "Git Repository",
-                            description: "Found Gitpod on a Git repository",
+                            description: "Found IOTA/Shimmer on a Git repository",
                             display_emoji: "✨",
                         },
                     ]);
