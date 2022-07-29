@@ -59,7 +59,7 @@ pub async fn responder(_ctx: &Context) {
 						.push_underline_line("**Welcome to the IOTA/Shimmer community!**")
 						.push_line("We are here to empower the community, we’re happy to help you out 🧡")
 						.push_line("Before **asking a question**, remember to check out our documentation")
-						.push_line("If you think IOTA/Shimmer is not working, please check our status page. Thank you!").build());
+//						.push_line("If you think IOTA/Shimmer is not working, please check our status page. Thank you!").build());
 				m.components(|c| {
 					c.create_action_row(|ar| {
 						ar.create_button(|button| {
@@ -76,14 +76,14 @@ pub async fn responder(_ctx: &Context) {
 								.label("Docs")
 								.emoji(ReactionType::Unicode("📚".to_string()))
 								.url("https://wiki.iota.org/")
-						});
-						ar.create_button(|button| {
-							button
-								.style(ButtonStyle::Link)
-								.label("Status")
-								.emoji(ReactionType::Unicode("🧭".to_string()))
-								.url("https://status.iota.org")
 						})
+						// ar.create_button(|button| {
+						// 	button
+						// 		.style(ButtonStyle::Link)
+						// 		.label("Status")
+						// 		.emoji(ReactionType::Unicode("🧭".to_string()))
+						// 		.url("https://status.iota.org")
+						// })
 					})
 				})
 			})
@@ -91,7 +91,7 @@ pub async fn responder(_ctx: &Context) {
 			.unwrap();
     }
 
-    let placeholder_text = "**Press the button below** 👇 to gain access to the server";
+    let placeholder_text = "👇 **Press the button** to tailor the server to your preferences (scroll down in the menus for more options)";
 
     let mut t = GETTING_STARTED_CHANNEL.messages_iter(&_ctx.http).boxed();
     while let Some(message_result) = t.next().await {

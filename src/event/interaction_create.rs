@@ -236,7 +236,7 @@ async fn assign_roles(
     ctx: &Context,
     role_choices: Vec<String>,
     member: &mut Member,
-    temp_role: &Role,
+    member_role: &Role,
     member_role: &Role,
 ) {
     if role_choices.len() > 1 || !role_choices.iter().any(|x| x == "none") {
@@ -256,8 +256,8 @@ async fn assign_roles(
     }
 
     // Remove the temp role from user
-    if member.roles.iter().any(|x| x == &temp_role.id) {
-        member.remove_role(&ctx.http, temp_role.id).await.unwrap();
+    if member.roles.iter().any(|x| x == &member_role.id) {
+        member.remove_role(&ctx.http, member_role.id).await.unwrap();
     }
     // Add member role if missing
     if !member.roles.iter().any(|x| x == &member_role.id) {
@@ -619,14 +619,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .await
                                     .unwrap();
 
-                                let temp_role = get_role(&mci, ctx, "Member").await;
+                                let member_role = get_role(&mci, ctx, "Member").await;
                                 let followup_results = match followup
                                     .await_component_interaction(&ctx)
                                     .timeout(Duration::from_secs(60 * 5))
                                     .await
                                 {
                                     Some(ci) => {
-                                        member.add_role(&ctx.http, temp_role.id).await.unwrap();
+                                        member.add_role(&ctx.http, member_role.id).await.unwrap();
                                         let final_msg = {
                                             if never_introduced {
                                                 MessageBuilder::new()
@@ -825,7 +825,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     ctx,
                                     role_choices,
                                     &mut member,
-                                    &temp_role,
+                                    &member_role,
                                     &member_role,
                                 )
                                 .await;
