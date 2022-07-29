@@ -325,28 +325,46 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
                         SelectMenuSpec {
-                            value: "Developer",
-                            description: "Develop on Shimmer/IOTA!",
-                            label: "Develop",
-                            display_emoji: "🧠",
+                            value: "Newcomer",
+                            description: "Get to know the people in the community",
+                            label: "Newcomer",
+                            display_emoji: "🌱",
                         },
                         SelectMenuSpec {
-                            value: "Speculator",
-                            description: "All things about markets",
+                            value: "Buidler",
+                            description: "Find resources and share your work",
+                            label: "Buidler",
+                            display_emoji: "🏗️",
+                        },
+                        SelectMenuSpec {
+                            value: "EarlyAdopter",
+                            description: "Join the pioneers in the ecosystem",
+                            label: "Early Adopter",
+                            display_emoji: "🌅",
+                        },
+                        SelectMenuSpec {
+                            value: "Governance",
+                            description: "Take part in decision making processes",
+                            label: "Governance",
+                            display_emoji: "🏛️",
+                        },
+                        SelectMenuSpec {
+                            value: "Research",
+                            description: "Deep discussions between researchers",
+                            label: "Academia and Research",
+                            display_emoji: "🧑‍🔬",
+                        },
+                        SelectMenuSpec {
+                            value: "Speculation",
+                            description: "Markets, altcoins and degens",
                             label: "Speculation/Degen Stuff",
-                            display_emoji: "✨",
+                            display_emoji: "🏛️",
                         },
                         SelectMenuSpec {
-                            value: "NodeOp",
-                            description: "Do you selfhost a node? Then you need this!",
-                            label: "Self Hosted Node",
-                            display_emoji: "🏡",
-                        },
-                        SelectMenuSpec {
-                            value: "User",
-                            description: "Learn about ecosystem dApps/projects and hangout with likeminded people",
-                            label: "Pioneer",
-                            display_emoji: "📱",
+                            value: "AllCategories",
+                            description: "Just like the old times",
+                            label: "Unlock everything",
+                            display_emoji: "♾️",
                         },
                     ]);
 
@@ -376,9 +394,9 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             display_emoji: "🐦",
                         },
                         SelectMenuSpec {
-                            value: "Found: FromGitRepo",
-                            label: "Git Repository",
-                            description: "Found IOTA/Shimmer on a Git repository",
+                            value: "Found: FromMarketCap",
+                            label: "MarketCap",
+                            description: "Found on CoinMarketCap/CoinGecko",
                             display_emoji: "✨",
                         },
                     ]);
@@ -509,10 +527,10 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                 // Save the choices of last interaction
                                 let subscribed_role = SelectMenuSpec {
-                                    label: "Subscribed",
-                                    description: "Subscribed to pings",
+                                    label: "Events",
+                                    description: "Subscribed to event pings",
                                     display_emoji: "",
-                                    value: "Subscriber",
+                                    value: "Events",
                                 };
                                 if interaction.data.custom_id == "subscribed" {
                                     role_choices.push(subscribed_role.value.to_string());
