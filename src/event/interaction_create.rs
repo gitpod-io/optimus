@@ -631,7 +631,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                             if never_introduced {
                                                 MessageBuilder::new()
 												.push_line(format!(
-													"Thank you {}! To unlock the server, drop by {} :wave:",
+													"Thank you {}! If you'd like to, drop by {}",
 													interaction.user.mention(),
 													INTRODUCTION_CHANNEL.mention()
 												))
