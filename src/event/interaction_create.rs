@@ -548,7 +548,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                 join_reason.push_str(interaction.data.custom_id.as_str());
 
                                 let mut member = mci.member.clone().unwrap();
-                                let temp_role = get_role(&mci, ctx, "Member").await;
+                                let temp_role = get_role(&mci, ctx, "Onboarding").await;
                                 let never_introduced = {
                                     let mut status = true;
                                     if let Some(roles) = member.roles(&ctx.cache) {
@@ -579,7 +579,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                 let followup = interaction
                                     .create_followup_message(&ctx.http, |d| {
-                                        d.content("**[4/4]:** How did you find Gitpod?");
+                                        d.content("**[4/4]:** How did you find IOTA&Shimmer?");
                                         d.components(|c| {
                                             c.create_action_row(|a| {
                                                 a.create_select_menu(|s| {
