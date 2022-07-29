@@ -58,7 +58,7 @@ pub async fn responder(_ctx: &Context) {
 					MessageBuilder::new()
 						.push_underline_line("**Welcome to the IOTA/Shimmer community!**")
 						.push_line("We are here to empower the community, we’re happy to help you out 🧡")
-						.push_line("Before **asking a question**, remember to check out our documentation")
+						.push_line("Before **asking a question**, remember to check out our documentation"));
 //						.push_line("If you think IOTA/Shimmer is not working, please check our status page. Thank you!").build());
 				m.components(|c| {
 					c.create_action_row(|ar| {
