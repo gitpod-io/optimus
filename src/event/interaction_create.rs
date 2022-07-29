@@ -306,41 +306,6 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                             .max_length(4000)
                             .value(desc)
                     })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_workspace")
-                                .label("Workspace affected")
-                                .required(false)
-                                .max_length(100)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_config_yaml")
-                                .label("Your config.yaml contents")
-                                .required(false)
-                                .max_length(1000)
-                        }
-                    })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_example_repo")
-                                .label("Example repo")
-                                .required(false)
-                                .max_length(100)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_kubectl_result")
-                                .label("Result of `kubectl get pods -n <namespace>`")
-                                .required(false)
-                                .max_length(1000)
-                                .value(SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER)
-                        }
-                    })
                 })
             })
         })
@@ -407,25 +372,25 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         SelectMenuSpec {
                             value: "Found: FromFriend",
                             label: "Friend or colleague",
-                            description: "A friend or colleague of mine introduced Gitpod to me",
+                            description: "A friend or colleague of mine introduced IOTA/Shimmer to me",
                             display_emoji: "🫂",
                         },
                         SelectMenuSpec {
                             value: "Found: FromGoogle",
                             label: "Google",
-                            description: "I found Gitpod from a Google search",
+                            description: "I found IOTA/Shimmer from a Google search",
                             display_emoji: "🔎",
                         },
                         SelectMenuSpec {
                             value: "Found: FromYouTube",
                             label: "YouTube",
-                            description: "Saw Gitpod on a Youtube Video",
+                            description: "Saw IOTA/Shimmer on a Youtube Video",
                             display_emoji: "📺",
                         },
                         SelectMenuSpec {
                             value: "Found: FromTwitter",
                             label: "Twitter",
-                            description: "Saw people talking about Gitpod on a Tweet",
+                            description: "Saw people talking about IOTA/Shimmer on a Tweet",
                             display_emoji: "🐦",
                         },
                         SelectMenuSpec {
@@ -436,20 +401,20 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         },
                     ]);
 
-                    for prog_role in [
-                        "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
-                        "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
-                        "Rust",
-                    ]
-                    .iter()
-                    {
-                        additional_roles.push(SelectMenuSpec {
-                            label: prog_role,
-                            description: "Discussions",
-                            display_emoji: "📜",
-                            value: prog_role,
-                        });
-                    }
+                    //for prog_role in [
+                    //    "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
+                    //    "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
+                    //    "Rust",
+                    //]
+                    //.iter()
+                    //{
+                    //    additional_roles.push(SelectMenuSpec {
+                    //        label: prog_role,
+                    //        description: "Discussions",
+                    //        display_emoji: "📜",
+                    //        value: prog_role,
+                    //    });
+                    //}
                     let mut role_choices: Vec<String> = Vec::new();
                     let mut join_reason = String::new();
 
@@ -481,7 +446,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                         });
                                         o
                                     });
-                                    s.custom_id("channel_choice").max_values(24)
+                                    s.custom_id("channel_choice").max_values(additional_roles.len().try_into().unwrap())
                                 });
                                 a
                             });
@@ -543,13 +508,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													b.custom_id("hangout")
 												});
 												a.create_button(|b|{
-													b.label("To get help with Gitpod.io");
+													b.label("To get help with IOTA/Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("✌️".to_string()));
 													b.custom_id("gitpodio_help")
 												});
 												a.create_button(|b|{
-													b.label("To get help with my selfhosted installation");
+													b.label("To develop on IOTA/Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("🏡".to_string()));
 													b.custom_id("selfhosted_help")
@@ -671,10 +636,8 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													INTRODUCTION_CHANNEL.mention()
 												))
 												.push_line("\nWe’d love to get to know you better and hear about:")
-												.push_quote_line("🔧 what you’re working on!")
-												.push_quote_line("🛑 what blocks you most in your daily dev workflow")
-												.push_quote_line("🌈 your favourite Gitpod feature")
-												.push_quote_line("✨ your favourite emoji").build()
+                                                .push_quote_line("🌈 your favourite IOTA/Shimmer feature")
+												.push_quote_line("🔧 what you’re working on!").build()
                                             } else {
                                                 "Awesome, your server profile will be updated now!"
                                                     .to_owned()
@@ -749,12 +712,12 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                             let general_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443516284943)
                                             } else {
-                                                ChannelId(839379835662368768)
+                                                ChannelId(970953101894889523)
                                             };
                                             let offtopic_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443793141769)
                                             } else {
-                                                ChannelId(972510491933032508)
+                                                ChannelId(970953101894889529)
                                             };
                                             let db = &ctx.get_db().await;
                                             let questions_channel =
@@ -771,7 +734,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                             let mut prepared_msg = MessageBuilder::new();
                                             prepared_msg.push_line(format!(
-                                                "Welcome to the Gitpod community {} 🙌\n",
+                                                "Welcome to the IOTA/Shimmer community {} 🙌\n",
                                                 &msg.author.mention()
                                             ));
                                             match join_reason.as_str() {
@@ -796,13 +759,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 _ => {}
                                             }
                                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
-											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
+											.push_quote_line(format!("• {} - for anything IOTA/Shimmer related", &general_channel.mention()))
 											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
-											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
+											.push_quote_line(format!("• {} - have a question or need help? This is the place to ask! ❓\n", &questions_channel.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
-											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
-											.push_quote_line("• https://www.gitpod.io/community")
-											.push_quote_line("• https://www.gitpod.io/about");
+											.push_bold_line("Feel free to check out the following pages to learn more about IOTA/Shimmer:")
+											.push_quote_line("• https://www.iota.org")
+                                            .push_quote_line("• https://shimmer.network")
+											.push_quote_line("• https://wiki.iota.org");
                                             let mut thread_msg = thread
                                                 .send_message(&ctx.http, |t| {
                                                     t.content(prepared_msg)
@@ -1009,30 +973,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 ActionRowComponent::InputText(it) => it,
                 _ => return,
             };
-            let optional_one = match mci
-                .data
-                .components
-                .get(2)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
-            let optional_two = match mci
-                .data
-                .components
-                .get(3)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
 
             mci.create_interaction_response(ctx, |r| {
                 if mci.data.custom_id == "gitpod_help_button_press" {
@@ -1114,36 +1054,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         );
                     } else {
                         m.add_embed(|e| e.title("Description").description(desc_safe));
-                    }
-                    if channel_name != SELF_HOSTED_TEXT {
-                        if !optional_one.value.is_empty() || !optional_two.value.is_empty() {
-                            m.add_embed(|e| {
-                                if !optional_one.value.is_empty() {
-                                    e.field("Workspace affected", &optional_one.value, false);
-                                }
-                                if !optional_two.value.is_empty() {
-                                    e.field("Example Repository", &optional_two.value, false);
-                                }
-                                e
-                            });
-                        }
-                    } else if channel_name == SELF_HOSTED_TEXT {
-                        if !optional_one.value.is_empty() {
-                            m.add_embed(|e| {
-                                e.title("config.yaml contents")
-                                    .description(format!("```yaml\n{}\n```", &optional_one.value))
-                            });
-                        }
-                        if optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
-                            && !optional_two.value.is_empty()
-                        {
-                            m.add_embed(|e| {
-                                e.title("Result of kubectl").description(format!(
-                                    "```javascript\n{}\n```",
-                                    &optional_two.value
-                                ))
-                            });
-                        }
                     }
 
                     m

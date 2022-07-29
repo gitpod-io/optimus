@@ -62,12 +62,12 @@ use serenity::{
 const GETTING_STARTED_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(947769444380336167)
 } else {
-    ChannelId(833891696764518441)
+    ChannelId(993476747414753370)
 };
 const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(947769443516284939)
 } else {
-    ChannelId(816249489911185418)
+    ChannelId(993490629789225030)
 };
 
 pub struct Listener {
