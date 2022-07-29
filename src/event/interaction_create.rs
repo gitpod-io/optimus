@@ -236,8 +236,7 @@ async fn assign_roles(
     ctx: &Context,
     role_choices: Vec<String>,
     member: &mut Member,
-    temp_role: &Role,
-    member_role: &Role,
+    member_role: &Role
 ) {
     if role_choices.len() > 1 || !role_choices.iter().any(|x| x == "none") {
         // Is bigger than a single choice or doesnt contain none
@@ -255,10 +254,6 @@ async fn assign_roles(
         db.set_user_roles(mci.user.id, role_ids).await.unwrap();
     }
 
-    // Remove the temp role from user
-    if member.roles.iter().any(|x| x == &temp_role.id) {
-        member.remove_role(&ctx.http, temp_role.id).await.unwrap();
-    }
     // Add member role if missing
     if !member.roles.iter().any(|x| x == &member_role.id) {
         member.add_role(&ctx.http, member_role.id).await.unwrap();
@@ -401,22 +396,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         },
                     ]);
 
-                    //for prog_role in [
-                    //    "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js",
-                    //    "Kotlin", "Lua", "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby",
-                    //    "Rust",
-                    //]
-                    //.iter()
-                    //{
-                    //    additional_roles.push(SelectMenuSpec {
-                    //        label: prog_role,
-                    //        description: "Discussions",
-                    //        display_emoji: "📜",
-                    //        value: prog_role,
-                    //    });
-                    //}
                     let mut role_choices: Vec<String> = Vec::new();
                     let mut join_reason = String::new();
+
+                    // Get user and check if user already went threw onboarding once
+                    let mut member = mci.member.clone().unwrap();
+                    let member_role = get_role(&mci, ctx, "Onboarding").await;
+                    
+                    let never_introduced = !member.roles.iter().any(|x| x == &member_role.id);
 
                     mci.create_interaction_response(&ctx.http, |r| {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
@@ -547,36 +534,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                 // Save join reason
                                 join_reason.push_str(interaction.data.custom_id.as_str());
 
-                                let mut member = mci.member.clone().unwrap();
-                                let temp_role = get_role(&mci, ctx, "Onboarding").await;
-                                let never_introduced = {
-                                    let mut status = true;
-                                    if let Some(roles) = member.roles(&ctx.cache) {
-                                        let gitpodder_role =
-                                            get_role(&mci, ctx, "Gitpodders").await;
-                                        status = !roles
-                                            .into_iter()
-                                            .any(|x| x == member_role || x == gitpodder_role);
-                                    }
-                                    if status {
-                                        let mut count = 0;
-                                        if let Ok(intro_msgs) = &ctx
-                                            .http
-                                            .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
-                                            .await
-                                        {
-                                            intro_msgs.iter().for_each(|x| {
-                                                if x.author == interaction.user {
-                                                    count += 1;
-                                                }
-                                            });
-                                        }
-
-                                        status = count < 1;
-                                    }
-                                    status
-                                };
-
                                 let followup = interaction
                                     .create_followup_message(&ctx.http, |d| {
                                         d.content("**[4/4]:** How did you find IOTA&Shimmer?");
@@ -626,12 +583,11 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .await
                                 {
                                     Some(ci) => {
-                                        member.add_role(&ctx.http, temp_role.id).await.unwrap();
                                         let final_msg = {
                                             if never_introduced {
                                                 MessageBuilder::new()
 												.push_line(format!(
-													"Thank you {}! If you'd like to, drop by {}",
+													"Thank you {}! If you'd like to get more introduction info, drop by {} and say Hi :)",
 													interaction.user.mention(),
 													INTRODUCTION_CHANNEL.mention()
 												))
@@ -767,9 +723,42 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 											.push_quote_line("• https://www.iota.org")
                                             .push_quote_line("• https://shimmer.network")
 											.push_quote_line("• https://wiki.iota.org");
+
+                                            let mut extra_msg = MessageBuilder::new();
+                                            if role_choices.contains(&additional_roles[6].value.to_string()) {
+                                                extra_msg.push(welcome_all());
+                                            }
+                                            else {
+                                                if role_choices.contains(&additional_roles[0].value.to_string()) {
+                                                    extra_msg.push(welcome_newcomer());
+                                                }
+                                                if role_choices.contains(&additional_roles[1].value.to_string()) {
+                                                    extra_msg.push(welcome_buidler());
+                                                }
+                                                if role_choices.contains(&additional_roles[2].value.to_string()) {
+                                                    extra_msg.push(welcome_eary_adopter());
+                                                }
+                                                if role_choices.contains(&additional_roles[3].value.to_string()) {
+                                                    extra_msg.push(welcome_governance());
+                                                }
+                                                if role_choices.contains(&additional_roles[4].value.to_string()) {
+                                                    extra_msg.push(welcome_researcher());
+                                                }
+                                                if role_choices.contains(&additional_roles[5].value.to_string()) {
+                                                    extra_msg.push(welcome_speculator());
+                                                }
+                                            }
+
                                             let mut thread_msg = thread
                                                 .send_message(&ctx.http, |t| {
                                                     t.content(prepared_msg)
+                                                })
+                                                .await
+                                                .unwrap();
+                                            thread_msg.suppress_embeds(&ctx.http).await.unwrap();
+                                            thread_msg = thread
+                                                .send_message(&ctx.http, |t| {
+                                                    t.content(extra_msg)
                                                 })
                                                 .await
                                                 .unwrap();
@@ -825,7 +814,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     ctx,
                                     role_choices,
                                     &mut member,
-                                    &temp_role,
                                     &member_role,
                                 )
                                 .await;
@@ -1197,4 +1185,80 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
         }
         _ => (),
     }
+}
+
+fn welcome_all() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push(welcome_newcomer())
+    .push(welcome_buidler())
+    .push(welcome_eary_adopter())
+    .push(welcome_governance())
+    .push(welcome_researcher())
+    .push(welcome_speculator());
+
+    msg
+}
+
+fn welcome_newcomer() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("Hello and welcome to our community")
+    .push_line("Some newcomer stuff")
+    .push_line("");
+
+    msg
+}
+
+fn welcome_buidler() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("Ready to build?")
+    .push_line("As a developer it's always a good idea, 
+    to start with the wiki at https://wiki.iota.org.
+    Currently you may be interested in stardust our first iteration of the Shimmer innovation network 
+    with support for a multi asset DLT. https://wiki.iota.org/introduction/develop/welcome.
+    And for a quick start have a look at our tutorial section: https://wiki.iota.org/tutorials.")
+    .push_line("");
+
+    msg
+}
+
+fn welcome_eary_adopter() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("The early bird catches the worm")
+    .push_line("Already heared about our Touchpoint initiative? https://assembly.sc/touchpoint.
+    Don't forget to have a look at https://shimmer.network/ecosystem and if you want to be informed
+    about the newest development proposal early, have a look at our TIPs repo https://github.com/iotaledger/tips.")
+    .push_line("");
+    
+    msg
+}
+
+fn welcome_governance() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("Ready to take matter in your own hands?")
+    .push_line("At IOTA we want the community to take part in important discussions and help with important
+    decissions. Look at our govern forum https://govern.iota.org")
+    .push_line("");
+    
+    msg
+}
+
+fn welcome_researcher() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("So you want to go into deep studies?")
+    .push_line("IOTA is putting a lot focus into research. Hav a look at our research papers https://wiki.iota.org/research/research-papers
+    keep yourself up-to-date with the latest coordicide specs https://wiki.iota.org/IOTA-2.0-Research-Specifications/Preface
+    or joind the discussion in <#970953102503071780>")
+    .push_line("");
+    
+    msg
+}
+
+fn welcome_speculator() -> MessageBuilder {
+    let mut msg = MessageBuilder::new();
+    msg.push_bold_line("Ready to ape in?")
+    .push_line("Want to talk about altcoins <#970953101894889531> or about the IOTA price? <#970953101894889530> 
+    (But don't forget to give p bot some love)")
+    .push_line("");
+    
+    msg
 }

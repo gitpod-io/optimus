@@ -7,7 +7,7 @@ use super::*;
 
 pub async fn responder(_ctx: &Context, ready: Ready) {
     println!("{} is connected!", ready.user.name);
-    _ctx.set_activity(Activity::watching("The pods on Gitpod!"))
+    _ctx.set_activity(Activity::competing("having the most native asset"))
         .await;
 
     let guild_id = GuildId(
