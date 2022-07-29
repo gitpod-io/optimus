@@ -619,7 +619,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .await
                                     .unwrap();
 
-                                let temp_role = get_role(&mci, ctx, "Temp").await;
+                                let temp_role = get_role(&mci, ctx, "Member").await;
                                 let followup_results = match followup
                                     .await_component_interaction(&ctx)
                                     .timeout(Duration::from_secs(60 * 5))
