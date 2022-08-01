@@ -353,7 +353,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             value: "Speculation",
                             description: "Markets, altcoins and degens",
                             label: "Speculation/Degen Stuff",
-                            display_emoji: "🏛️",
+                            display_emoji: "🦍",
                         },
                         SelectMenuSpec {
                             value: "AllCategories",
@@ -371,15 +371,15 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             display_emoji: "🫂",
                         },
                         SelectMenuSpec {
-                            value: "Found: FromGoogle",
-                            label: "Google",
-                            description: "I found IOTA & Shimmer from a Google search",
+                            value: "Found: FromSeachEngine",
+                            label: "Search Engien",
+                            description: "I found IOTA & Shimmer through a search engine",
                             display_emoji: "🔎",
                         },
                         SelectMenuSpec {
                             value: "Found: FromYouTube",
                             label: "YouTube",
-                            description: "Saw IOTA & Shimmer on a Youtube Video",
+                            description: "Saw IOTA & Shimmer in a Youtube Video",
                             display_emoji: "📺",
                         },
                         SelectMenuSpec {
@@ -394,6 +394,11 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             description: "Found on CoinMarketCap/CoinGecko",
                             display_emoji: "✨",
                         },
+                        SelectMenuSpec {
+                            value: "Found: FromMeetup",
+                            label: "Event",
+                            description: "Participated in an IOTA & Shimmer event (Meetup, etc...)",
+                            display_emoji: "🔗",                        
                     ]);
 
                     let mut role_choices: Vec<String> = Vec::new();
@@ -409,12 +414,12 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     r.kind(InteractionResponseType::ChannelMessageWithSource);
                     r.interaction_response_data(|d| {
                         d.content(
-                            "**[1/4]:** Which additional channels would you like to have access to?",
+                            "**[1/4]:** Which content would you like to have access to?",
                         );
                         d.components(|c| {
                             c.create_action_row(|a| {
                                 a.create_select_menu(|s| {
-                                    s.placeholder("Select channels (Optional)");
+                                    s.placeholder("Select your interest(s)");
                                     s.options(|o| {
 										for spec in &additional_roles {
 											o.create_option(|opt| {
@@ -426,7 +431,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 										}
                                         o.create_option(|opt| {
                                             opt.label("[Skip] I don't want any!")
-                                                .description("Nopes, I ain't need more.")
+                                                .description("Nope, I ain't need more.")
                                                 .emoji(ReactionType::Unicode("⏭".to_string()))
                                                 .value("none");
                                             opt
@@ -460,7 +465,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                             "channel_choice" => {
                                 interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
-										d.content("**[2/4]:** Would you like to get notified for announcements and community events?");
+										d.content("**[2/4]:** Would you like to get notified for community events?");
 										d.components(|c| {
 											c.create_action_row(|a| {
 												a.create_button(|b|{
@@ -1194,7 +1199,7 @@ fn welcome_all() -> MessageBuilder {
 
     👇")
     .push_line("")
-    
+
     .push(welcome_newcomer())
     .push(welcome_buidler())
     .push(welcome_eary_adopter())
