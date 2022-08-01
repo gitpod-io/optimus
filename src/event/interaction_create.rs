@@ -1189,7 +1189,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
 fn welcome_all() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
-    msg.push(welcome_newcomer())
+    msg.push_bold_line("Don't wanna miss a thing, eh?")
+    .push.line("Get ready to unlock the whole potential of the server.
+
+    👇")
+    .push_line("")
+    
+    .push(welcome_newcomer())
     .push(welcome_buidler())
     .push(welcome_eary_adopter())
     .push(welcome_governance())
