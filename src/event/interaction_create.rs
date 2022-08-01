@@ -406,7 +406,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                     // Get user and check if user already went threw onboarding once
                     let mut member = mci.member.clone().unwrap();
-                    let member_role = get_role(&mci, ctx, "Onboarding").await;
+                    let member_role = get_role(&mci, ctx, "Onboarded").await;
                     
                     let never_introduced = !member.roles.iter().any(|x| x == &member_role.id);
 
