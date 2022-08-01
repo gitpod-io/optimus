@@ -541,7 +541,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                 let followup = interaction
                                     .create_followup_message(&ctx.http, |d| {
-                                        d.content("**[4/4]:** How did you find IOTA&Shimmer?");
+                                        d.content("**[4/4]:** How did you find IOTA & Shimmer?");
                                         d.components(|c| {
                                             c.create_action_row(|a| {
                                                 a.create_select_menu(|s| {
@@ -581,7 +581,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                     .await
                                     .unwrap();
 
-                                let temp_role = get_role(&mci, ctx, "Member").await;
                                 let followup_results = match followup
                                     .await_component_interaction(&ctx)
                                     .timeout(Duration::from_secs(60 * 5))

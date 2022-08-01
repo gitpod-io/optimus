@@ -56,10 +56,9 @@ pub async fn responder(_ctx: &Context) {
 			.send_message(&_ctx, |m| {
 				m.content(
 					MessageBuilder::new()
-						.push_underline_line("**Welcome to the IOTA/Shimmer community!**")
+						.push_underline_line("**Welcome to the IOTA & Shimmer community!**")
 						.push_line("We are here to empower the community, we’re happy to help you out 🧡")
 						.push_line("Before **asking a question**, remember to check out our documentation"));
-//						.push_line("If you think IOTA/Shimmer is not working, please check our status page. Thank you!").build());
 				m.components(|c| {
 					c.create_action_row(|ar| {
 						ar.create_button(|button| {
@@ -77,13 +76,6 @@ pub async fn responder(_ctx: &Context) {
 								.emoji(ReactionType::Unicode("📚".to_string()))
 								.url("https://wiki.iota.org/")
 						})
-						// ar.create_button(|button| {
-						// 	button
-						// 		.style(ButtonStyle::Link)
-						// 		.label("Status")
-						// 		.emoji(ReactionType::Unicode("🧭".to_string()))
-						// 		.url("https://status.iota.org")
-						// })
 					})
 				})
 			})
