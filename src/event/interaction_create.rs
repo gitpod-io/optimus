@@ -367,25 +367,25 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                         SelectMenuSpec {
                             value: "Found: FromFriend",
                             label: "Friend or colleague",
-                            description: "A friend or colleague of mine introduced IOTA/Shimmer to me",
+                            description: "A friend or colleague of mine introduced IOTA & Shimmer to me",
                             display_emoji: "🫂",
                         },
                         SelectMenuSpec {
                             value: "Found: FromGoogle",
                             label: "Google",
-                            description: "I found IOTA/Shimmer from a Google search",
+                            description: "I found IOTA & Shimmer from a Google search",
                             display_emoji: "🔎",
                         },
                         SelectMenuSpec {
                             value: "Found: FromYouTube",
                             label: "YouTube",
-                            description: "Saw IOTA/Shimmer on a Youtube Video",
+                            description: "Saw IOTA & Shimmer on a Youtube Video",
                             display_emoji: "📺",
                         },
                         SelectMenuSpec {
                             value: "Found: FromTwitter",
                             label: "Twitter",
-                            description: "Saw people talking about IOTA/Shimmer on a Tweet",
+                            description: "Saw people talking about IOTA & Shimmer on a Tweet",
                             display_emoji: "🐦",
                         },
                         SelectMenuSpec {
@@ -495,13 +495,13 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													b.custom_id("hangout")
 												});
 												a.create_button(|b|{
-													b.label("To get help with IOTA/Shimmer");
+													b.label("To get help with IOTA & Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("✌️".to_string()));
 													b.custom_id("gitpodio_help")
 												});
 												a.create_button(|b|{
-													b.label("To develop on IOTA/Shimmer");
+													b.label("To develop on IOTA & Shimmer");
 													b.style(ButtonStyle::Secondary);
 													b.emoji(ReactionType::Unicode("🏡".to_string()));
 													b.custom_id("selfhosted_help")
@@ -592,7 +592,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 													INTRODUCTION_CHANNEL.mention()
 												))
 												.push_line("\nWe’d love to get to know you better and hear about:")
-                                                .push_quote_line("🌈 your favourite IOTA/Shimmer feature")
+                                                .push_quote_line("🌈 your favourite IOTA & Shimmer feature")
 												.push_quote_line("🔧 what you’re working on!").build()
                                             } else {
                                                 "Awesome, your server profile will be updated now!"
@@ -690,7 +690,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
 
                                             let mut prepared_msg = MessageBuilder::new();
                                             prepared_msg.push_line(format!(
-                                                "Welcome to the IOTA/Shimmer community {} 🙌\n",
+                                                "Welcome to the IOTA & Shimmer community {} 🙌\n",
                                                 &msg.author.mention()
                                             ));
                                             match join_reason.as_str() {
@@ -715,14 +715,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 _ => {}
                                             }
                                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
-											.push_quote_line(format!("• {} - for anything IOTA/Shimmer related", &general_channel.mention()))
+											.push_quote_line(format!("• {} - for anything IOTA & Shimmer related", &general_channel.mention()))
 											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
 											.push_quote_line(format!("• {} - have a question or need help? This is the place to ask! ❓\n", &questions_channel.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
-											.push_bold_line("Feel free to check out the following pages to learn more about IOTA/Shimmer:")
-											.push_quote_line("• https://www.iota.org")
-                                            .push_quote_line("• https://shimmer.network")
-											.push_quote_line("• https://wiki.iota.org");
+											.push_bold_line("Feel free to check out the following pages to learn more about IOTA & Shimmer:")
+											.push_quote_line("• <https://www.iota.org>")
+                                            .push_quote_line("• <https://shimmer.network>")
+											.push_quote_line("• <https://wiki.iota.org>");
 
                                             let mut extra_msg = MessageBuilder::new();
                                             if role_choices.contains(&additional_roles[6].value.to_string()) {
@@ -1201,8 +1201,9 @@ fn welcome_all() -> MessageBuilder {
 
 fn welcome_newcomer() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
-    msg.push_bold_line("Hello and welcome to our community")
-    .push_line("Some newcomer stuff")
+    msg.push_bold_line("Hello and welcome to your community")
+    .push_line("- Browse the channels and feel free to ask questions to learn more.
+    - Not all activitiy is visible right now. Get dedicated roles to unlock more channels in <#884705920028930068>.")
     .push_line("");
 
     msg
@@ -1210,12 +1211,10 @@ fn welcome_newcomer() -> MessageBuilder {
 
 fn welcome_buidler() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
-    msg.push_bold_line("Ready to build?")
-    .push_line("As a developer it's always a good idea, 
-    to start with the wiki at https://wiki.iota.org.
-    Currently you may be interested in stardust our first iteration of the Shimmer innovation network 
-    with support for a multi asset DLT. https://wiki.iota.org/introduction/develop/welcome.
-    And for a quick start have a look at our tutorial section: https://wiki.iota.org/tutorials.")
+    msg.push_bold_line("Ready to buidl?")
+    .push_line("We suggest to start with the wiki at <https://wiki.iota.org>.
+    - Currently you may be interested in Stardust, the first iteration of the Shimmer innovation network with support for a multi asset DLT. <https://wiki.iota.org/introduction/develop/welcome>.
+    - For a quick start have a look at our tutorial section: <https://wiki.iota.org/tutorials>.")
     .push_line("");
 
     msg
@@ -1224,9 +1223,10 @@ fn welcome_buidler() -> MessageBuilder {
 fn welcome_eary_adopter() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
     msg.push_bold_line("The early bird catches the worm")
-    .push_line("Already heared about our Touchpoint initiative? https://assembly.sc/touchpoint.
-    Don't forget to have a look at https://shimmer.network/ecosystem and if you want to be informed
-    about the newest development proposal early, have a look at our TIPs repo https://github.com/iotaledger/tips.")
+    .push_line("- Hangout with the community, explore and try out upcoming dApps and opportunities.
+    - Explore ecosystem projects: <https://shimmer.network/ecosystem>
+    - Be informed about the newest development proposals early, have a look at our Tangle Improvement Proposals (TIPs) repo https://github.com/iotaledger/tips
+     - Already heared about our Touchpoint initiative to build, launch and scale the next generation of dApps and infrastructure? Learn more: <https://assembly.sc/touchpoint>")
     .push_line("");
     
     msg
@@ -1235,8 +1235,7 @@ fn welcome_eary_adopter() -> MessageBuilder {
 fn welcome_governance() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
     msg.push_bold_line("Ready to take matter in your own hands?")
-    .push_line("At IOTA we want the community to take part in important discussions and help with important
-    decissions. Look at our govern forum https://govern.iota.org")
+    .push_line("The community is empowered to take part in governance. Start participating in key decisions at our governance forum <https://govern.iota.org>")
     .push_line("");
     
     msg
@@ -1244,10 +1243,11 @@ fn welcome_governance() -> MessageBuilder {
 
 fn welcome_researcher() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
-    msg.push_bold_line("So you want to go into deep studies?")
-    .push_line("IOTA is putting a lot focus into research. Hav a look at our research papers https://wiki.iota.org/research/research-papers
-    keep yourself up-to-date with the latest coordicide specs https://wiki.iota.org/IOTA-2.0-Research-Specifications/Preface
-    or joind the discussion in <#970953102503071780>")
+    msg.push_bold_line("We build on the shoulders of giants")
+    .push_line("Research is a key element to the project.
+    - Have a look at our research papers https://wiki.iota.org/research/research-papers
+    - Keep yourself up-to-date with the latest coordicide specs https://wiki.iota.org/IOTA-2.0-Research-Specifications/Preface
+    And join the discussion in <#970953102503071780>")
     .push_line("");
     
     msg
@@ -1256,8 +1256,8 @@ fn welcome_researcher() -> MessageBuilder {
 fn welcome_speculator() -> MessageBuilder {
     let mut msg = MessageBuilder::new();
     msg.push_bold_line("Ready to ape in?")
-    .push_line("Want to talk about altcoins <#970953101894889531> or about the IOTA price? <#970953101894889530> 
-    (But don't forget to give p bot some love)")
+    .push_line("- Take off your shoes and join <#970953101894889530>. Where big 🧠 start as degens 🦍 and become regens  (And don't forget to give *p* bot some love)
+    - Discuss other projects eloquently in <#970953101894889531>")
     .push_line("");
     
     msg
