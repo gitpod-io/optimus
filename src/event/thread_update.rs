@@ -22,13 +22,13 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) {
 }
 
 pub async fn responder(_ctx: Context, _thread: GuildChannel) {
-    // let thread_type = {
-    //     if _thread.name.starts_with("✅") || _thread.name.starts_with("❓") {
-    //         "question"
-    //     } else {
-    //         "thread"
-    //     }
-    // };
+    let thread_type = {
+        if _thread.name.starts_with("✅") || _thread.name.starts_with("❓") {
+            "question"
+        } else {
+            "thread"
+        }
+    };
     let last_msg = &_ctx
         .http
         .get_messages(*_thread.id.as_u64(), "")
@@ -36,13 +36,15 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
         .unwrap();
     let last_msg = last_msg.first().unwrap();
 
-    if _thread.thread_metadata.unwrap().archived
-        && last_msg.is_own(&_ctx.cache)
-        && !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
+    if _thread.thread_metadata.unwrap().archived && last_msg.is_own(&_ctx.cache) {
+        if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
             || Regex::new("^This [a-z]+ was closed ?b?y?")
                 .unwrap()
                 .is_match(last_msg.content.as_str()))
-    {
+        {
+            unarchival_action(_ctx, _thread).await;
+        }
+    } else if _thread.thread_metadata.unwrap().archived && thread_type == "question" {
         unarchival_action(_ctx, _thread).await;
     }
 }
