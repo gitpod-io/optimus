@@ -6,6 +6,7 @@ mod interaction_create;
 mod message;
 mod message_delete;
 // mod message_update;
+mod new_question;
 pub mod questions_thread;
 mod reaction_add;
 mod ready;

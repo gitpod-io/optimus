@@ -26,10 +26,10 @@ impl Database {
     }
 
     pub async fn fetch_msg(&self, id: MessageId) -> String {
-        let var = fs::read_to_string(format!("{}/{}", &self.node_name, id))
+        
+        fs::read_to_string(format!("{}/{}", &self.node_name, id))
             .await
-            .unwrap();
-        var
+            .unwrap()
     }
 
     pub async fn save_msg(&self, id: &MessageId, contents: String) {
@@ -55,14 +55,14 @@ impl Database {
         let new_contents = {
             if path::Path::new(&path).exists() {
                 let old_content = fs::read_to_string(&path).await.unwrap();
-                let ready_content = {
+                
+                {
                     if !fs::read_to_string(&path).await.unwrap().contains(&contents) {
                         format!("{}\n{}", &old_content, &contents)
                     } else {
                         String::from(&old_content)
                     }
-                };
-                ready_content
+                }
             } else {
                 String::from(&contents)
             }

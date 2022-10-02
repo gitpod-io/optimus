@@ -1,11 +1,5 @@
-use std::collections::HashMap;
-
 use super::*;
 use crate::db::ClientContextExt;
-use substr::StringUtils;
-
-use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
-use serde::{Deserialize, Serialize};
 
 use serenity::{
     futures::StreamExt,
@@ -14,24 +8,13 @@ use serenity::{
         self,
         application::interaction::{message_component::MessageComponentInteraction, MessageFlags},
         channel::{AttachmentType, Embed},
-        guild::{Emoji, Role},
+        guild::Role,
         id::RoleId,
         prelude::component::Button,
         Permissions,
     },
-    utils::{read_image, MessageBuilder},
+    utils::MessageBuilder,
 };
-
-use urlencoding::encode;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Thread {
-    id: u64,
-    guild_id: u64,
-    channel_id: u64,
-    title: String,
-    history: String,
-}
 #[derive(Clone, Copy)]
 struct SelectMenuSpec<'a> {
     value: &'a str,
@@ -89,119 +72,21 @@ async fn get_role(
             .await
             .unwrap();
     }
+
     role
 }
 
-async fn save_and_fetch_links(
-    sites: &[&str],
-    thread_id: u64,
-    channel_id: u64,
-    guild_id: u64,
-    title: String,
-    description: String,
-) -> HashMap<String, String> {
-    let mut links: HashMap<String, String> = HashMap::new();
-    let client = reqwest::Client::new();
-    let mclient = MeiliClient::new("http://localhost:7700", "optimus");
-    let msettings = Settings::new()
-        .with_searchable_attributes(["title", "description"])
-        .with_distinct_attribute("title");
-    mclient
-        .index("threads")
-        .set_settings(&msettings)
-        .await
-        .unwrap();
-    let threads = mclient.index("threads");
-
-    // Fetch matching links
-    for site in sites.iter() {
-        if let Ok(resp) = client
-		.get(format!("https://www.google.com/search?q=site:{} {}", encode(site), encode(title.as_str())))
-		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
-		.send()
-		.await {
-			if let Ok(result) = resp.text().await {
-				let mut times = 1;
-				// [^:~] avoids the google hyperlinks
-				for caps in
-					Regex::new(format!("\"(?P<url>{}/.[^:~]*?)\"", &site).as_str())
-						.unwrap()
-						.captures_iter(&result)
-				{
-					let url = &caps["url"];
-					let hash = {
-						if let Some(result) = Regex::new(r"(?P<hash>#[^:~].*)").unwrap().captures(url) {
-							result.name("hash").map(|hash| hash.as_str())
-						} else {
-							None
-						}
-					};
-					if let Ok(resp) = client.get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
-					.send()
-					.await {
-						if let Ok(result) = resp.text().await {
-							let result = html_escape::decode_html_entities(&result).to_string();
-							for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
-								let title = &caps["title"];
-								let text = if hash.is_none() {
-									title.to_string()
-								} else {
-									format!("{} | {}", title, hash.unwrap())
-								};
-								//links.push_str(format!("• __{}__\n\n", text).as_str());
-								links.insert(text, url.to_string());
-							}
-						}
-					}
-					times += 1;
-					if times > 3 {
-						break;
-					}
-				}
-			}
-		}
-    }
-
-    // Fetch matching discord questions
-    if let Ok(discord_questions) = threads
-        .search()
-        .with_query(format!("{} {}", title, description).as_str())
-        .with_limit(3)
-        .execute::<Thread>()
-        .await
-    {
-        for ids in discord_questions.hits {
-            links.insert(
-                ids.result.title,
-                format!(
-                    "https://discord.com/channels/{}/{}/{}",
-                    ids.result.guild_id, ids.result.channel_id, ids.result.id
-                ),
-            );
-        }
-    }
-
-    // Save the question to search engine
-    threads
-        .add_documents(
-            &[Thread {
-                id: thread_id,
-                channel_id,
-                guild_id,
-                title,
-                history: description,
-            }],
-            Some("id"),
-        )
-        .await
-        .ok();
-    links
-}
-
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
-    let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+    let thread_node = mci
+        .channel_id
+        .to_channel(&ctx.http)
+        .await
+        .unwrap()
+        .guild()
+        .unwrap();
+
     let thread_type = {
-        if _thread.name.contains('✅') || _thread.name.contains('❓') {
+        if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
             "question"
         } else {
             "thread"
@@ -209,10 +94,10 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     };
 
     let thread_name = {
-        if _thread.name.contains('✅') || thread_type == "thread" {
-            _thread.name
+        if thread_node.name.contains('✅') || thread_type == "thread" {
+            thread_node.name
         } else {
-            format!("✅ {}", _thread.name.trim_start_matches("❓ "))
+            format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
         }
     };
     let action_user_mention = mci.member.as_ref().unwrap().mention();
@@ -713,20 +598,18 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 .await
                                                 .unwrap();
 
-                                            if words_count::count(&msg.content).words > 5 {
-                                                msg.react(
-                                                    &ctx.http,
-                                                    ReactionType::Unicode("🔥".to_string()),
-                                                )
-                                                .await
-                                                .unwrap();
+                                            if words_count::count(&msg.content).words > 4 {
+                                                for unicode in ["👋", "🔥"] {
+                                                    msg.react(
+                                                        &ctx.http,
+                                                        ReactionType::Unicode(unicode.to_string()),
+                                                    )
+                                                    .await
+                                                    .unwrap();
+                                                }
+                                            } else {
+                                                msg.delete(&ctx.http).await.unwrap();
                                             }
-                                            msg.react(
-                                                &ctx.http,
-                                                ReactionType::Unicode("👋".to_string()),
-                                            )
-                                            .await
-                                            .unwrap();
 
                                             let general_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443516284943)
@@ -903,9 +786,15 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
         }
         Interaction::ApplicationCommand(mci) => match mci.data.name.as_str() {
             "close" => {
-                let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+                let thread_node = mci
+                    .channel_id
+                    .to_channel(&ctx.http)
+                    .await
+                    .unwrap()
+                    .guild()
+                    .unwrap();
                 let thread_type = {
-                    if _thread.name.contains('✅') || _thread.name.contains('❓') {
+                    if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
                         "question"
                     } else {
                         "thread"
@@ -919,7 +808,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 })
                 .await
                 .unwrap();
-                let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_name = {
                     if thread_node.name.contains('✅') || thread_type == "thread" {
                         thread_node.name
@@ -1150,122 +1038,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-            questions_thread::responder(ctx).await;
-
-            let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
-            let mut relevant_links = save_and_fetch_links(
-                &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
-                *thread.id.as_u64(),
-                *mci.channel_id.as_u64(),
-                *mci.guild_id.unwrap().as_u64(),
-                (*title.value).to_string(),
-                (*description.value).to_string(),
-            )
-            .await;
-            if !&relevant_links.is_empty() {
-                let mut prefix_emojis: HashMap<&str, Emoji> = HashMap::new();
-                let emoji_sources: HashMap<&str, &str> = HashMap::from([
-					("gitpod", "https://www.gitpod.io/images/media-kit/logo-mark.png"),
-					("github", "https://cdn.discordapp.com/attachments/981191970024210462/981192908780736573/github-transparent.png"),
-					("discord", "https://discord.com/assets/9f6f9cd156ce35e2d94c0e62e3eff462.png")
-				]);
-                let guild = &mci.guild_id.unwrap();
-                for source in ["gitpod", "github", "discord"].iter() {
-                    let emoji = {
-                        if let Some(emoji) = guild
-                            .emojis(&ctx.http)
-                            .await
-                            .unwrap()
-                            .into_iter()
-                            .find(|x| x.name == *source)
-                        {
-                            emoji
-                        } else {
-                            let dw_path = env::current_dir().unwrap().join(format!("{source}.png"));
-                            let dw_url = emoji_sources.get(source).unwrap().to_string();
-                            let client = reqwest::Client::new();
-                            let downloaded_bytes = client
-                                .get(dw_url)
-                                .timeout(Duration::from_secs(5))
-                                .send()
-                                .await
-                                .unwrap()
-                                .bytes()
-                                .await
-                                .unwrap();
-                            tokio::fs::write(&dw_path, &downloaded_bytes).await.unwrap();
-                            let emoji_image = read_image(dw_path).unwrap();
-                            let emoji_image = emoji_image.as_str();
-                            guild
-                                .create_emoji(&ctx.http, source, emoji_image)
-                                .await
-                                .unwrap()
-                        }
-                    };
-                    prefix_emojis.insert(source, emoji);
-                }
-
-                let mut suggested_count = 1;
-                thread.send_message(&ctx.http, |m| {
-				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
-					m.components(|c| {
-						loop {
-							if suggested_count > 10 || relevant_links.is_empty() {
-								break;
-							}
-							c.create_action_row(|a|
-								{
-									let mut i = 1;
-									for (title, url) in relevant_links.clone() {
-										if i > 5 {
-											break;
-										} else {
-											i += 1;
-											relevant_links.remove(&title);
-										}
-										let emoji = {
-											if url.starts_with("https://www.gitpod.io") {
-												prefix_emojis.get("gitpod").unwrap()
-											} else if url.starts_with("https://github.com") {
-												prefix_emojis.get("github").unwrap()
-											} else {
-												prefix_emojis.get("discord").unwrap()
-											}
-										};
-
-										a.create_button(|b|b.label(&title.as_str().substring(0, 80)).custom_id(&url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
-											id: emoji.id,
-											name: Some(emoji.name.clone()),
-											animated: false,
-										}));
-									}
-										a
-									}
-								);
-								suggested_count += 1;
-						}
-							c
-						});
-						m
-					}
-				).await.unwrap();
-                thread_typing.stop().unwrap();
-            }
-            // if !relevant_links.is_empty() {
-            //     thread
-            //         .send_message(&ctx.http, |m|
-            //             m.content(format!(
-            //                 "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
-            //                 &user_mention
-            //             ))
-            //             .embed(|e| e.description(relevant_links))
-            //         })
-            //         .await
-            //         .unwrap();
-            //     thread_typing.stop();
-            // }
-            // let db = &ctx.get_db().await;
-            // db.add_title(i64::from(mci.id), &title.value).await.unwrap();
+            // questions_thread::responder(ctx).await;
         }
         _ => (),
     }

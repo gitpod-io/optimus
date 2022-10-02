@@ -59,11 +59,12 @@ impl Db {
     }
 }
 
-pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
-    //
-    // Log messages
-    //
-    if !_msg.is_own(&ctx.cache) {
+pub async fn responder(ctx: Context, msg: Message) -> Result<()> {
+    if !msg.is_own(&ctx.cache) {
+        // Handle forum channel posts
+        new_question::responder(&ctx, &msg).await.unwrap();
+
+        // Log messages
         // let dbnode_msgcache = Database::from("msgcache".to_string()).await;
 
         // let attc = &_msg.attachments;
@@ -89,14 +90,14 @@ pub async fn responder(ctx: Context, mut _msg: Message) -> Result<()> {
         //     .await;
 
         // Pending questions logging
-        if !_msg.author.bot {
+        if !msg.author.bot {
             let db = &ctx.get_db().await;
             if let Ok(qc) = db.get_question_channels().await {
-                if qc.iter().any(|x| x.id == _msg.channel_id) {
-                    db.add_pending_question(&_msg.author.id, &_msg.channel_id, &_msg.content)
+                if qc.iter().any(|x| x.id == msg.channel_id) {
+                    db.add_pending_question(&msg.author.id, &msg.channel_id, &msg.content)
                         .await?;
-                    _msg.delete(&ctx.http).await?;
-                    let r = _msg
+                    msg.delete(&ctx.http).await?;
+                    let r = msg
                         .reply_mention(
                             &ctx.http,
                             "☝️ Please click on **`💡 Ask a Question`** button to complete your question",

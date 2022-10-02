@@ -23,7 +23,7 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) {
 
 pub async fn responder(_ctx: Context, _thread: GuildChannel) {
     let thread_type = {
-        if _thread.name.starts_with("✅") || _thread.name.starts_with("❓") {
+        if _thread.name.starts_with('✅') || _thread.name.starts_with('❓') {
             "question"
         } else {
             "thread"
