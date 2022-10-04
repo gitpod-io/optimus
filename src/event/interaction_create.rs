@@ -1,11 +1,5 @@
-use std::collections::HashMap;
-
 use super::*;
 use crate::db::ClientContextExt;
-use substr::StringUtils;
-
-use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
-use serde::{Deserialize, Serialize};
 
 use serenity::{
     futures::StreamExt,
@@ -13,25 +7,13 @@ use serenity::{
     model::{
         self,
         application::interaction::{message_component::MessageComponentInteraction, MessageFlags},
-        channel::{AttachmentType, Embed},
-        guild::{Emoji, Role},
+        guild::Role,
         id::RoleId,
         prelude::component::Button,
         Permissions,
     },
-    utils::{read_image, MessageBuilder},
+    utils::MessageBuilder,
 };
-
-use urlencoding::encode;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Thread {
-    id: u64,
-    guild_id: u64,
-    channel_id: u64,
-    title: String,
-    history: String,
-}
 #[derive(Clone, Copy)]
 struct SelectMenuSpec<'a> {
     value: &'a str,
@@ -39,10 +21,6 @@ struct SelectMenuSpec<'a> {
     display_emoji: &'a str,
     description: &'a str,
 }
-
-const SELF_HOSTED_TEXT: &str = "self-hosted-questions";
-const SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
-
 async fn safe_text(_ctx: &Context, _input: &String) -> String {
     content_safe(
         &_ctx.cache,
@@ -89,119 +67,21 @@ async fn get_role(
             .await
             .unwrap();
     }
+
     role
 }
 
-async fn save_and_fetch_links(
-    sites: &[&str],
-    thread_id: u64,
-    channel_id: u64,
-    guild_id: u64,
-    title: String,
-    description: String,
-) -> HashMap<String, String> {
-    let mut links: HashMap<String, String> = HashMap::new();
-    let client = reqwest::Client::new();
-    let mclient = MeiliClient::new("http://localhost:7700", "optimus");
-    let msettings = Settings::new()
-        .with_searchable_attributes(["title", "description"])
-        .with_distinct_attribute("title");
-    mclient
-        .index("threads")
-        .set_settings(&msettings)
-        .await
-        .unwrap();
-    let threads = mclient.index("threads");
-
-    // Fetch matching links
-    for site in sites.iter() {
-        if let Ok(resp) = client
-		.get(format!("https://www.google.com/search?q=site:{} {}", encode(site), encode(title.as_str())))
-		.header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
-		.send()
-		.await {
-			if let Ok(result) = resp.text().await {
-				let mut times = 1;
-				// [^:~] avoids the google hyperlinks
-				for caps in
-					Regex::new(format!("\"(?P<url>{}/.[^:~]*?)\"", &site).as_str())
-						.unwrap()
-						.captures_iter(&result)
-				{
-					let url = &caps["url"];
-					let hash = {
-						if let Some(result) = Regex::new(r"(?P<hash>#[^:~].*)").unwrap().captures(url) {
-							result.name("hash").map(|hash| hash.as_str())
-						} else {
-							None
-						}
-					};
-					if let Ok(resp) = client.get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
-					.send()
-					.await {
-						if let Ok(result) = resp.text().await {
-							let result = html_escape::decode_html_entities(&result).to_string();
-							for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
-								let title = &caps["title"];
-								let text = if hash.is_none() {
-									title.to_string()
-								} else {
-									format!("{} | {}", title, hash.unwrap())
-								};
-								//links.push_str(format!("• __{}__\n\n", text).as_str());
-								links.insert(text, url.to_string());
-							}
-						}
-					}
-					times += 1;
-					if times > 3 {
-						break;
-					}
-				}
-			}
-		}
-    }
-
-    // Fetch matching discord questions
-    if let Ok(discord_questions) = threads
-        .search()
-        .with_query(format!("{} {}", title, description).as_str())
-        .with_limit(3)
-        .execute::<Thread>()
-        .await
-    {
-        for ids in discord_questions.hits {
-            links.insert(
-                ids.result.title,
-                format!(
-                    "https://discord.com/channels/{}/{}/{}",
-                    ids.result.guild_id, ids.result.channel_id, ids.result.id
-                ),
-            );
-        }
-    }
-
-    // Save the question to search engine
-    threads
-        .add_documents(
-            &[Thread {
-                id: thread_id,
-                channel_id,
-                guild_id,
-                title,
-                history: description,
-            }],
-            Some("id"),
-        )
-        .await
-        .ok();
-    links
-}
-
 async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
-    let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+    let thread_node = mci
+        .channel_id
+        .to_channel(&ctx.http)
+        .await
+        .unwrap()
+        .guild()
+        .unwrap();
+
     let thread_type = {
-        if _thread.name.contains('✅') || _thread.name.contains('❓') {
+        if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
             "question"
         } else {
             "thread"
@@ -209,10 +89,10 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
     };
 
     let thread_name = {
-        if _thread.name.contains('✅') || thread_type == "thread" {
-            _thread.name
+        if thread_node.name.contains('✅') || thread_type == "thread" {
+            thread_node.name
         } else {
-            format!("✅ {}", _thread.name.trim_start_matches("❓ "))
+            format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
         }
     };
     let action_user_mention = mci.member.as_ref().unwrap().mention();
@@ -266,67 +146,108 @@ async fn assign_roles(
 }
 
 async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
-    let db = &ctx.get_db().await;
-    let desc = {
-        if let Ok(result) = db
-            .get_pending_question_content(&mci.user.id, &mci.channel_id)
-            .await
-        {
-            db.remove_pending_question(&mci.user.id, &mci.channel_id)
-                .await
-                .ok();
-            result
-        } else {
-            "".to_string()
-        }
-    };
+    // let db = &ctx.get_db().await;
+    // let desc = {
+    //     if let Ok(result) = db
+    //         .get_pending_question_content(&mci.user.id, &mci.channel_id)
+    //         .await
+    //     {
+    //         db.remove_pending_question(&mci.user.id, &mci.channel_id)
+    //             .await
+    //             .ok();
+    //         result
+    //     } else {
+    //         "".to_string()
+    //     }
+    // };
 
-    let channel_name = mci.channel_id.name(&ctx.cache).await.unwrap();
+    let parent_channel_id = &mci
+        .channel_id
+        .to_channel(&ctx.http)
+        .await
+        .unwrap()
+        .guild()
+        .unwrap()
+        .parent_id
+        .unwrap();
+
+    // Temp
+    mci.create_interaction_response(&ctx.http, |r| {
+        r.kind(InteractionResponseType::ChannelMessageWithSource);
+        r.interaction_response_data(|d| {
+            let mut msg = MessageBuilder::new();
+            msg.push_quote_line(format!(
+                "{} **{}**",
+                &mci.user.mention(),
+                "Please share the following (if applies):"
+            ));
+
+            if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+                msg.push_line("• Contents of your `.gitpod.yml`")
+                    .push_line("• Contents of your `.gitpod.Dockerfile")
+                    .push_line("• An example repository link");
+                d.content(msg.build());
+            } else {
+                msg.push_line("• Contents of your `config.yml`")
+                    .push_line("• Result of:\n```bash\nkubectl get pods -n <namespace>\n```");
+                d.content(msg.build());
+            }
+
+            d
+        });
+        r
+    })
+    .await
+    .unwrap();
+
+    return;
+    // There is a discord UI bug with it.
+    // Not going to execute below code until https://github.com/discord/discord-api-docs/issues/5302 is fixed :(
     mci.create_interaction_response(&ctx, |r| {
         r.kind(InteractionResponseType::Modal);
         r.interaction_response_data(|d| {
             d.custom_id("gitpod_help_button_press");
             d.title("Template");
             d.components(|c| {
+                // c.create_action_row(|ar| {
+                //     ar.create_input_text(|it| {
+                //         it.style(InputTextStyle::Short)
+                //             .custom_id("input_title")
+                //             .required(true)
+                //             .label("Title")
+                //             .max_length(98)
+                //     })
+                // });
+                // c.create_action_row(|ar| {
+                //     ar.create_input_text(|it| {
+                //         it.style(InputTextStyle::Paragraph)
+                //             .custom_id("input_description")
+                //             .label("Description")
+                //             .required(true)
+                //             .max_length(4000)
+                //             // .value(desc)
+                //     })
+                // });
                 c.create_action_row(|ar| {
                     ar.create_input_text(|it| {
-                        it.style(InputTextStyle::Short)
-                            .custom_id("input_title")
-                            .required(true)
-                            .label("Title")
-                            .max_length(98)
-                    })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        it.style(InputTextStyle::Paragraph)
-                            .custom_id("input_description")
-                            .label("Description")
-                            .required(true)
-                            .max_length(4000)
-                            .value(desc)
-                    })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_workspace")
-                                .label("Workspace affected")
+                        if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+                            it.style(InputTextStyle::Paragraph)
+                                .custom_id("input_gitpod_yml")
+                                .label("Your .gitpod.yml contents")
                                 .required(false)
-                                .max_length(100)
+                            // .max_length(4000)
                         } else {
                             it.style(InputTextStyle::Paragraph)
                                 .custom_id("input_config_yaml")
                                 .label("Your config.yaml contents")
                                 .required(false)
-                                .max_length(1000)
+                            // .max_length(1000)
                         }
                     })
                 });
                 c.create_action_row(|ar| {
                     ar.create_input_text(|it| {
-                        if channel_name != SELF_HOSTED_TEXT {
+                        if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
                             it.style(InputTextStyle::Short)
                                 .custom_id("input_example_repo")
                                 .label("Example repo")
@@ -338,7 +259,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                                 .label("Result of `kubectl get pods -n <namespace>`")
                                 .required(false)
                                 .max_length(1000)
-                                .value(SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER)
+                                .value(SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER)
                         }
                     })
                 })
@@ -355,7 +276,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
     match interaction {
         Interaction::MessageComponent(mci) => {
             match mci.data.custom_id.as_str() {
-                "gitpod_create_issue" => show_issue_form(&mci, ctx).await,
+                "gitpod_complete_question_submit" => show_issue_form(&mci, ctx).await,
                 "gitpod_close_issue" => close_issue(&mci, ctx).await,
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
@@ -713,20 +634,18 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 .await
                                                 .unwrap();
 
-                                            if words_count::count(&msg.content).words > 5 {
-                                                msg.react(
-                                                    &ctx.http,
-                                                    ReactionType::Unicode("🔥".to_string()),
-                                                )
-                                                .await
-                                                .unwrap();
+                                            if words_count::count(&msg.content).words > 4 {
+                                                for unicode in ["👋", "🔥"] {
+                                                    msg.react(
+                                                        &ctx.http,
+                                                        ReactionType::Unicode(unicode.to_string()),
+                                                    )
+                                                    .await
+                                                    .unwrap();
+                                                }
+                                            } else {
+                                                msg.delete(&ctx.http).await.unwrap();
                                             }
-                                            msg.react(
-                                                &ctx.http,
-                                                ReactionType::Unicode("👋".to_string()),
-                                            )
-                                            .await
-                                            .unwrap();
 
                                             let general_channel = if cfg!(debug_assertions) {
                                                 ChannelId(947769443516284943)
@@ -738,18 +657,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                             } else {
                                                 ChannelId(972510491933032508)
                                             };
-                                            let db = &ctx.get_db().await;
-                                            let questions_channel =
-                                                db.get_question_channels().await.unwrap();
-                                            let questions_channel =
-                                                questions_channel.into_iter().next().unwrap().id;
-
-                                            let selfhosted_questions_channel =
-                                                if cfg!(debug_assertions) {
-                                                    ChannelId(947769443793141761)
-                                                } else {
-                                                    ChannelId(879915120510267412)
-                                                };
 
                                             let mut prepared_msg = MessageBuilder::new();
                                             prepared_msg.push_line(format!(
@@ -760,7 +667,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                 "gitpodio_help" => {
                                                     prepared_msg.push_line(
 														format!("**You mentioned that** you need help with Gitpod.io, please ask in {}\n",
-																	&questions_channel.mention())
+																	&QUESTIONS_CHANNEL.mention())
 													);
                                                 }
                                                 "selfhosted_help" => {
@@ -772,7 +679,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                                         .unwrap();
                                                     prepared_msg.push_line(
 														format!("**You mentioned that** you need help with selfhosted, please ask in {}\n",
-																	&selfhosted_questions_channel.mention())
+																	&SELFHOSTED_QUESTIONS_CHANNEL.mention())
 													);
                                                 }
                                                 _ => {}
@@ -780,7 +687,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
 											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
 											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
-											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &questions_channel.mention()))
+											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &QUESTIONS_CHANNEL.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
 											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
 											.push_quote_line("• https://www.gitpod.io/community")
@@ -903,9 +810,15 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
         }
         Interaction::ApplicationCommand(mci) => match mci.data.name.as_str() {
             "close" => {
-                let _thread = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
+                let thread_node = mci
+                    .channel_id
+                    .to_channel(&ctx.http)
+                    .await
+                    .unwrap()
+                    .guild()
+                    .unwrap();
                 let thread_type = {
-                    if _thread.name.contains('✅') || _thread.name.contains('❓') {
+                    if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
                         "question"
                     } else {
                         "thread"
@@ -919,7 +832,6 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 })
                 .await
                 .unwrap();
-                let thread_node = mci.channel_id.edit_thread(&ctx.http, |t| t).await.unwrap();
                 let thread_name = {
                     if thread_node.name.contains('✅') || thread_type == "thread" {
                         thread_node.name
@@ -966,35 +878,10 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             _ => {}
         },
         Interaction::ModalSubmit(mci) => {
-            let typing = mci.channel_id.start_typing(&ctx.http).unwrap();
-            let title = match mci
-                .data
-                .components
-                .get(0)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
-            let description = match mci
-                .data
-                .components
-                .get(1)
-                .unwrap()
-                .components
-                .get(0)
-                .unwrap()
-            {
-                ActionRowComponent::InputText(it) => it,
-                _ => return,
-            };
             let optional_one = match mci
                 .data
                 .components
-                .get(2)
+                .get(0)
                 .unwrap()
                 .components
                 .get(0)
@@ -1006,7 +893,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             let optional_two = match mci
                 .data
                 .components
-                .get(3)
+                .get(1)
                 .unwrap()
                 .components
                 .get(0)
@@ -1028,80 +915,34 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
             .await
             .ok();
 
-            let user_name = &mci.user.name;
-            let channel_name = &mci.channel_id.name(&ctx.cache).await.unwrap();
-            // let self_avatar = &ctx.cache.current_user().await.face();
-            // let self_name = &ctx.cache.current_user().await.name;
-            let webhook_get = mci.channel_id.webhooks(&ctx).await.unwrap();
-            for hook in webhook_get {
-                if hook.name == Some(user_name.clone()) {
-                    hook.delete(&ctx).await.unwrap();
-                }
-            }
-
-            let img_url = reqwest::Url::parse(&mci.user.face().replace(".webp", ".png")).unwrap();
-            let webhook = mci
+            let parent_channel_id = &mci
                 .channel_id
-                .create_webhook_with_avatar(&ctx, &user_name, AttachmentType::Image(img_url))
-                .await
-                .unwrap();
-
-            let temp_embed = Embed::fake(|e| e.description(&description.value));
-
-            let mut msg = webhook
-                .execute(&ctx, true, |w| {
-                    w.embeds(vec![temp_embed]).content(&title.value)
-                })
+                .to_channel(&ctx.http)
                 .await
                 .unwrap()
+                .guild()
+                .unwrap()
+                .parent_id
                 .unwrap();
-            msg.suppress_embeds(&ctx.http).await.unwrap();
-            webhook.delete(&ctx.http).await.unwrap();
-            typing.stop().unwrap();
-            if mci.data.custom_id == "gitpod_help_button_press" {
-                if let Some(msg) = mci.message {
-                    msg.delete(&ctx.http).await.ok();
-                }
-            }
+            // let self_avatar = &ctx.cache.current_user().await.face();
+            // let self_name = &ctx.cache.current_user().await.name;
+
+            // if mci.data.custom_id == "gitpod_help_button_press" {
+            //     if let Some(msg) = mci.message {
+            //         msg.delete(&ctx.http).await.ok();
+            //     }
+            // }
 
             let user_mention = mci.user.mention();
+            let thread = mci.channel_id;
 
-            let thread_auto_archive_dur = {
-                if cfg!(debug_assertions) {
-                    1440 // 1 day
-                } else {
-                    4320 // 3 days
-                }
-            };
-
-            let thread = mci
-                .channel_id
-                .create_public_thread(&ctx, msg.id, |e| {
-                    e.name(format!("❓ {}", &title.value))
-                        .auto_archive_duration(thread_auto_archive_dur)
-                })
-                .await
-                .unwrap();
-
-            let desc_safe = safe_text(ctx, &description.value).await;
             thread
                 .send_message(&ctx.http, |m| {
-                    if description.value.chars().count() < 1960 {
-                        m.content(
-                            MessageBuilder::new()
-                                .push_underline_line("**Description**")
-                                .push_line(&desc_safe)
-                                .push_bold("---------------")
-                                .build(),
-                        );
-                    } else {
-                        m.add_embed(|e| e.title("Description").description(desc_safe));
-                    }
-                    if channel_name != SELF_HOSTED_TEXT {
+                    if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
                         if !optional_one.value.is_empty() || !optional_two.value.is_empty() {
                             m.add_embed(|e| {
                                 if !optional_one.value.is_empty() {
-                                    e.field("Workspace affected", &optional_one.value, false);
+                                    e.field(".gitpod.yml contents", &optional_one.value, false);
                                 }
                                 if !optional_two.value.is_empty() {
                                     e.field("Example Repository", &optional_two.value, false);
@@ -1109,14 +950,14 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                                 e
                             });
                         }
-                    } else if channel_name == SELF_HOSTED_TEXT {
+                    } else if *parent_channel_id == SELFHOSTED_QUESTIONS_CHANNEL {
                         if !optional_one.value.is_empty() {
                             m.add_embed(|e| {
                                 e.title("config.yaml contents")
                                     .description(format!("```yaml\n{}\n```", &optional_one.value))
                             });
                         }
-                        if optional_two.value != SELF_HOSTED_KUBECTL_COMMAND_PLACEHOLDER
+                        if optional_two.value != SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER
                             && !optional_two.value.is_empty()
                         {
                             m.add_embed(|e| {
@@ -1150,122 +991,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                 .await
                 .unwrap();
 
-            questions_thread::responder(ctx).await;
-
-            let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
-            let mut relevant_links = save_and_fetch_links(
-                &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
-                *thread.id.as_u64(),
-                *mci.channel_id.as_u64(),
-                *mci.guild_id.unwrap().as_u64(),
-                (*title.value).to_string(),
-                (*description.value).to_string(),
-            )
-            .await;
-            if !&relevant_links.is_empty() {
-                let mut prefix_emojis: HashMap<&str, Emoji> = HashMap::new();
-                let emoji_sources: HashMap<&str, &str> = HashMap::from([
-					("gitpod", "https://www.gitpod.io/images/media-kit/logo-mark.png"),
-					("github", "https://cdn.discordapp.com/attachments/981191970024210462/981192908780736573/github-transparent.png"),
-					("discord", "https://discord.com/assets/9f6f9cd156ce35e2d94c0e62e3eff462.png")
-				]);
-                let guild = &mci.guild_id.unwrap();
-                for source in ["gitpod", "github", "discord"].iter() {
-                    let emoji = {
-                        if let Some(emoji) = guild
-                            .emojis(&ctx.http)
-                            .await
-                            .unwrap()
-                            .into_iter()
-                            .find(|x| x.name == *source)
-                        {
-                            emoji
-                        } else {
-                            let dw_path = env::current_dir().unwrap().join(format!("{source}.png"));
-                            let dw_url = emoji_sources.get(source).unwrap().to_string();
-                            let client = reqwest::Client::new();
-                            let downloaded_bytes = client
-                                .get(dw_url)
-                                .timeout(Duration::from_secs(5))
-                                .send()
-                                .await
-                                .unwrap()
-                                .bytes()
-                                .await
-                                .unwrap();
-                            tokio::fs::write(&dw_path, &downloaded_bytes).await.unwrap();
-                            let emoji_image = read_image(dw_path).unwrap();
-                            let emoji_image = emoji_image.as_str();
-                            guild
-                                .create_emoji(&ctx.http, source, emoji_image)
-                                .await
-                                .unwrap()
-                        }
-                    };
-                    prefix_emojis.insert(source, emoji);
-                }
-
-                let mut suggested_count = 1;
-                thread.send_message(&ctx.http, |m| {
-				m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
-					m.components(|c| {
-						loop {
-							if suggested_count > 10 || relevant_links.is_empty() {
-								break;
-							}
-							c.create_action_row(|a|
-								{
-									let mut i = 1;
-									for (title, url) in relevant_links.clone() {
-										if i > 5 {
-											break;
-										} else {
-											i += 1;
-											relevant_links.remove(&title);
-										}
-										let emoji = {
-											if url.starts_with("https://www.gitpod.io") {
-												prefix_emojis.get("gitpod").unwrap()
-											} else if url.starts_with("https://github.com") {
-												prefix_emojis.get("github").unwrap()
-											} else {
-												prefix_emojis.get("discord").unwrap()
-											}
-										};
-
-										a.create_button(|b|b.label(&title.as_str().substring(0, 80)).custom_id(&url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
-											id: emoji.id,
-											name: Some(emoji.name.clone()),
-											animated: false,
-										}));
-									}
-										a
-									}
-								);
-								suggested_count += 1;
-						}
-							c
-						});
-						m
-					}
-				).await.unwrap();
-                thread_typing.stop().unwrap();
-            }
-            // if !relevant_links.is_empty() {
-            //     thread
-            //         .send_message(&ctx.http, |m|
-            //             m.content(format!(
-            //                 "{} I also found some relevant links which might answer your question, please do check them out below 🙏:",
-            //                 &user_mention
-            //             ))
-            //             .embed(|e| e.description(relevant_links))
-            //         })
-            //         .await
-            //         .unwrap();
-            //     thread_typing.stop();
-            // }
-            // let db = &ctx.get_db().await;
-            // db.add_title(i64::from(mci.id), &title.value).await.unwrap();
+            // questions_thread::responder(ctx).await;
         }
         _ => (),
     }

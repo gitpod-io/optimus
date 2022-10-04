@@ -4,16 +4,13 @@ mod guild_create;
 mod guild_member_removal;
 mod interaction_create;
 mod message;
-mod message_delete;
-// mod message_update;
-pub mod questions_thread;
+mod new_question;
 mod reaction_add;
 mod ready;
 mod thread_update;
 
 use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
 
-use regex::Regex;
 use serde_json::json;
 
 use serenity::model::{
@@ -25,7 +22,7 @@ use serenity::model::{
     // event::MessageUpdateEvent,
     gateway::{Activity, Ready},
     guild::{Guild, Member},
-    id::{ChannelId, GuildId, MessageId},
+    id::{ChannelId, GuildId},
     prelude::User,
 };
 use serenity::{
@@ -36,14 +33,13 @@ use serenity::{
 use std::convert::TryFrom;
 
 use std::{
-    env, path,
+    env,
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
 
 use anyhow::Result;
 // use thorne::english_gen;
-use tokio::{fs, process};
 
 // questions_thread
 
@@ -55,10 +51,7 @@ use serenity::{
     },
 };
 
-// static QUESTIONS_PLACEHOLDER_TEXT: &str = ">
-// > Ask or discuss about anything related with Gitpod
-// > ‎";
-
+// Used on questions_thread.rs
 const GETTING_STARTED_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(947769444380336167)
 } else {
@@ -68,6 +61,19 @@ const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(947769443516284939)
 } else {
     ChannelId(816249489911185418)
+};
+
+const SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
+
+const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
+    ChannelId(1026115789721444384)
+} else {
+    ChannelId(1026792978854973460)
+};
+const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
+    ChannelId(1026800568989143051)
+} else {
+    ChannelId(1026800700002402336)
 };
 
 pub struct Listener {
@@ -86,15 +92,15 @@ impl EventHandler for Listener {
         message::responder(_ctx, _msg).await.unwrap();
     }
 
-    async fn message_delete(
-        &self,
-        _ctx: Context,
-        _channel_id: ChannelId,
-        _deleted_message_id: MessageId,
-        _guild_id: Option<GuildId>,
-    ) {
-        message_delete::responder(_ctx, _channel_id, _deleted_message_id, _guild_id).await;
-    }
+    // async fn message_delete(
+    //     &self,
+    //     _ctx: Context,
+    //     _channel_id: ChannelId,
+    //     _deleted_message_id: MessageId,
+    //     _guild_id: Option<GuildId>,
+    // ) {
+    //     message_delete::responder(_ctx, _channel_id, _deleted_message_id, _guild_id).await;
+    // }
 
     // async fn message_update(
     //     &self,

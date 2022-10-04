@@ -1,4 +1,3 @@
-use crate::event::questions_thread;
 use serenity::model::id::ChannelId;
 
 use super::*;
@@ -12,13 +11,13 @@ impl Db {
         &self,
         data_name: &str,
         id: ChannelId,
-        ctx: &Context,
+        _ctx: &Context,
     ) -> Result<()> {
         let id = id.0 as i64;
 
         let q = format!("insert into server_config({}) values({})", data_name, id);
         if sqlx::query(&q).execute(&self.sqlitedb).await.is_ok() {
-            questions_thread::responder(ctx).await;
+            // questions_thread::responder(ctx).await;
         }
         Ok(())
     }
