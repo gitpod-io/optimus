@@ -1,4 +1,5 @@
 use super::substr::StringUtils;
+use super::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use anyhow::Result;
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use regex::Regex;
@@ -9,8 +10,6 @@ use serenity::{
     prelude::Mentionable,
 };
 use serenity::{
-    futures::StreamExt,
-    // http::AttachmentType,
     model::{guild::Emoji, prelude::Message},
     utils::{read_image, MessageBuilder},
 };
@@ -119,8 +118,8 @@ async fn save_and_fetch_links(
             links.insert(
                 ids.result.title,
                 format!(
-                    "https://discord.com/channels/{}/{}/{}",
-                    ids.result.guild_id, ids.result.channel_id, ids.result.id
+                    "https://discord.com/channels/{}/{}",
+                    ids.result.guild_id, ids.result.id
                 ),
             );
         }
@@ -146,19 +145,48 @@ async fn save_and_fetch_links(
 pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
     if let Some(thread) = msg.channel(&ctx.http).await?.guild() {
         if let Some(parent_channel_id) = thread.parent_id {
-            if [1026115789721444384, 1026115789721444381].contains(parent_channel_id.as_u64()) {
+            if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(&parent_channel_id)
+                && msg.id.as_u64() == thread.id.as_u64()
+            {
                 let user_mention = &msg.author.mention();
 
                 thread
                 .send_message(&ctx, |m| {
-                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. Meanwhile, feel free to add anymore information in this thread!", user_mention)).build()).components(|c| {
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. **Please complete your question by adding more information** 👇!", user_mention)).build()).components(|c| {
                         c.create_action_row(|ar| {
+                            ar.create_button(|button| {
+                                button
+                                .style(ButtonStyle::Primary)
+                                .label("Complete question")
+                                .custom_id("gitpod_complete_question_submit")
+                                .emoji(ReactionType::Unicode("📝".to_string()))
+                            });
                             ar.create_button(|button| {
                                 button
                                     .style(ButtonStyle::Danger)
                                     .label("Close")
                                     .custom_id("gitpod_close_issue")
                                     .emoji(ReactionType::Unicode("🔒".to_string()))
+                            });
+                            ar.create_button(|button| {
+                                button
+                                    // .custom_id("gitpod_docs_link")
+                                    .style(ButtonStyle::Link)
+                                    .label("Docs")
+                                    .emoji(ReactionType::Unicode("📚".to_string()))
+                                    .url("https://www.gitpod.io/docs/")
+                            });
+                            ar.create_button(|button| {
+                                button.style(ButtonStyle::Link).label("YouTube").url(
+                                    "https://youtube.com/playlist?list=PL3TSF5whlprXVp-7Br2oKwQgU4bji1S7H",
+                                ).emoji(ReactionType::Unicode("📺".to_string()))
+                            });
+                            ar.create_button(|button| {
+                                button
+                                    .style(ButtonStyle::Link)
+                                    .label("Status")
+                                    .emoji(ReactionType::Unicode("🧭".to_string()))
+                                    .url("https://www.gitpodstatus.com/")
                             })
                         })
                     })

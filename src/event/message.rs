@@ -1,63 +1,4 @@
 use super::*;
-use crate::db::{ClientContextExt, Db};
-use serenity::model::id::UserId;
-use tokio::time::sleep;
-
-impl Db {
-    pub async fn add_pending_question(
-        &self,
-        user_id: &UserId,
-        channel_id: &ChannelId,
-        message_contents: &String,
-    ) -> Result<()> {
-        let user_id = user_id.0 as i64;
-        let channel_id = channel_id.0 as i64;
-        sqlx::query!(
-            "insert into pending_questions(user_id, channel_id, message_contents) values(?, ?, ?)",
-            user_id,
-            channel_id,
-            message_contents
-        )
-        .execute(&self.sqlitedb)
-        .await?;
-        Ok(())
-    }
-    pub async fn get_pending_question_content(
-        &self,
-        user_id: &UserId,
-        channel_id: &ChannelId,
-    ) -> Result<String> {
-        let user_id = user_id.0 as i64;
-        let channel_id = channel_id.0 as i64;
-        let q = sqlx::query!(
-            r#"select message_contents from pending_questions where user_id=? and channel_id=?"#,
-            user_id,
-            channel_id
-        )
-        .fetch_one(&self.sqlitedb)
-        .await?
-        .message_contents;
-
-        Ok(q)
-    }
-
-    pub async fn remove_pending_question(
-        &self,
-        user_id: &UserId,
-        channel_id: &ChannelId,
-    ) -> Result<()> {
-        let user_id = user_id.0 as i64;
-        let channel_id = channel_id.0 as i64;
-        sqlx::query!(
-            "delete from pending_questions where user_id=? and channel_id=?",
-            user_id,
-            channel_id
-        )
-        .execute(&self.sqlitedb)
-        .await?;
-        Ok(())
-    }
-}
 
 pub async fn responder(ctx: Context, msg: Message) -> Result<()> {
     if !msg.is_own(&ctx.cache) {
@@ -89,29 +30,6 @@ pub async fn responder(ctx: Context, msg: Message) -> Result<()> {
         //     )
         //     .await;
 
-        // Pending questions logging
-        if !msg.author.bot {
-            let db = &ctx.get_db().await;
-            if let Ok(qc) = db.get_question_channels().await {
-                if qc.iter().any(|x| x.id == msg.channel_id) {
-                    db.add_pending_question(&msg.author.id, &msg.channel_id, &msg.content)
-                        .await?;
-                    msg.delete(&ctx.http).await?;
-                    let r = msg
-                        .reply_mention(
-                            &ctx.http,
-                            "☝️ Please click on **`💡 Ask a Question`** button to complete your question",
-                        )
-                        .await?;
-                    sleep(Duration::from_secs(15)).await;
-                    r.delete(&ctx.http).await?;
-                }
-            }
-
-            //
-            // Moderate "showcase" and "feedback" type channel
-            //
-        }
     }
 
     Ok(())

@@ -52,48 +52,7 @@ pub async fn responder(_ctx: &Context) {
         // let msg = qq.unwrap();
         // let last_msg = msg.first().unwrap();
 
-        let _m = channel_id
-			.send_message(&_ctx, |m| {
-				m.content(
-					MessageBuilder::new()
-						.push_underline_line("**Welcome to the Gitpod community!**")
-						.push_line("Community is at the heart of Gitpod, we’re happy to help you out 🧡")
-						.push_line("Before **asking a question**, remember to check out our documentation or watch our screencasts.")
-						.push_line("If you think Gitpod is not working, please check our status page. Thank you!").build());
-				m.components(|c| {
-					c.create_action_row(|ar| {
-						ar.create_button(|button| {
-							button
-								.style(ButtonStyle::Primary)
-								.label("Ask a question")
-								.custom_id("gitpod_create_issue")
-								.emoji(ReactionType::Unicode("💡".to_string()))
-						});
-						ar.create_button(|button| {
-							button
-								// .custom_id("gitpod_docs_link")
-								.style(ButtonStyle::Link)
-								.label("Docs")
-								.emoji(ReactionType::Unicode("📚".to_string()))
-								.url("https://www.gitpod.io/docs/")
-						});
-						ar.create_button(|button| {
-							button.style(ButtonStyle::Link).label("YouTube").url(
-								"https://youtube.com/playlist?list=PL3TSF5whlprXVp-7Br2oKwQgU4bji1S7H",
-							).emoji(ReactionType::Unicode("📺".to_string()))
-						});
-						ar.create_button(|button| {
-							button
-								.style(ButtonStyle::Link)
-								.label("Status")
-								.emoji(ReactionType::Unicode("🧭".to_string()))
-								.url("https://www.gitpodstatus.com/")
-						})
-					})
-				})
-			})
-			.await
-			.unwrap();
+       
     }
 
     let placeholder_text = "**Press the button below** 👇 to gain access to the server";
