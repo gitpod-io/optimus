@@ -81,7 +81,9 @@ async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
         .unwrap();
 
     let thread_type = {
-        if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
+        if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL]
+            .contains(&thread_node.parent_id.unwrap())
+        {
             "question"
         } else {
             "thread"
@@ -189,7 +191,7 @@ async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
                 d.content(msg.build());
             } else {
                 msg.push_line("• Contents of your `config.yml`")
-                    .push_line("• Result of:\n```bash\nkubectl get pods -n <namespace>\n```");
+                    .push_line("• Result(s) of:\n```bash\nkubectl get pods -n <namespace>\n``````bash\nkubectl describe```\n");
                 d.content(msg.build());
             }
 
@@ -818,7 +820,9 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
                     .guild()
                     .unwrap();
                 let thread_type = {
-                    if thread_node.name.contains('✅') || thread_node.name.contains('❓') {
+                    if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL]
+                        .contains(&thread_node.parent_id.unwrap())
+                    {
                         "question"
                     } else {
                         "thread"
