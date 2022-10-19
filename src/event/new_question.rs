@@ -14,6 +14,7 @@ use serenity::{
     utils::{read_image, MessageBuilder},
 };
 use std::{collections::HashMap, env, time::Duration};
+use tokio::time::sleep;
 use urlencoding::encode;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -149,18 +150,12 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                 && msg.id.as_u64() == thread.id.as_u64()
             {
                 let user_mention = &msg.author.mention();
+                let user_without_mention = &msg.author.name;
 
                 thread
                 .send_message(&ctx, |m| {
-                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out. **Please complete your question by adding more information** 👇!", user_mention)).build()).components(|c| {
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build()).components(|c| {
                         c.create_action_row(|ar| {
-                            ar.create_button(|button| {
-                                button
-                                .style(ButtonStyle::Primary)
-                                .label("Complete question")
-                                .custom_id("gitpod_complete_question_submit")
-                                .emoji(ReactionType::Unicode("📝".to_string()))
-                            });
                             ar.create_button(|button| {
                                 button
                                     .style(ButtonStyle::Danger)
@@ -295,6 +290,31 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                     }
                 ).await.unwrap();
                 }
+
+                // Take a pause
+                sleep(Duration::from_secs(20)).await;
+
+                let mut msg = MessageBuilder::new();
+                msg.push_quote_line(format!(
+                    "{} **{}**",
+                    &user_mention, "Please share the following (if applies):"
+                ));
+
+                if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+                    msg.push_line("• Contents of your `.gitpod.yml`")
+                        .push_line("• Contents of your `.gitpod.Dockerfile")
+                        .push_line("• An example repository link");
+                } else {
+                    msg.push_line("• Contents of your `config.yml`")
+                    .push("• Result of:```bash\nkubectl get pods -n <namespace>```")
+                    .push_line("• If you have resources that are set up strangely, please run `kubectl describe` on the resource");
+                }
+
+                thread
+                    .send_message(&ctx.http, |m| m.content(msg.build()))
+                    .await
+                    .unwrap();
+
                 thread_typing.stop().unwrap();
             }
         }

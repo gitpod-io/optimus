@@ -147,130 +147,93 @@ async fn assign_roles(
     }
 }
 
-async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
-    // let db = &ctx.get_db().await;
-    // let desc = {
-    //     if let Ok(result) = db
-    //         .get_pending_question_content(&mci.user.id, &mci.channel_id)
-    //         .await
-    //     {
-    //         db.remove_pending_question(&mci.user.id, &mci.channel_id)
-    //             .await
-    //             .ok();
-    //         result
-    //     } else {
-    //         "".to_string()
-    //     }
-    // };
+// async fn show_issue_form(mci: &MessageComponentInteraction, ctx: &Context) {
+//     // let db = &ctx.get_db().await;
+//     // let desc = {
+//     //     if let Ok(result) = db
+//     //         .get_pending_question_content(&mci.user.id, &mci.channel_id)
+//     //         .await
+//     //     {
+//     //         db.remove_pending_question(&mci.user.id, &mci.channel_id)
+//     //             .await
+//     //             .ok();
+//     //         result
+//     //     } else {
+//     //         "".to_string()
+//     //     }
+//     // };
+//     // Temp
 
-    let parent_channel_id = &mci
-        .channel_id
-        .to_channel(&ctx.http)
-        .await
-        .unwrap()
-        .guild()
-        .unwrap()
-        .parent_id
-        .unwrap();
 
-    // Temp
-    mci.create_interaction_response(&ctx.http, |r| {
-        r.kind(InteractionResponseType::ChannelMessageWithSource);
-        r.interaction_response_data(|d| {
-            let mut msg = MessageBuilder::new();
-            msg.push_quote_line(format!(
-                "{} **{}**",
-                &mci.user.mention(),
-                "Please share the following (if applies):"
-            ));
-
-            if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
-                msg.push_line("• Contents of your `.gitpod.yml`")
-                    .push_line("• Contents of your `.gitpod.Dockerfile")
-                    .push_line("• An example repository link");
-                d.content(msg.build());
-            } else {
-                msg.push_line("• Contents of your `config.yml`")
-                    .push_line("• Result(s) of:\n```bash\nkubectl get pods -n <namespace>\n``````bash\nkubectl describe```\n");
-                d.content(msg.build());
-            }
-
-            d
-        });
-        r
-    })
-    .await
-    .unwrap();
-
-    return;
-    // There is a discord UI bug with it.
-    // Not going to execute below code until https://github.com/discord/discord-api-docs/issues/5302 is fixed :(
-    mci.create_interaction_response(&ctx, |r| {
-        r.kind(InteractionResponseType::Modal);
-        r.interaction_response_data(|d| {
-            d.custom_id("gitpod_help_button_press");
-            d.title("Template");
-            d.components(|c| {
-                // c.create_action_row(|ar| {
-                //     ar.create_input_text(|it| {
-                //         it.style(InputTextStyle::Short)
-                //             .custom_id("input_title")
-                //             .required(true)
-                //             .label("Title")
-                //             .max_length(98)
-                //     })
-                // });
-                // c.create_action_row(|ar| {
-                //     ar.create_input_text(|it| {
-                //         it.style(InputTextStyle::Paragraph)
-                //             .custom_id("input_description")
-                //             .label("Description")
-                //             .required(true)
-                //             .max_length(4000)
-                //             // .value(desc)
-                //     })
-                // });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_gitpod_yml")
-                                .label("Your .gitpod.yml contents")
-                                .required(false)
-                            // .max_length(4000)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_config_yaml")
-                                .label("Your config.yaml contents")
-                                .required(false)
-                            // .max_length(1000)
-                        }
-                    })
-                });
-                c.create_action_row(|ar| {
-                    ar.create_input_text(|it| {
-                        if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
-                            it.style(InputTextStyle::Short)
-                                .custom_id("input_example_repo")
-                                .label("Example repo")
-                                .required(false)
-                                .max_length(100)
-                        } else {
-                            it.style(InputTextStyle::Paragraph)
-                                .custom_id("input_kubectl_result")
-                                .label("Result of `kubectl get pods -n <namespace>`")
-                                .required(false)
-                                .max_length(1000)
-                                .value(SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER)
-                        }
-                    })
-                })
-            })
-        })
-    })
-    .await
-    .unwrap();
-}
+//     return;
+//     // There is a discord UI bug with it.
+//     // Not going to execute below code until https://github.com/discord/discord-api-docs/issues/5302 is fixed :(
+//     mci.create_interaction_response(&ctx, |r| {
+//         r.kind(InteractionResponseType::Modal);
+//         r.interaction_response_data(|d| {
+//             d.custom_id("gitpod_help_button_press");
+//             d.title("Template");
+//             d.components(|c| {
+//                 // c.create_action_row(|ar| {
+//                 //     ar.create_input_text(|it| {
+//                 //         it.style(InputTextStyle::Short)
+//                 //             .custom_id("input_title")
+//                 //             .required(true)
+//                 //             .label("Title")
+//                 //             .max_length(98)
+//                 //     })
+//                 // });
+//                 // c.create_action_row(|ar| {
+//                 //     ar.create_input_text(|it| {
+//                 //         it.style(InputTextStyle::Paragraph)
+//                 //             .custom_id("input_description")
+//                 //             .label("Description")
+//                 //             .required(true)
+//                 //             .max_length(4000)
+//                 //             // .value(desc)
+//                 //     })
+//                 // });
+//                 c.create_action_row(|ar| {
+//                     ar.create_input_text(|it| {
+//                         if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+//                             it.style(InputTextStyle::Paragraph)
+//                                 .custom_id("input_gitpod_yml")
+//                                 .label("Your .gitpod.yml contents")
+//                                 .required(false)
+//                             // .max_length(4000)
+//                         } else {
+//                             it.style(InputTextStyle::Paragraph)
+//                                 .custom_id("input_config_yaml")
+//                                 .label("Your config.yaml contents")
+//                                 .required(false)
+//                             // .max_length(1000)
+//                         }
+//                     })
+//                 });
+//                 c.create_action_row(|ar| {
+//                     ar.create_input_text(|it| {
+//                         if *parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+//                             it.style(InputTextStyle::Short)
+//                                 .custom_id("input_example_repo")
+//                                 .label("Example repo")
+//                                 .required(false)
+//                                 .max_length(100)
+//                         } else {
+//                             it.style(InputTextStyle::Paragraph)
+//                                 .custom_id("input_kubectl_result")
+//                                 .label("Result of `kubectl get pods -n <namespace>`")
+//                                 .required(false)
+//                                 .max_length(1000)
+//                                 .value(SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER)
+//                         }
+//                     })
+//                 })
+//             })
+//         })
+//     })
+//     .await
+//     .unwrap();
+// }
 
 pub async fn responder(ctx: Context, interaction: Interaction) {
     let ctx = &ctx.clone();
@@ -278,7 +241,7 @@ pub async fn responder(ctx: Context, interaction: Interaction) {
     match interaction {
         Interaction::MessageComponent(mci) => {
             match mci.data.custom_id.as_str() {
-                "gitpod_complete_question_submit" => show_issue_form(&mci, ctx).await,
+                // "gitpod_complete_question_submit" => show_issue_form(&mci, ctx).await,
                 "gitpod_close_issue" => close_issue(&mci, ctx).await,
                 "getting_started_letsgo" => {
                     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
