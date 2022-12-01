@@ -1,45 +1,56 @@
-
-use serenity::model::{application::interaction::Interaction, guild::Member, id::ChannelId};
-use serenity::prelude::*;
+use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use anyhow::Result;
+use async_trait::async_trait;
+use duplicate::duplicate_item;
 
 use serenity::{
     client::Context,
     model::{
-        application::{component::ButtonStyle, interaction::InteractionResponseType},
-        channel::ReactionType,
+        application::interaction::{
+            application_command::ApplicationCommandInteraction,
+            message_component::MessageComponentInteraction, InteractionResponseType,
+        },
+        guild::Member,
+        id::ChannelId,
     },
+    prelude::*,
 };
 
-// Internals
-use crate::db::ClientContextExt;
+#[async_trait]
+pub trait CommonInteractionComponent {
+    async fn get_channel_id(&self) -> ChannelId;
+    async fn get_member(&self) -> Option<&Member>;
+    async fn make_interaction_resp(&self, ctx: &Context) -> Result<()>;
+}
 
-const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026115789721444384)
-} else {
-    ChannelId(1026792978854973460)
-};
+#[async_trait]
+#[duplicate_item(name; [ApplicationCommandInteraction]; [MessageComponentInteraction])]
+impl CommonInteractionComponent for name {
+    async fn get_channel_id(&self) -> ChannelId {
+        self.channel_id
+    }
 
-const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026800568989143051)
-} else {
-    ChannelId(1026800700002402336)
-};
+    async fn get_member(&self) -> Option<&Member> {
+        self.member.as_ref()
+    }
 
-use serenity::{
-    // http::AttachmentType,
-    model::{
-        self,
-        application::interaction::{message_component::MessageComponentInteraction, MessageFlags},
-        guild::Role,
-        id::RoleId,
-        prelude::component::Button,
-        Permissions,
-    },
-};
+    async fn make_interaction_resp(&self, ctx: &Context) -> Result<()> {
+        self.create_interaction_response(&ctx.http, |r| {
+            r.kind(InteractionResponseType::UpdateMessage);
+            r.interaction_response_data(|d| d)
+        })
+        .await?;
+        Ok(())
+    }
+}
 
-pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
-    let thread_node = mci
-        .channel_id
+pub async fn responder<T>(mci: &T, ctx: &Context) -> Result<()>
+where
+    T: CommonInteractionComponent,
+{
+    let channel_id = mci.get_channel_id().await;
+
+    let thread_node = channel_id
         .to_channel(&ctx.http)
         .await
         .unwrap()
@@ -63,18 +74,23 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
             format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
         }
     };
-    let action_user_mention = mci.member.as_ref().unwrap().mention();
-    let response = format!("This {} was closed by {}", thread_type, action_user_mention);
-    mci.channel_id.say(&ctx.http, &response).await.unwrap();
-    mci.create_interaction_response(&ctx.http, |r| {
-        r.kind(InteractionResponseType::UpdateMessage);
-        r.interaction_response_data(|d| d)
-    })
-    .await
-    .unwrap();
 
-    mci.channel_id
+    {
+        use anyhow::Context;
+        let action_user_mention = mci
+            .get_member()
+            .await
+            .context("Couldn't get member")?
+            .mention();
+        let response = format!("This {} was closed by {}", thread_type, action_user_mention);
+        channel_id.say(&ctx.http, &response).await?;
+    }
+
+    mci.make_interaction_resp(ctx).await?;
+
+    channel_id
         .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
-        .await
-        .unwrap();
+        .await?;
+
+    Ok(())
 }

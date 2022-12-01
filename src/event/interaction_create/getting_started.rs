@@ -1,42 +1,24 @@
+use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL, INTRODUCTION_CHANNEL};
 use crate::db::ClientContextExt;
-
-use serenity::{model::{guild::Member, id::ChannelId}, prelude::*};
+use std::time::Duration;
 
 use serenity::{
     client::Context,
-    model::{
-        application::{component::ButtonStyle, interaction::InteractionResponseType},
-        channel::ReactionType,
-    },
-};
-use std::time::Duration;
-
-const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(947769443516284939)
-} else {
-    ChannelId(816249489911185418)
-};
-
-const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026115789721444384)
-} else {
-    ChannelId(1026792978854973460)
-};
-
-const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026800568989143051)
-} else {
-    ChannelId(1026800700002402336)
-};
-
-use serenity::{
     futures::StreamExt,
     model::{
-        self,
-        application::interaction::{message_component::MessageComponentInteraction, MessageFlags},
+        application::{
+            component::ButtonStyle,
+            interaction::{
+                message_component::MessageComponentInteraction, InteractionResponseType,
+                MessageFlags,
+            },
+        },
+        channel::ReactionType,
+        guild::Member,
         guild::Role,
+        id::ChannelId,
         id::RoleId,
-        prelude::component::Button,
+        prelude::*,
         Permissions,
     },
     utils::MessageBuilder,
@@ -50,11 +32,7 @@ struct SelectMenuSpec<'a> {
     description: &'a str,
 }
 
-async fn get_role(
-    mci: &model::application::interaction::message_component::MessageComponentInteraction,
-    ctx: &Context,
-    name: &str,
-) -> Role {
+async fn get_role(mci: &MessageComponentInteraction, ctx: &Context, name: &str) -> Role {
     let role = {
         if let Some(result) = mci
             .guild_id
@@ -87,48 +65,6 @@ async fn get_role(
     }
 
     role
-}
-
-async fn close_issue(mci: &MessageComponentInteraction, ctx: &Context) {
-    let thread_node = mci
-        .channel_id
-        .to_channel(&ctx.http)
-        .await
-        .unwrap()
-        .guild()
-        .unwrap();
-
-    let thread_type = {
-        if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL]
-            .contains(&thread_node.parent_id.unwrap())
-        {
-            "question"
-        } else {
-            "thread"
-        }
-    };
-
-    let thread_name = {
-        if thread_node.name.contains('✅') || thread_type == "thread" {
-            thread_node.name
-        } else {
-            format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
-        }
-    };
-    let action_user_mention = mci.member.as_ref().unwrap().mention();
-    let response = format!("This {} was closed by {}", thread_type, action_user_mention);
-    mci.channel_id.say(&ctx.http, &response).await.unwrap();
-    mci.create_interaction_response(&ctx.http, |r| {
-        r.kind(InteractionResponseType::UpdateMessage);
-        r.interaction_response_data(|d| d)
-    })
-    .await
-    .unwrap();
-
-    mci.channel_id
-        .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
-        .await
-        .unwrap();
 }
 
 async fn assign_roles(
@@ -376,11 +312,11 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                 join_reason.push_str(interaction.data.custom_id.as_str());
 
                 let mut member = mci.member.clone().unwrap();
-                let member_role = get_role(&mci, ctx, "Member").await;
+                let member_role = get_role(mci, ctx, "Member").await;
                 let never_introduced = {
                     let mut status = true;
                     if let Some(roles) = member.roles(&ctx.cache) {
-                        let gitpodder_role = get_role(&mci, ctx, "Gitpodders").await;
+                        let gitpodder_role = get_role(mci, ctx, "Gitpodders").await;
                         status = !roles
                             .into_iter()
                             .any(|x| x == member_role || x == gitpodder_role);
@@ -442,7 +378,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                     .await
                     .unwrap();
 
-                let temp_role = get_role(&mci, ctx, "Temp").await;
+                let temp_role = get_role(mci, ctx, "Temp").await;
                 let followup_results =
                     match followup
                         .await_component_interaction(ctx)
@@ -556,7 +492,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
 													);
                                 }
                                 "selfhosted_help" => {
-                                    let selfhosted_role = get_role(&mci, ctx, "SelfHosted").await;
+                                    let selfhosted_role = get_role(mci, ctx, "SelfHosted").await;
                                     member
                                         .add_role(&ctx.http, selfhosted_role.id)
                                         .await
@@ -627,7 +563,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                 }
 
                 assign_roles(
-                    &mci,
+                    mci,
                     ctx,
                     role_choices,
                     &mut member,
