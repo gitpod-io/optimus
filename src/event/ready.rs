@@ -46,5 +46,4 @@ pub async fn responder(_ctx: &Context, ready: Ready) {
             .map(|x| format!("{} ", x.name))
             .collect::<String>()
     );
-
 }

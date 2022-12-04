@@ -29,7 +29,6 @@ pub async fn responder(ctx: Context, msg: Message) -> Result<()> {
         //         ),
         //     )
         //     .await;
-
     }
 
     Ok(())

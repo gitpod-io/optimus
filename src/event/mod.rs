@@ -204,6 +204,6 @@ impl EventHandler for Listener {
         guild_create::responder(_ctx, _guild, _is_new).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        interaction_create::responder(ctx, interaction).await;
+        interaction_create::responder(&ctx, interaction).await;
     }
 }

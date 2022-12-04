@@ -1,5 +1,5 @@
-use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL, INTRODUCTION_CHANNEL};
 use crate::db::ClientContextExt;
+use crate::event::{INTRODUCTION_CHANNEL, QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use std::time::Duration;
 
 use serenity::{

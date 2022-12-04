@@ -1,3 +1,4 @@
+use anyhow::{Context as _, Result};
 use serenity::model::{application::interaction::Interaction, id::ChannelId};
 use serenity::prelude::*;
 
@@ -25,7 +26,7 @@ const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(1026800700002402336)
 };
 
-pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
+pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {
     // If a Question thread suggestion was clicked
     if mci.data.custom_id.starts_with("http") {
         let button_label = &mci
@@ -36,14 +37,14 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                 a.components.iter().find_map(|x| {
                     let button: Button =
                         serde_json::from_value(serde_json::to_value(x).unwrap()).unwrap();
-                    if button.custom_id.unwrap() == mci.data.custom_id {
-                        Some(button.label.unwrap())
+                    if button.custom_id? == mci.data.custom_id {
+                        Some(button.label?)
                     } else {
                         None
                     }
                 })
             })
-            .unwrap();
+            .context("Failed to get button label")?;
 
         mci.create_interaction_response(&ctx.http, |r| {
             r.kind(InteractionResponseType::ChannelMessageWithSource)
@@ -69,4 +70,6 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
             .await
             .unwrap();
     }
+
+    Ok(())
 }

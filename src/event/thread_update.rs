@@ -39,9 +39,9 @@ pub async fn responder(_ctx: Context, _thread: GuildChannel) {
     if thread_type == "question" {
         if _thread.thread_metadata.unwrap().archived && last_msg.is_own(&_ctx.cache) {
             if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
-            || Regex::new("^This [a-z]+ was closed ?b?y?")
-            .unwrap()
-            .is_match(last_msg.content.as_str()))
+                || Regex::new("^This [a-z]+ was closed ?b?y?")
+                    .unwrap()
+                    .is_match(last_msg.content.as_str()))
             {
                 unarchival_action(_ctx, _thread).await;
             }

@@ -16,7 +16,6 @@ use std::{
 
 #[tokio::main]
 async fn main() {
-
     let token = env::var("DISCORD_TOKEN").expect("Expected BOT_TOKEN");
     let application_id: u64 = env::var("APPLICATION_ID")
         .expect("Expected APPLICATION_ID")
