@@ -13,7 +13,7 @@ pub async fn responder(ctx: &Context, interaction: Interaction) -> Result<()> {
         Interaction::MessageComponent(mci) => match mci.data.custom_id.as_str() {
             "gitpod_close_issue" => close_issue::responder(&mci, ctx).await?,
             "getting_started_letsgo" => getting_started::responder(&mci, ctx).await,
-            _ => question_thread_suggestions::responder(&mci, ctx).await,
+            _ => question_thread_suggestions::responder(&mci, ctx).await?,
         },
         Interaction::ApplicationCommand(mci) => match mci.data.name.as_str() {
             "close" => close_issue::responder(&mci, ctx).await?,

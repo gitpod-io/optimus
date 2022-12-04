@@ -27,7 +27,6 @@ const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
 };
 
 pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {
-    // If a Question thread suggestion was clicked
     if mci.data.custom_id.starts_with("http") {
         let button_label = &mci
             .message

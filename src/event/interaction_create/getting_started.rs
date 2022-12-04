@@ -2,6 +2,7 @@ use crate::db::ClientContextExt;
 use crate::event::{INTRODUCTION_CHANNEL, QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use std::time::Duration;
 
+use anyhow::{bail, Context as _, Result};
 use serenity::{
     client::Context,
     futures::StreamExt,
@@ -32,39 +33,35 @@ struct SelectMenuSpec<'a> {
     description: &'a str,
 }
 
-async fn get_role(mci: &MessageComponentInteraction, ctx: &Context, name: &str) -> Role {
+async fn get_role(mci: &MessageComponentInteraction, ctx: &Context, name: &str) -> Result<Role> {
+    let guild_id = mci.guild_id.context("Ok")?;
     let role = {
-        if let Some(result) = mci
-            .guild_id
-            .unwrap()
+        if let Some(result) = guild_id
             .to_guild_cached(&ctx.cache)
-            .unwrap()
+            .context("Failed to get guild ID")?
             .role_by_name(name)
         {
             result.clone()
         } else {
-            let r = mci
-                .guild_id
-                .unwrap()
+            let r = guild_id
                 .create_role(&ctx.http, |r| {
                     r.name(name);
                     r.mentionable(false);
                     r.hoist(false);
                     r
                 })
-                .await
-                .unwrap();
+                .await?;
+
             r.clone()
         }
     };
 
     if role.name != "Member" && role.name != "Gitpodders" && !role.permissions.is_empty() {
         role.edit(&ctx.http, |r| r.permissions(Permissions::empty()))
-            .await
-            .unwrap();
+            .await?;
     }
 
-    role
+    Ok(role)
 }
 
 async fn assign_roles(
@@ -74,7 +71,7 @@ async fn assign_roles(
     member: &mut Member,
     temp_role: &Role,
     member_role: &Role,
-) {
+) -> Result<()> {
     if role_choices.len() > 1 || !role_choices.iter().any(|x| x == "none") {
         // Is bigger than a single choice or doesnt contain none
 
@@ -83,25 +80,27 @@ async fn assign_roles(
             if role_name == "none" {
                 continue;
             }
-            let role = get_role(mci, ctx, role_name.as_str()).await;
+            let role = get_role(mci, ctx, role_name.as_str()).await.context("ok")?;
             role_ids.push(role.id);
         }
-        member.add_roles(&ctx.http, &role_ids).await.unwrap();
+        member.add_roles(&ctx.http, &role_ids).await?;
         let db = &ctx.get_db().await;
-        db.set_user_roles(mci.user.id, role_ids).await.unwrap();
+        db.set_user_roles(mci.user.id, role_ids).await?;
     }
 
     // Remove the temp role from user
     if member.roles.iter().any(|x| x == &temp_role.id) {
-        member.remove_role(&ctx.http, temp_role.id).await.unwrap();
+        member.remove_role(&ctx.http, temp_role.id).await?;
     }
     // Add member role if missing
     if !member.roles.iter().any(|x| x == &member_role.id) {
-        member.add_role(&ctx.http, member_role.id).await.unwrap();
+        member.add_role(&ctx.http, member_role.id).await?;
     }
+
+    Ok(())
 }
 
-pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
+pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {
     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
         SelectMenuSpec {
             value: "JetBrainsIDEs",
@@ -212,17 +211,16 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                 });
                 c
             });
-            d.custom_id("bruh").flags(MessageFlags::EPHEMERAL)
+            d.custom_id("additional_roles")
+                .flags(MessageFlags::EPHEMERAL)
         });
         r
     })
-    .await
-    .unwrap();
+    .await?;
 
     let mut interactions = mci
         .get_interaction_response(&ctx.http)
-        .await
-        .unwrap()
+        .await?
         .await_component_interactions(ctx)
         .timeout(Duration::from_secs(60 * 5))
         .build();
@@ -246,7 +244,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
 										});
 										d
 									})
-								}).await.unwrap();
+								}).await?;
 
                 // Save the choices of last interaction
                 interaction
@@ -282,7 +280,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
 											})
 										})
 									})
-								}).await.unwrap();
+								}).await?;
 
                 // Save the choices of last interaction
                 let subscribed_role = SelectMenuSpec {
@@ -305,18 +303,17 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                                     .components(|c| c)
                             })
                     })
-                    .await
-                    .unwrap();
+                    .await?;
 
                 // Save join reason
                 join_reason.push_str(interaction.data.custom_id.as_str());
 
-                let mut member = mci.member.clone().unwrap();
-                let member_role = get_role(mci, ctx, "Member").await;
+                let mut member = mci.member.clone().context("Can't fetch member")?;
+                let member_role = get_role(mci, ctx, "Member").await?;
                 let never_introduced = {
                     let mut status = true;
                     if let Some(roles) = member.roles(&ctx.cache) {
-                        let gitpodder_role = get_role(mci, ctx, "Gitpodders").await;
+                        let gitpodder_role = get_role(mci, ctx, "Gitpodders").await?;
                         status = !roles
                             .into_iter()
                             .any(|x| x == member_role || x == gitpodder_role);
@@ -375,10 +372,9 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                         });
                         d.flags(MessageFlags::EPHEMERAL)
                     })
-                    .await
-                    .unwrap();
+                    .await?;
 
-                let temp_role = get_role(mci, ctx, "Temp").await;
+                let temp_role = get_role(mci, ctx, "Temp").await?;
                 let followup_results =
                     match followup
                         .await_component_interaction(ctx)
@@ -386,7 +382,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                         .await
                     {
                         Some(ci) => {
-                            member.add_role(&ctx.http, temp_role.id).await.unwrap();
+                            member.add_role(&ctx.http, temp_role.id).await?;
                             let final_msg =
                                 {
                                     if never_introduced {
@@ -413,16 +409,16 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                                     })
                             })
                             .await
-                            .unwrap();
+                            ?;
                             ci
                         }
-                        None => return,
+                        None => bail!("Did not interact in time"),
                     };
 
                 // if let Some(interaction) = interaction
                 //     .get_interaction_response(&ctx.http)
                 //     .await
-                //     .unwrap()
+                //     ?
                 //     .await_component_interaction(&ctx)
                 //     .timeout(Duration::from_secs(60 * 5))
                 //     .await
@@ -452,8 +448,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                                     t.auto_archive_duration(1440)
                                         .name(format!("Welcome {}!", msg.author.name))
                                 })
-                                .await
-                                .unwrap();
+                                .await?;
 
                             if words_count::count(&msg.content).words > 4 {
                                 for unicode in ["👋", "🔥"] {
@@ -461,11 +456,10 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                                         &ctx.http,
                                         ReactionType::Unicode(unicode.to_string()),
                                     )
-                                    .await
-                                    .unwrap();
+                                    .await?;
                                 }
                             } else {
-                                msg.delete(&ctx.http).await.unwrap();
+                                msg.delete(&ctx.http).await?;
                             }
 
                             let general_channel = if cfg!(debug_assertions) {
@@ -492,11 +486,8 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
 													);
                                 }
                                 "selfhosted_help" => {
-                                    let selfhosted_role = get_role(mci, ctx, "SelfHosted").await;
-                                    member
-                                        .add_role(&ctx.http, selfhosted_role.id)
-                                        .await
-                                        .unwrap();
+                                    let selfhosted_role = get_role(mci, ctx, "SelfHosted").await?;
+                                    member.add_role(&ctx.http, selfhosted_role.id).await?;
                                     prepared_msg.push_line(
 														format!("**You mentioned that** you need help with selfhosted, please ask in {}\n",
 																	&SELFHOSTED_QUESTIONS_CHANNEL.mention())
@@ -514,9 +505,8 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
 											.push_quote_line("• https://www.gitpod.io/about");
                             let mut thread_msg = thread
                                 .send_message(&ctx.http, |t| t.content(prepared_msg))
-                                .await
-                                .unwrap();
-                            thread_msg.suppress_embeds(&ctx.http).await.unwrap();
+                                .await?;
+                            thread_msg.suppress_embeds(&ctx.http).await?;
                             // } else {
                             // 	let warn_msg = msg
                             // 	.reply_mention(
@@ -524,9 +514,9 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                             // 		"Please reply in threads above instead of here",
                             // 	)
                             // 	.await
-                            // 	.unwrap();
+                            // 	?;
                             // 	sleep(Duration::from_secs(10)).await;
-                            // 	warn_msg.delete(&ctx.http).await.unwrap();
+                            // 	warn_msg.delete(&ctx.http).await?;
                             // 	msg.delete(&ctx.http).await.ok();
                             // }
                         }
@@ -555,10 +545,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                         }
                     }
                     if !removeable_roles.is_empty() {
-                        member
-                            .remove_roles(&ctx.http, &removeable_roles)
-                            .await
-                            .unwrap();
+                        member.remove_roles(&ctx.http, &removeable_roles).await?;
                     }
                 }
 
@@ -570,10 +557,13 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) {
                     &temp_role,
                     &member_role,
                 )
-                .await;
+                .await?;
+
                 break;
             }
             _ => {}
         }
     }
+
+    Ok(())
 }
