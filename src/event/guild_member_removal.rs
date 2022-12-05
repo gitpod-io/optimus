@@ -8,7 +8,7 @@ pub async fn responder(
 ) {
     let _system_channel_id = _ctx
         .cache
-        .guild(&_guild_id)
+        .guild(_guild_id)
         .map(|x| x.system_channel_id)
         .unwrap()
         .unwrap();

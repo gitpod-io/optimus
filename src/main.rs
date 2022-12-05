@@ -1,10 +1,10 @@
 mod command;
 mod event;
 mod utils;
+use anyhow::{Result, Context as _};
 use command::*;
 mod db;
 use db::Db;
-use std::env;
 
 use serenity::framework::standard::{buckets::LimitedFor, StandardFramework};
 use serenity::http::Http;
@@ -12,16 +12,39 @@ use serenity::prelude::*;
 use std::{
     collections::{HashMap, HashSet},
     sync::{atomic::AtomicBool, Arc},
+    io::{self, BufRead},
 };
 
 #[tokio::main]
-async fn main() {
-    let token = env::var("DISCORD_TOKEN").expect("Expected BOT_TOKEN");
-    let application_id: u64 = env::var("APPLICATION_ID")
-        .expect("Expected APPLICATION_ID")
-        .parse()
-        .expect("Unable to parse");
-    let http = Http::new(&token);
+async fn main() -> Result<()> {
+    let mut bot_token = String::new();
+    let mut application_id = String::new();
+
+    // Read stdin (warn: does not handle VALUE whitespaces, we could use clap to parse but not needed now)
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    handle.read_line(&mut buffer)?;
+
+    for arg in buffer.split_whitespace() {
+        if arg.contains('=') {
+            let (key, value) = arg.split_once('=').context("Unable to split from '='")?;
+            match key {
+                "app_id" => {
+                    application_id.clear();
+                    application_id.push_str(value);
+                }
+                "bot_token" => {
+                    bot_token.clear();
+                    bot_token.push_str(value);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let application_id: u64 = application_id.parse().expect("Unable to parse");
+    let http = Http::new(bot_token.as_str());
 
     // Init sqlite database
     let db = Db::new().await.expect("Can't init database");
@@ -112,7 +135,7 @@ async fn main() {
     ////// .group(&MATH_GROUP)
     // .group(&OWNER_GROUP)
 
-    let mut client = Client::builder(token, GatewayIntents::default())
+    let mut client = Client::builder(bot_token, GatewayIntents::default())
         .application_id(application_id)
         .event_handler(event::Listener {
             is_loop_running: AtomicBool::new(false),
@@ -132,4 +155,6 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
     }
+
+    Ok(())
 }

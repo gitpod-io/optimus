@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use serenity::model::{application::interaction::Interaction, id::ChannelId};
 use serenity::prelude::*;
 
 use serenity::{
@@ -12,18 +11,6 @@ use serenity::{
         channel::ReactionType,
         prelude::component::Button,
     },
-};
-
-const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026115789721444384)
-} else {
-    ChannelId(1026792978854973460)
-};
-
-const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026800568989143051)
-} else {
-    ChannelId(1026800700002402336)
 };
 
 pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {

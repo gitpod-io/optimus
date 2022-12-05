@@ -17,7 +17,7 @@ async fn say(_ctx: &Context, _msg: &Message, _args: Args) -> CommandResult {
             .clean_user(false)
     };
 
-    let content = content_safe(&_ctx.cache, &_args.rest(), &settings, &[]);
+    let content = content_safe(&_ctx.cache, _args.rest(), &settings, &[]);
     let ref_msg = &_msg.referenced_message;
 
     if ref_msg.is_some() {

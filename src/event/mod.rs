@@ -13,11 +13,9 @@ use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
 
 use serde_json::json;
 
+use serenity::async_trait;
 use serenity::model::{
-    application::{
-        component::{ActionRowComponent, InputTextStyle},
-        interaction::Interaction,
-    },
+    application::interaction::Interaction,
     channel::{GuildChannel, Message, Reaction},
     // event::MessageUpdateEvent,
     gateway::{Activity, Ready},
@@ -25,45 +23,22 @@ use serenity::model::{
     id::{ChannelId, GuildId},
     prelude::User,
 };
-use serenity::{
-    async_trait,
-    prelude::*,
-    utils::{content_safe, ContentSafeOptions},
-};
 use std::convert::TryFrom;
 
-use std::{
-    env,
-    sync::atomic::{AtomicBool, Ordering},
-    time::Duration,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Result;
 // use thorne::english_gen;
 
 // questions_thread
 
-use serenity::{
-    client::{Context, EventHandler},
-    model::{
-        application::{component::ButtonStyle, interaction::InteractionResponseType},
-        channel::ReactionType,
-    },
-};
+use serenity::client::{Context, EventHandler};
 
-// Used on questions_thread.rs
-const GETTING_STARTED_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(947769444380336167)
-} else {
-    ChannelId(833891696764518441)
-};
 const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(947769443516284939)
 } else {
     ChannelId(816249489911185418)
 };
-
-const SELFHOSTED_KUBECTL_COMMAND_PLACEHOLDER: &str = "# Run: kubectl get pods -n <namespace>";
 
 const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
     ChannelId(1026115789721444384)
@@ -122,7 +97,7 @@ impl EventHandler for Listener {
     //
     // In this case, just print what the current user's username is.
     async fn ready(&self, _ctx: Context, ready: Ready) {
-        ready::responder(&_ctx, ready).await;
+        ready::responder(&_ctx, ready).await.unwrap();
     }
 
     // async fn guild_member_addition(&self, _ctx: Context, _guild_id: GuildId, _new_member: Member) {
@@ -204,6 +179,8 @@ impl EventHandler for Listener {
         guild_create::responder(_ctx, _guild, _is_new).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        interaction_create::responder(&ctx, interaction).await;
+        interaction_create::responder(&ctx, interaction)
+            .await
+            .unwrap();
     }
 }
