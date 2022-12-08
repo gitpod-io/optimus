@@ -20,7 +20,23 @@ pub async fn responder(_ctx: &Context, ready: Ready) -> Result<()> {
             });
 
             commands.create_application_command(|command| {
-                command.name("pull").description("Pull this thread into GitHub to merge into website")
+                command
+                    .name("create-pr")
+                    .description("Pull this thread into GitHub to merge into website")
+                    .kind(CommandType::ChatInput)
+                    .default_member_permissions(Permissions::ADMINISTRATOR)
+                    .create_option(|opt| {
+                        opt.kind(CommandOptionType::String)
+                            .name("title")
+                            .description("Title of the FAQ")
+                            .required(true)
+                    })
+                    .create_option(|opt| {
+                        opt.kind(CommandOptionType::String)
+                            .name("link")
+                            .description("Full page link to https://www.gitpod.io/docs/<page>")
+                            .required(true)
+                    })
             });
 
             commands.create_application_command(|c| {

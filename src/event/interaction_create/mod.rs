@@ -16,9 +16,9 @@ pub async fn responder(ctx: &Context, interaction: Interaction) -> Result<()> {
         },
         Interaction::ApplicationCommand(mci) => match mci.data.name.as_str() {
             "close" => close_issue::responder(&mci, ctx).await?,
-            "nothing_to_see_here" => {
-                slash_commands::nothing_to_see_here::responder(mci, ctx).await?
-            }
+            "nothing_to_see_here" => slash_commands::nothing_to_see_here::responder(mci, ctx).await?,
+            "create-pr" => slash_commands::create_pr::responder(&mci, ctx).await?,
+            
             _ => {}
         },
         _ => {}
