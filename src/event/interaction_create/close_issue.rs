@@ -1,5 +1,5 @@
 use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duplicate::duplicate_item;
 
@@ -9,18 +9,18 @@ use serenity::{
         application::interaction::{
             application_command::ApplicationCommandInteraction,
             message_component::MessageComponentInteraction, InteractionResponseType,
+            InteractionType,
         },
         guild::Member,
         id::ChannelId,
     },
-    prelude::*,
 };
 
 #[async_trait]
 pub trait CommonInteractionComponent {
     async fn get_channel_id(&self) -> ChannelId;
     async fn get_member(&self) -> Option<&Member>;
-    async fn make_interaction_resp(&self, ctx: &Context) -> Result<()>;
+    async fn make_interaction_resp(&self, ctx: &Context, thread_type: &str) -> Result<()>;
 }
 
 #[async_trait]
@@ -34,12 +34,36 @@ impl CommonInteractionComponent for name {
         self.member.as_ref()
     }
 
-    async fn make_interaction_resp(&self, ctx: &Context) -> Result<()> {
-        self.create_interaction_response(&ctx.http, |r| {
-            r.kind(InteractionResponseType::UpdateMessage);
-            r.interaction_response_data(|d| d)
-        })
-        .await?;
+    async fn make_interaction_resp(&self, ctx: &Context, thread_type: &str) -> Result<()> {
+
+        match self.kind {
+            InteractionType::ApplicationCommand => {
+                self.create_interaction_response(&ctx.http, |r| {
+                    r.kind(InteractionResponseType::ChannelMessageWithSource);
+                    r.interaction_response_data(|d| {
+                        d.content(format!("This {} was closed", thread_type))
+                    })
+                })
+                .await?;
+            }
+            InteractionType::MessageComponent => {
+                let response = format!(
+                    "This {} was closed by {}",
+                    thread_type,
+                    self.get_member().await.context("Failed to get member")?
+                );
+
+                self.channel_id.say(&ctx.http, &response).await?;
+
+                self.create_interaction_response(&ctx.http, |r| {
+                    r.kind(InteractionResponseType::UpdateMessage);
+                    r.interaction_response_data(|d| d)
+                })
+                .await?;
+            }
+            _ => {}
+        }
+
         Ok(())
     }
 }
@@ -75,18 +99,7 @@ where
         }
     };
 
-    {
-        use anyhow::Context;
-        let action_user_mention = mci
-            .get_member()
-            .await
-            .context("Couldn't get member")?
-            .mention();
-        let response = format!("This {} was closed by {}", thread_type, action_user_mention);
-        channel_id.say(&ctx.http, &response).await?;
-    }
-
-    mci.make_interaction_resp(ctx).await?;
+    mci.make_interaction_resp(ctx, thread_type).await?;
 
     channel_id
         .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
