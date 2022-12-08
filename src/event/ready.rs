@@ -18,6 +18,11 @@ pub async fn responder(_ctx: &Context, ready: Ready) -> Result<()> {
             commands.create_application_command(|command| {
                 command.name("close").description("Close a question")
             });
+
+            commands.create_application_command(|command| {
+                command.name("pull").description("Pull this thread into GitHub to merge into website")
+            });
+
             commands.create_application_command(|c| {
                 c.name("nothing_to_see_here")
                     .description("Nope :P")

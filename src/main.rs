@@ -50,7 +50,6 @@ async fn main() -> Result<()> {
     let db = Db::new().await.expect("Can't init database");
     db.run_migrations().await.unwrap();
 
-    // We will fetch your bot's owners and id
     let (owners, bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();

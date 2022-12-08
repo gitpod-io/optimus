@@ -154,9 +154,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
 
                 thread
                 .send_message(&ctx, |m| {
-                    if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
-                        m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build());
-                    }
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build());
 
                     m.components(|c| {
                         c.create_action_row(|ar| {
