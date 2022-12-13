@@ -19,6 +19,7 @@ piston_rs = "0.4.2"
 async-trait = "0.1.59"
 duplicate = "0.4.1"
 base64 = "0.13.1"
+obfstr = "0.4.1"
 
 [dependencies.reqwest]
 default-features = false
