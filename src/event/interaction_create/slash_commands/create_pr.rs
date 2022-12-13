@@ -232,20 +232,18 @@ impl GitHubAPI {
     ) -> Result<String> {
         let req = self
             .client
-            .put(format!("{}/pulls", &self.upstream_api_root))
+            .post(format!("{}/pulls", &self.upstream_api_root))
             .json(&json!({
                 "title": title,
                 "body": body,
                 "base": base,
                 "head": head,
-                "maintainer_can_modify": "true",
+                "maintainer_can_modify": true,
             }))
             .send()
-            .await?
-            .json::<GitHubPullReqObj>()
             .await?;
 
-        Ok(req.html_url)
+        Ok(req.json::<GitHubPullReqObj>().await?.html_url)
     }
 }
 
@@ -308,13 +306,13 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     let sanitized_messages = sanitized_messages.into_iter().collect::<String>();
 
     let github_client = GitHubAPI::from(GitHubAPI {
-        origin_api_root: "https://api.github.com/repos/github-activity/website".to_owned(),
-        upstream_api_root: "https://api.github.com/repos/axonasif/website".to_owned(),
-        token: "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".to_owned(),
+        origin_api_root: "https://api.github.com/repos/axonasif/website".to_owned(),
+        upstream_api_root: "https://api.github.com/repos/gitpod-io/website".to_owned(),
+        token: env!("GITHUB_TOKEN"),
         upstream_main_branch_name: "main".to_owned(),
-        upstream_user_name: "axonasif".to_owned(),
+        upstream_user_name: "gitpod-io".to_owned(),
         origin_work_branch_name: "discord_staging".to_owned(),
-        origin_user_name: "github-activity".to_owned(),
+        origin_user_name: "axonasif".to_owned(),
         ..Default::default()
     });
 
@@ -352,18 +350,14 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
             // Create PR
             github_client
                 .pull_request(
-                    format!("Discord question as FAQ for {relative_file_path}").as_str(),
+                    format!("Add FAQ for {relative_file_path}").as_str(),
                     "Pulling a Discord thread as FAQ",
                     format!(
                         "{}:{}",
                         github_client.origin_user_name, github_client.origin_work_branch_name,
                     )
                     .as_str(),
-                    format!(
-                        "{}:{}",
-                        github_client.upstream_user_name, github_client.upstream_main_branch_name,
-                    )
-                    .as_str(),
+                    github_client.upstream_main_branch_name.as_str(),
                 )
                 .await?
         } else {
@@ -413,12 +407,13 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     let file_contents_encoded = encode(file_contents_decoded);
 
     // Commit the new changes
+    // TODO: Create a bot account on GitHub instead of using my email.
     github_client
         .commit(
             file.path.as_str(),
             format!("Update {}", file.path).as_str(),
-            "Bot",
-            "bot@gmail.com",
+            "AXON",
+            "axonasif@gmail.com",
             file_contents_encoded.as_str(),
             file.sha.as_str(),
             github_client.origin_work_branch_name.as_str(),
@@ -426,7 +421,7 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         .await?;
 
     mci.edit_original_interaction_response(&ctx.http, |r| {
-        r.content(format!("PR for the thread conversation: {pr_link}"))
+        r.content(format!("PR for this thread conversation: {pr_link}"))
     })
     .await?;
 
