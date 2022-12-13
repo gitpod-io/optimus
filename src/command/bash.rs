@@ -36,7 +36,7 @@ async fn bash(_ctx: &Context, _msg: &Message, mut _args: Args) -> CommandResult 
                 .unwrap();
             let cmd_output = process::Command::new("bash")
                 .arg("-c")
-                .arg(&cmd_args)
+                .arg(cmd_args)
                 .output()
                 .await
                 .unwrap();

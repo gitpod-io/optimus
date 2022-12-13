@@ -51,8 +51,6 @@ pub async fn responder(_ctx: &Context) {
         // // Place the placeholder
         // let msg = qq.unwrap();
         // let last_msg = msg.first().unwrap();
-
-       
     }
 
     let placeholder_text = "**Press the button below** 👇 to gain access to the server";

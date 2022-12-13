@@ -154,7 +154,9 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
 
                 thread
                 .send_message(&ctx, |m| {
-                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build()).components(|c| {
+                    m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build());
+
+                    m.components(|c| {
                         c.create_action_row(|ar| {
                             ar.create_button(|button| {
                                 button
@@ -184,7 +186,10 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                                     .url("https://www.gitpodstatus.com/")
                             })
                         })
-                    })
+                    });
+
+                    m
+
                 })
                 .await
                 .unwrap();
@@ -192,8 +197,16 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                 // questions_thread::responder(ctx).await;
                 let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
 
+                let relevant_links_external_sources = {
+                    if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+                        Vec::from(["https://www.gitpod.io/docs", "https://github.com/gitpod-io"])
+                    } else {
+                        Vec::from(["https://github.com/gitpod-io"])
+                    }
+                };
+
                 let mut relevant_links = save_and_fetch_links(
-                    &["https://www.gitpod.io/docs", "https://github.com/gitpod-io"],
+                    &relevant_links_external_sources,
                     *thread.id.as_u64(),
                     *parent_channel_id.as_u64(),
                     *thread.guild_id.as_u64(),
@@ -201,6 +214,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                     (*msg.content).to_string(),
                 )
                 .await;
+
                 if !&relevant_links.is_empty() {
                     let mut prefix_emojis: HashMap<&str, Emoji> = HashMap::new();
                     let emoji_sources: HashMap<&str, &str> = HashMap::from([
@@ -247,7 +261,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
 
                     let mut suggested_count = 1;
                     thread.send_message(&ctx.http, |m| {
-                m.content(format!("{} I also found some relevant links which might answer your question, please do check them out below 🙏:", &user_mention));
+                m.content(format!("{} I also found some relevant links which might help to self-serve, please do check them out below 🙏:", &user_mention));
                     m.components(|c| {
                         loop {
                             if suggested_count > 10 || relevant_links.is_empty() {
@@ -273,7 +287,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                                             }
                                         };
 
-                                        a.create_button(|b|b.label(&title.as_str().substring(0, 80)).custom_id(&url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
+                                        a.create_button(|b|b.label(title.as_str().substring(0, 80)).custom_id(url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
                                             id: emoji.id,
                                             name: Some(emoji.name.clone()),
                                             animated: false,
@@ -297,12 +311,12 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                 let mut msg = MessageBuilder::new();
                 msg.push_quote_line(format!(
                     "{} **{}**",
-                    &user_mention, "Please share the following (if applies):"
+                    &user_mention, "You can share the following (if applies):"
                 ));
 
                 if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
                     msg.push_line("• Contents of your `.gitpod.yml`")
-                        .push_line("• Contents of your `.gitpod.Dockerfile")
+                        .push_line("• Contents of your `.gitpod.Dockerfile`")
                         .push_line("• An example repository link");
                 } else {
                     msg.push_line("• Contents of your `config.yml`")

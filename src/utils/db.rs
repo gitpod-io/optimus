@@ -26,7 +26,6 @@ impl Database {
     }
 
     pub async fn fetch_msg(&self, id: MessageId) -> String {
-        
         fs::read_to_string(format!("{}/{}", &self.node_name, id))
             .await
             .unwrap()
@@ -55,7 +54,7 @@ impl Database {
         let new_contents = {
             if path::Path::new(&path).exists() {
                 let old_content = fs::read_to_string(&path).await.unwrap();
-                
+
                 {
                     if !fs::read_to_string(&path).await.unwrap().contains(&contents) {
                         format!("{}\n{}", &old_content, &contents)
