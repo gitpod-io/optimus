@@ -239,6 +239,7 @@ impl GitHubAPI {
                 "base": base,
                 "head": head,
                 "maintainer_can_modify": true,
+                "draft": true,
             }))
             .send()
             .await?;
@@ -323,47 +324,27 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         .sync_fork_from_upstream(github_client.upstream_main_branch_name.as_str())
         .await?;
 
-    let pr_link = {
-        let pr = github_client.get_origin_pr_on_upstream().await;
+    if github_client.get_origin_pr_on_upstream().await.is_err() {
+        // Delete branch if no PR is open in upstream
+        github_client
+            .create_or_delete_branch(
+                github_client.upstream_main_branch_name.as_str(),
+                github_client.origin_work_branch_name.as_str(),
+                "delete",
+            )
+            .await
+            // Ignore any error.
+            .ok();
 
-        if pr.is_err() {
-            // Delete branch if no PR is open in upstream
-            github_client
-                .create_or_delete_branch(
-                    github_client.upstream_main_branch_name.as_str(),
-                    github_client.origin_work_branch_name.as_str(),
-                    "delete",
-                )
-                .await
-                // Ignore any error.
-                .ok();
-
-            // Create branch
-            github_client
-                .create_or_delete_branch(
-                    github_client.upstream_main_branch_name.as_str(),
-                    github_client.origin_work_branch_name.as_str(),
-                    "create",
-                )
-                .await?;
-
-            // Create PR
-            github_client
-                .pull_request(
-                    format!("Add FAQ for {relative_file_path}").as_str(),
-                    "Pulling a Discord thread as FAQ",
-                    format!(
-                        "{}:{}",
-                        github_client.origin_user_name, github_client.origin_work_branch_name,
-                    )
-                    .as_str(),
-                    github_client.upstream_main_branch_name.as_str(),
-                )
-                .await?
-        } else {
-            pr?
-        }
-    };
+        // Create branch
+        github_client
+            .create_or_delete_branch(
+                github_client.upstream_main_branch_name.as_str(),
+                github_client.origin_work_branch_name.as_str(),
+                "create",
+            )
+            .await?;
+    }
 
     // Committing the changes
     /////////////////////////
@@ -418,6 +399,28 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
             github_client.origin_work_branch_name.as_str(),
         )
         .await?;
+
+    // Create PR
+    let pr_link = {
+        let pr = github_client.get_origin_pr_on_upstream().await;
+
+        if pr.is_ok() {
+            pr?
+        } else {
+            github_client
+                .pull_request(
+                    format!("Add FAQ for {relative_file_path}").as_str(),
+                    "Pulling a Discord thread as FAQ",
+                    format!(
+                        "{}:{}",
+                        github_client.origin_user_name, github_client.origin_work_branch_name,
+                    )
+                    .as_str(),
+                    github_client.upstream_main_branch_name.as_str(),
+                )
+                .await?
+        }
+    };
 
     mci.edit_original_interaction_response(&ctx.http, |r| {
         r.content(format!("PR for this thread conversation: {pr_link}"))
