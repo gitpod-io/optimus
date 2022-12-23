@@ -249,25 +249,37 @@ impl GitHubAPI {
 }
 
 pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Result<()> {
+    let channel_id = mci.channel_id;
+    let thread_node = channel_id
+        .to_channel(&ctx.http)
+        .await?
+        .guild()
+        .context("Failed to convert into Guild")?;
+    let thread_id = &thread_node.id;
+    let guild_id = &mci.guild_id.context("Failed to get guild ID")?;
     let options = &mci.data.options;
 
-    let title = &options
-        .get(0)
-        .context("Failed to get title")?
-        .value
-        .as_ref()
-        .context("Error getting value")?
-        .to_string();
-    let title = title.trim_start_matches('"').trim_end_matches('"');
-
     let link = &options
-        .get(1)
+        .get(0)
         .context("Failed to get link")?
         .value
         .as_ref()
         .context("Error getting value")?
         .to_string();
     let link = link.trim_start_matches('"').trim_end_matches('"');
+
+    let title = {
+        if let Some(result) = &options.get(1) {
+            result
+                .value
+                .as_ref()
+                .context("Error getting value")?
+                .to_string()
+        } else {
+            thread_node.name
+        }
+    };
+    let title = title.trim_start_matches('"').trim_end_matches('"');
 
     mci.create_interaction_response(&ctx.http, |r| {
         r.kind(InteractionResponseType::DeferredChannelMessageWithSource)
@@ -296,13 +308,16 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
             let content = Regex::new(r#"```"#)?.replace(content.as_str(), "\n```");
 
             sanitized_messages.push(format!(
-                "\n**{}{}**: {}\n{attachments}",
+                "\n**{}#{}**: {}\n{attachments}",
                 message.author.name, message.author.discriminator, content
             ));
         }
     }
 
-    sanitized_messages.push(format!("### {}\n{}\n", title, SIGNATURE));
+    sanitized_messages.push(format!(
+        "### [{}](https://discord.com/channels/{guild_id}/{thread_id})\n{}\n",
+        title, SIGNATURE
+    ));
     sanitized_messages.reverse();
     let sanitized_messages = sanitized_messages.into_iter().collect::<String>();
 

@@ -27,15 +27,15 @@ pub async fn responder(_ctx: &Context, ready: Ready) -> Result<()> {
                     .default_member_permissions(Permissions::ADMINISTRATOR)
                     .create_option(|opt| {
                         opt.kind(CommandOptionType::String)
-                            .name("title")
-                            .description("Title of the FAQ")
+                            .name("link")
+                            .description("Page link to a https://www.gitpod.io/docs/<page>")
                             .required(true)
                     })
                     .create_option(|opt| {
                         opt.kind(CommandOptionType::String)
-                            .name("link")
-                            .description("Full page link to https://www.gitpod.io/docs/<page>")
-                            .required(true)
+                            .name("title")
+                            .description("Title of the FAQ")
+                            .required(false)
                     })
             });
 
