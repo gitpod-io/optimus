@@ -1,7 +1,7 @@
 mod command;
 mod event;
 mod utils;
-use anyhow::{Result, Context as _};
+use anyhow::{Context as _, Result};
 use command::*;
 mod db;
 use db::Db;
@@ -11,8 +11,8 @@ use serenity::http::Http;
 use serenity::prelude::*;
 use std::{
     collections::{HashMap, HashSet},
-    sync::{atomic::AtomicBool, Arc},
     io::{self, BufRead},
+    sync::{atomic::AtomicBool, Arc},
 };
 
 #[tokio::main]

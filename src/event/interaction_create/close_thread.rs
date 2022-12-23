@@ -35,7 +35,6 @@ impl CommonInteractionComponent for name {
     }
 
     async fn make_interaction_resp(&self, ctx: &Context, thread_type: &str) -> Result<()> {
-
         match self.kind {
             InteractionType::ApplicationCommand => {
                 self.create_interaction_response(&ctx.http, |r| {

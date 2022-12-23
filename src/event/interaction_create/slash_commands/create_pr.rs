@@ -374,13 +374,20 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
             .await
         {
             result
+        } else if let Ok(result) = github_client
+            .get_file(
+                format!("{relative_file_path}/index.md").as_str(),
+                github_client.origin_work_branch_name.as_str(),
+            )
+            .await
+        {
+            result
         } else {
-            github_client
-                .get_file(
-                    format!("{relative_file_path}/index.md").as_str(),
-                    github_client.origin_work_branch_name.as_str(),
-                )
-                .await?
+            mci.edit_original_interaction_response(&ctx.http, |r| {
+                r.content(format!("Error: {relative_file_path} does not exist, maybe you need to resolve a redirect?"))
+            })
+            .await?;
+            bail!("{relative_file_path} does not exist");
         }
     };
 

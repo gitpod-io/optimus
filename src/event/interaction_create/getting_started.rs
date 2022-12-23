@@ -408,8 +408,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                                         d.content(final_msg).components(|c| c)
                                     })
                             })
-                            .await
-                            ?;
+                            .await?;
                             ci
                         }
                         None => bail!("Did not interact in time"),
