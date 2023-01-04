@@ -1,5 +1,5 @@
 use super::substr::StringUtils;
-use super::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use anyhow::Result;
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use regex::Regex;

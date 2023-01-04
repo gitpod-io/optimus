@@ -27,29 +27,12 @@ use std::convert::TryFrom;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use anyhow::Result;
+use color_eyre::eyre::Result;
 // use thorne::english_gen;
 
 // questions_thread
 
 use serenity::client::{Context, EventHandler};
-
-const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(947769443516284939)
-} else {
-    ChannelId(816249489911185418)
-};
-
-const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026115789721444384)
-} else {
-    ChannelId(1026792978854973460)
-};
-const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026800568989143051)
-} else {
-    ChannelId(1026800700002402336)
-};
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,
@@ -172,7 +155,7 @@ impl EventHandler for Listener {
     }
 
     async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
-        thread_update::responder(_ctx, _thread).await;
+        thread_update::responder(_ctx, _thread).await.unwrap();
     }
 
     async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {

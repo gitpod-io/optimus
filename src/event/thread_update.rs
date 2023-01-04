@@ -1,52 +1,61 @@
+use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use anyhow::{Context as _, Result};
 use regex::Regex;
-use serenity::model::channel::MessageType;
-
-use super::*;
+use serenity::{client::Context, model::channel::GuildChannel, model::channel::MessageType};
 
 // Was trying to hook into auto thread archival and ask the participants
 // if the thread was resolved but guess we can't reliably do it now
 // since there is no reliable way to detect who triggered thread_update
 // Tl;dr : Discord API doesn't tell you who archived the thread, which is a big issue.
-async fn unarchival_action(_ctx: Context, _thread: GuildChannel) {
+async fn unarchival_action(_ctx: Context, _thread: GuildChannel) -> Result<()> {
     // _thread
     //         .say(
     //             &_ctx.http,
     //             "Whoever is trying to archive from the Discord UI, please send `/close` as a message here instead.",
     //         )
     //         .await
-    //         .unwrap();
+    //         ?;
     _thread
         .edit_thread(&_ctx.http, |t| t.archived(false))
-        .await
-        .unwrap();
+        .await?;
+
+    Ok(())
 }
 
-pub async fn responder(_ctx: Context, _thread: GuildChannel) {
+pub async fn responder(_ctx: Context, _thread: GuildChannel) -> Result<()> {
     let thread_type = {
-        if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(&_thread.parent_id.unwrap()) {
+        if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(
+            &_thread
+                .parent_id
+                .context("Couldn't get parent_id of thread")?,
+        ) {
             "question"
         } else {
             "thread"
         }
     };
-    let last_msg = &_ctx
-        .http
-        .get_messages(*_thread.id.as_u64(), "")
-        .await
-        .unwrap();
-    let last_msg = last_msg.first().unwrap();
+    let last_msg = &_ctx.http.get_messages(*_thread.id.as_u64(), "").await?;
+    let last_msg = last_msg.first().context("Couldn't get last message")?;
 
     if thread_type == "question" {
-        if _thread.thread_metadata.unwrap().archived && last_msg.is_own(&_ctx.cache) {
+        if _thread
+            .thread_metadata
+            .context("Couldn't get thread_metadata")?
+            .archived
+            && last_msg.is_own(&_ctx.cache)
+        {
             if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
-                || Regex::new("^This [a-z]+ was closed ?b?y?")
-                    .unwrap()
-                    .is_match(last_msg.content.as_str()))
+                || Regex::new("^This [a-z]+ was closed ?b?y?")?.is_match(last_msg.content.as_str()))
             {
-                unarchival_action(_ctx, _thread).await;
+                unarchival_action(_ctx, _thread).await?;
             }
-        } else if _thread.thread_metadata.unwrap().archived {
-            unarchival_action(_ctx, _thread).await;
+        } else if _thread
+            .thread_metadata
+            .context("Couldn't get thread_metadata")?
+            .archived
+        {
+            unarchival_action(_ctx, _thread).await?;
         }
     }
+    Ok(())
 }

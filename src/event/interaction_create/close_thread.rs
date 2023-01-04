@@ -1,4 +1,4 @@
-use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duplicate::duplicate_item;

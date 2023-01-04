@@ -1,22 +1,49 @@
 mod command;
 mod event;
 mod utils;
-use anyhow::{Context as _, Result};
+use color_eyre::eyre::ContextCompat;
 use command::*;
 mod db;
 use db::Db;
+mod variables;
 
-use serenity::framework::standard::{buckets::LimitedFor, StandardFramework};
-use serenity::http::Http;
-use serenity::prelude::*;
+use color_eyre::eyre::{Report, Result};
+use once_cell::sync::OnceCell;
+use serenity::{
+    framework::standard::{buckets::LimitedFor, StandardFramework},
+    http::Http,
+    prelude::*,
+};
 use std::{
     collections::{HashMap, HashSet},
     io::{self, BufRead},
     sync::{atomic::AtomicBool, Arc},
 };
 
+static GITHUB_TOKEN: OnceCell<String> = OnceCell::new();
+
+fn init_tracing() {
+    use tracing_error::ErrorLayer;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    let fmt_layer = fmt::layer().with_target(false);
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(ErrorLayer::default())
+        .init();
+}
+
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Report> {
+    init_tracing();
+    color_eyre::install()?;
+
     let mut bot_token = String::new();
     let mut application_id = String::new();
 
@@ -28,7 +55,7 @@ async fn main() -> Result<()> {
 
     for arg in buffer.split_whitespace() {
         if arg.contains('=') {
-            let (key, value) = arg.split_once('=').context("Unable to split from '='")?;
+            let (key, value) = arg.split_once('=').wrap_err("Unable to split from '='")?;
             match key {
                 "app_id" => {
                     application_id.clear();
@@ -37,6 +64,9 @@ async fn main() -> Result<()> {
                 "bot_token" => {
                     bot_token.clear();
                     bot_token.push_str(value);
+                }
+                "github_token" => {
+                    GITHUB_TOKEN.set(value.to_owned()).ok();
                 }
                 _ => {}
             }

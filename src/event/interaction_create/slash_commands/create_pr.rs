@@ -11,6 +11,8 @@ use serenity::{
 };
 use std::collections::HashMap;
 
+use crate::GITHUB_TOKEN;
+
 const SIGNATURE: &str = "<!-- DISCORD_BOT_FAQ - DO NOT REMOVE -->";
 
 #[derive(Default)]
@@ -324,7 +326,10 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     let github_client = GitHubAPI::from(GitHubAPI {
         origin_api_root: "https://api.github.com/repos/github-activity/website".to_owned(),
         upstream_api_root: "https://api.github.com/repos/gitpod-io/website".to_owned(),
-        token: obfstr::obfstr!(env!("GITHUB_TOKEN")).to_owned(),
+        token: GITHUB_TOKEN
+            .get()
+            .context("github_token= was not passed via stdin")?
+            .to_owned(),
         upstream_main_branch_name: "main".to_owned(),
         upstream_user_name: "gitpod-io".to_owned(),
         origin_work_branch_name: "discord_staging".to_owned(),
