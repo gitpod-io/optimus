@@ -92,17 +92,32 @@ where
 
     let thread_name = {
         if thread_node.name.contains('✅') || thread_type == "thread" {
-            thread_node.name
+            thread_node.name.to_owned()
         } else {
             format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
         }
     };
 
-    mci.make_interaction_resp(ctx, thread_type).await?;
+    let interacted_member = mci.get_member().await.context("Failed to get member")?;
+    let thread_owner = thread_node.guild(&ctx.cache).unwrap().owner_id;
 
-    channel_id
-        .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
-        .await?;
+    let mut got_admin = false;
+    for role in &interacted_member.roles {
+        if role.to_role_cached(&ctx.cache).map_or(false, |r| {
+            r.has_permission(serenity::model::Permissions::ADMINISTRATOR)
+        }) {
+            got_admin = true;
+            break;
+        }
+    }
+
+    if interacted_member.user.id == thread_owner || got_admin {
+        mci.make_interaction_resp(ctx, thread_type).await?;
+
+        channel_id
+            .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
+            .await?;
+    }
 
     Ok(())
 }

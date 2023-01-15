@@ -241,7 +241,6 @@ impl GitHubAPI {
                 "base": base,
                 "head": head,
                 "maintainer_can_modify": true,
-                "draft": false,
             }))
             .send()
             .await?;
