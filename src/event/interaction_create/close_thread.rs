@@ -75,14 +75,13 @@ where
 
     let thread_node = channel_id
         .to_channel(&ctx.http)
-        .await
-        .unwrap()
+        .await?
         .guild()
-        .unwrap();
+        .context("Failed to get channel info")?;
 
     let thread_type = {
         if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL]
-            .contains(&thread_node.parent_id.unwrap())
+            .contains(&thread_node.parent_id.context("Can't get parent id")?)
         {
             "question"
         } else {
@@ -99,7 +98,10 @@ where
     };
 
     let interacted_member = mci.get_member().await.context("Failed to get member")?;
-    let thread_owner = thread_node.guild(&ctx.cache).unwrap().owner_id;
+    let thread_owner = thread_node
+        .guild(&ctx.cache)
+        .context("Failed to get thread owner")?
+        .owner_id;
 
     let mut got_admin = false;
     for role in &interacted_member.roles {
