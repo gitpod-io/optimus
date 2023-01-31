@@ -1,5 +1,5 @@
 tasks:
-  - init: cargo build
+  - init: cargo build --release
 
 vscode:
   extensions:
