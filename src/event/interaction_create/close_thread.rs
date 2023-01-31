@@ -98,22 +98,23 @@ where
     };
 
     let interacted_member = mci.get_member().await.context("Failed to get member")?;
-    let thread_owner = thread_node
-        .guild(&ctx.cache)
-        .context("Failed to get thread owner")?
-        .owner_id;
 
     let mut got_admin = false;
     for role in &interacted_member.roles {
         if role.to_role_cached(&ctx.cache).map_or(false, |r| {
-            r.has_permission(serenity::model::Permissions::ADMINISTRATOR)
+            r.has_permission(serenity::model::Permissions::MANAGE_THREADS)
         }) {
             got_admin = true;
             break;
         }
     }
 
-    if interacted_member.user.id == thread_owner || got_admin {
+    if interacted_member.user.id
+        == thread_node
+            .owner_id
+            .context("Failed to get owner_id of thread")?
+        || got_admin
+    {
         mci.make_interaction_resp(ctx, thread_type).await?;
 
         channel_id
