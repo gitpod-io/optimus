@@ -5,22 +5,18 @@ mod guild_member_removal;
 mod interaction_create;
 mod message;
 mod new_question;
-mod reaction_add;
+// mod reaction_add;
 mod ready;
 mod thread_update;
 
-use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
-
-
-
+use crate::utils::substr;
 
 use serde_json::json;
 
 use serenity::async_trait;
-use serenity::futures::StreamExt;
 use serenity::model::{
     application::interaction::Interaction,
-    channel::{GuildChannel, Message, Reaction},
+    channel::{GuildChannel, Message},
     // event::MessageUpdateEvent,
     gateway::{Activity, Ready},
     guild::{Guild, Member},
@@ -28,11 +24,9 @@ use serenity::model::{
     prelude::User,
 };
 
-use std::convert::TryFrom;
-
-use std::sync::atomic::{AtomicBool, Ordering};
-
 use color_eyre::eyre::Result;
+use std::convert::TryFrom;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // use thorne::english_gen;
 
@@ -103,9 +97,9 @@ impl EventHandler for Listener {
         guild_member_removal::responder(_ctx, _guild_id, _user, _member_data_if_available).await;
     }
 
-    async fn reaction_add(&self, _ctx: Context, _added_reaction: Reaction) {
-        reaction_add::responder(_ctx, _added_reaction).await;
-    }
+    // async fn reaction_add(&self, _ctx: Context, _added_reaction: Reaction) {
+    //     reaction_add::responder(_ctx, _added_reaction).await;
+    // }
 
     // We use the cache_ready event just in case some cache operation is required in whatever use
     // case you have for this.
