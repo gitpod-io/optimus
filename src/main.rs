@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 mod command;
 mod event;
 mod utils;
@@ -8,6 +10,8 @@ use db::Db;
 mod variables;
 
 use color_eyre::eyre::{Report, Result};
+use meilisearch_sdk::indexes::Index;
+use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use once_cell::sync::OnceCell;
 use serenity::{
     framework::standard::{buckets::LimitedFor, StandardFramework},
@@ -21,6 +25,32 @@ use std::{
 };
 
 static GITHUB_TOKEN: OnceCell<String> = OnceCell::new();
+static MEILICLIENT_THREAD_INDEX: OnceCell<Index> = OnceCell::new();
+
+async fn init_meiliclient() {
+    // Init MeiliClient
+    let mclient = MeiliClient::new("http://localhost:7700", "optimusbotdatabase");
+    let msettings = Settings::new()
+        .with_searchable_attributes(["title", "messages"])
+        .with_distinct_attribute("title");
+    let threads_index_db = {
+        let index_uid = "threads";
+        if let Ok(res) = mclient.get_index(index_uid).await {
+            res
+        } else {
+            let task = mclient.create_index(index_uid, None).await.unwrap();
+            let task = task
+                .wait_for_completion(&mclient, None, None)
+                .await
+                .unwrap();
+            let task = task.try_make_index(&mclient).unwrap();
+            task.set_settings(&msettings).await.unwrap();
+            task
+        }
+    };
+
+    MEILICLIENT_THREAD_INDEX.set(threads_index_db).unwrap();
+}
 
 fn init_tracing() {
     use tracing_error::ErrorLayer;
@@ -43,6 +73,7 @@ fn init_tracing() {
 async fn main() -> Result<(), Report> {
     init_tracing();
     color_eyre::install()?;
+    init_meiliclient().await;
 
     let mut bot_token = String::new();
     let mut application_id = String::new();

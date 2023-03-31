@@ -15,6 +15,8 @@ mod say;
 mod some_long_command;
 mod status;
 // mod whois;
+mod exec;
+mod index_threads;
 
 // Import commands
 use about::*;
@@ -27,11 +29,11 @@ use invite::*;
 use latency::*;
 use math::*;
 // use note::*;
+use index_threads::*;
 use owner_check::*;
 use say::*;
 use status::*;
 // use whois::*;
-mod exec;
 use exec::*;
 
 use crate::db::{ClientContextExt, Db};
@@ -94,7 +96,8 @@ impl TypeMapKey for CommandCounter {
     status,
     invite,
     // some_long_command,
-    config
+    config,
+    index_threads
 )]
 struct General;
 

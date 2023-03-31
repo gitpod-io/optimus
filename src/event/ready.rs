@@ -1,9 +1,9 @@
-use super::*;
-use anyhow::Result;
 use serenity::model::{
     prelude::command::{CommandOptionType, CommandType},
     Permissions,
 };
+
+use super::*;
 
 pub async fn responder(_ctx: &Context, ready: Ready) -> Result<()> {
     println!("{} is connected!", ready.user.name);
@@ -57,6 +57,7 @@ pub async fn responder(_ctx: &Context, ready: Ready) -> Result<()> {
         .await?;
     }
 
+    // Not useful in multi-guild context
     // println!(
     //     "Now I have these application commands: {}",
     //     commands

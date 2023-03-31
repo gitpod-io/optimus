@@ -1,5 +1,8 @@
-use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
-use anyhow::{Context as _, Result};
+use crate::{
+    utils::index_threads::index_thread_messages,
+    variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL},
+};
+use color_eyre::eyre::{eyre, Result};
 use regex::Regex;
 use serenity::{client::Context, model::channel::GuildChannel, model::channel::MessageType};
 
@@ -22,39 +25,47 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) -> Result<()> {
     Ok(())
 }
 
-pub async fn responder(_ctx: Context, _thread: GuildChannel) -> Result<()> {
+pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
+    // Index to DB
+    let guild_id = &thread.guild_id;
+    index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
+        .await
+        .ok();
+
     let thread_type = {
         if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(
-            &_thread
+            &thread
                 .parent_id
-                .context("Couldn't get parent_id of thread")?,
+                .ok_or_else(|| eyre!("Couldn't get parent_id of thread"))?,
         ) {
             "question"
         } else {
             "thread"
         }
     };
-    let last_msg = &_ctx.http.get_messages(*_thread.id.as_u64(), "").await?;
-    let last_msg = last_msg.first().context("Couldn't get last message")?;
+    let last_msg = &ctx.http.get_messages(*thread.id.as_u64(), "").await?;
+    let last_msg = last_msg
+        .first()
+        .ok_or_else(|| eyre!("Couldn't get last message"))?;
 
     if thread_type == "question" {
-        if _thread
+        if thread
             .thread_metadata
-            .context("Couldn't get thread_metadata")?
+            .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
             .archived
-            && last_msg.is_own(&_ctx.cache)
+            && last_msg.is_own(&ctx.cache)
         {
             if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
                 || Regex::new("^This [a-z]+ was closed ?b?y?")?.is_match(last_msg.content.as_str()))
             {
-                unarchival_action(_ctx, _thread).await?;
+                unarchival_action(ctx, thread).await?;
             }
-        } else if _thread
+        } else if thread
             .thread_metadata
-            .context("Couldn't get thread_metadata")?
+            .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
             .archived
         {
-            unarchival_action(_ctx, _thread).await?;
+            unarchival_action(ctx, thread).await?;
         }
     }
     Ok(())
