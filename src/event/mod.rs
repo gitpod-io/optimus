@@ -10,10 +10,10 @@ mod ready;
 mod thread_update;
 
 use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
-use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 
-use regex::Regex;
-use serde::{Deserialize, Serialize};
+
+
+
 use serde_json::json;
 
 use serenity::async_trait;
@@ -27,13 +27,13 @@ use serenity::model::{
     id::{ChannelId, GuildId},
     prelude::User,
 };
-use serenity::utils::{content_safe, ContentSafeOptions};
+
 use std::convert::TryFrom;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use color_eyre::eyre::Result;
-use color_eyre::eyre::{eyre, Report};
+
 // use thorne::english_gen;
 
 // questions_thread

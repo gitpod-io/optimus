@@ -1,7 +1,7 @@
 use super::substr::StringUtils;
 use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use anyhow::Result;
-use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
+
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serenity::{
@@ -28,11 +28,11 @@ struct Thread {
 
 async fn save_and_fetch_links(
     sites: &[&str],
-    thread_id: u64,
-    channel_id: u64,
-    guild_id: u64,
+    _thread_id: u64,
+    _channel_id: u64,
+    _guild_id: u64,
     title: String,
-    description: String,
+    _description: String,
 ) -> HashMap<String, String> {
     let mut links: HashMap<String, String> = HashMap::new();
 
