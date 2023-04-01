@@ -9,6 +9,7 @@ use serenity::{
     model::{
         id::{ChannelId, GuildId},
         prelude::{GuildChannel, MessageType},
+        Timestamp,
     },
     utils::{content_safe, ContentSafeOptions},
 };
@@ -22,6 +23,7 @@ struct Thread {
     id: u64,
     guild_id: u64,
     parent_channel_id: u64,
+    timestamp: Timestamp,
     poster: String, // author discord avatar
 }
 
@@ -94,6 +96,19 @@ pub async fn index_thread_messages(
             .map(|x| x.name.to_owned())
             .collect::<Vec<String>>();
 
+        let thread_timestamp = {
+            let meta = thread_node
+                .thread_metadata
+                .ok_or_else(|| eyre!("Cant fetch metadata"))?;
+            if let Some(time) = meta.create_timestamp {
+                time
+            } else if let Some(time) = meta.archive_timestamp {
+                time
+            } else {
+                thread_node.id.created_at()
+            }
+        };
+
         // Get thread users
         /* let thread_user_ids: Vec<UserId> = thread_id
             .get_thread_members(&ctx.http)
@@ -157,6 +172,7 @@ pub async fn index_thread_messages(
                     id: thread_id.into(),
                     guild_id: *guild_id.as_u64(),
                     parent_channel_id: thread_parent_channel_id.into(),
+                    timestamp: thread_timestamp,
                     poster: thread_author_avatar_url,
                 }],
                 Some("id"),
