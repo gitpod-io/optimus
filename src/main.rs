@@ -31,7 +31,9 @@ async fn init_meiliclient() {
     // Init MeiliClient
     let mclient = MeiliClient::new("http://localhost:7700", "optimusbotdatabase");
     let msettings = Settings::new()
-        .with_searchable_attributes(["*"])
+        .with_searchable_attributes(["title", "messages", "tags", "author_id", "id"])
+        .with_filterable_attributes(["timestamp"])
+        .with_sortable_attributes(["timestamp"])
         .with_distinct_attribute("title");
     let threads_index_db = {
         let index_uid = "threads";
