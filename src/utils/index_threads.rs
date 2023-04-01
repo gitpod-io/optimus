@@ -23,7 +23,8 @@ struct Thread {
     id: u64,
     guild_id: u64,
     parent_channel_id: u64,
-    timestamp: Timestamp,
+    timestamp: i64,
+    date: Timestamp,
     poster: String, // author discord avatar
 }
 
@@ -172,7 +173,8 @@ pub async fn index_thread_messages(
                     id: thread_id.into(),
                     guild_id: *guild_id.as_u64(),
                     parent_channel_id: thread_parent_channel_id.into(),
-                    timestamp: thread_timestamp,
+                    timestamp: thread_timestamp.unix_timestamp(),
+                    date: thread_timestamp,
                     poster: thread_author_avatar_url,
                 }],
                 Some("id"),
