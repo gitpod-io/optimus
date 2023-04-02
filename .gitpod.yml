@@ -1,3 +1,5 @@
+image: gitpod/workspace-rust:2023-03-24-22-45-37
+
 tasks:
   - init: cargo build --release
 
