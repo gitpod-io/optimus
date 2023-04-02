@@ -26,12 +26,6 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) -> Result<()> {
 }
 
 pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
-    // Index to DB
-    let guild_id = &thread.guild_id;
-    index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
-        .await
-        .ok();
-
     let thread_type = {
         if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(
             &thread
@@ -49,6 +43,12 @@ pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
         .ok_or_else(|| eyre!("Couldn't get last message"))?;
 
     if thread_type == "question" {
+        // Index to DB
+        let guild_id = &thread.guild_id;
+        index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
+            .await
+            .ok();
+
         if thread
             .thread_metadata
             .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
