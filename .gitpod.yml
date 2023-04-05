@@ -1,4 +1,5 @@
-image: gitpod/workspace-rust:2023-03-24-22-45-37
+image: 
+  file: .gitpod.Dockerfile
 
 tasks:
   - init: cargo build --release
@@ -16,6 +17,7 @@ github:
     # enable for pull requests coming from this repo (defaults to true)
     pullRequests: true
     # enable for pull requests coming from forks (defaults to false)
+    # DANGER: do not enable!!
     pullRequestsFromForks: false
     # add a check to pull requests (defaults to true)
     addCheck: true

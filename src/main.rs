@@ -3,13 +3,13 @@
 mod command;
 mod event;
 mod utils;
-use color_eyre::eyre::ContextCompat;
+use color_eyre::eyre::{eyre, ContextCompat};
 use command::*;
 mod db;
 use db::Db;
 mod variables;
 
-use color_eyre::eyre::{Report, Result};
+use color_eyre::eyre::Result;
 use meilisearch_sdk::indexes::Index;
 use meilisearch_sdk::{client::Client as MeiliClient, settings::Settings};
 use once_cell::sync::OnceCell;
@@ -27,9 +27,9 @@ use std::{
 static GITHUB_TOKEN: OnceCell<String> = OnceCell::new();
 static MEILICLIENT_THREAD_INDEX: OnceCell<Index> = OnceCell::new();
 
-async fn init_meiliclient() {
+async fn init_meilisearch(api_key: &str) -> Result<()> {
     // Init MeiliClient
-    let mclient = MeiliClient::new("http://localhost:7700", "optimusbotdatabase");
+    let mclient = MeiliClient::new("http://localhost:7700", api_key);
     let msettings = Settings::new()
         .with_searchable_attributes(["title", "messages", "tags", "author_id", "id"])
         .with_filterable_attributes(["timestamp", "tags"])
@@ -40,45 +40,48 @@ async fn init_meiliclient() {
         if let Ok(res) = mclient.get_index(index_uid).await {
             res
         } else {
-            let task = mclient.create_index(index_uid, None).await.unwrap();
+            let task = mclient.create_index(index_uid, None).await?;
+            let task = task.wait_for_completion(&mclient, None, None).await?;
             let task = task
-                .wait_for_completion(&mclient, None, None)
-                .await
-                .unwrap();
-            let task = task.try_make_index(&mclient).unwrap();
-            task.set_settings(&msettings).await.unwrap();
+                .try_make_index(&mclient)
+                .ok()
+                .ok_or_else(|| eyre!("Can't make index"))?;
+            task.set_settings(&msettings).await?;
             task
         }
     };
 
-    MEILICLIENT_THREAD_INDEX.set(threads_index_db).unwrap();
+    MEILICLIENT_THREAD_INDEX
+        .set(threads_index_db)
+        .ok()
+        .ok_or_else(|| eyre!("Can't cache the meiliclient index"))?;
+    Ok(())
 }
 
-fn init_tracing() {
+fn init_tracing() -> Result<()> {
     use tracing_error::ErrorLayer;
     use tracing_subscriber::prelude::*;
     use tracing_subscriber::{fmt, EnvFilter};
 
     let fmt_layer = fmt::layer().with_target(false);
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
         .with(ErrorLayer::default())
         .init();
+    Ok(())
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Report> {
-    init_tracing();
+async fn main() -> Result<()> {
+    init_tracing()?;
     color_eyre::install()?;
-    init_meiliclient().await;
 
     let mut bot_token = String::new();
     let mut application_id = String::new();
+    let mut meilisearch_api_key = String::new();
 
     // Read stdin (warn: does not handle VALUE whitespaces, we could use clap to parse but not needed now)
     let mut buffer = String::new();
@@ -101,6 +104,11 @@ async fn main() -> Result<(), Report> {
                 "github_token" => {
                     GITHUB_TOKEN.set(value.to_owned()).ok();
                 }
+                "meilisearch_api_key" => {
+                    meilisearch_api_key.clear();
+                    init_meilisearch(value).await?;
+                    meilisearch_api_key.push_str(value);
+                }
                 _ => {}
             }
         }
@@ -111,7 +119,10 @@ async fn main() -> Result<(), Report> {
 
     // Init sqlite database
     let db = Db::new().await.expect("Can't init database");
-    db.run_migrations().await.unwrap();
+    db.run_migrations()
+        .await
+        .ok()
+        .ok_or_else(|| eyre!("Failed to run db migrations"))?;
 
     let (owners, bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
