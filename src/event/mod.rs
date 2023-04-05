@@ -5,51 +5,34 @@ mod guild_member_removal;
 mod interaction_create;
 mod message;
 mod new_question;
-mod reaction_add;
+// mod reaction_add;
 mod ready;
 mod thread_update;
 
-use crate::utils::{db::*, /*misc::vowel_gen,*/ substr};
+use crate::utils::substr;
 
 use serde_json::json;
 
 use serenity::async_trait;
 use serenity::model::{
     application::interaction::Interaction,
-    channel::{GuildChannel, Message, Reaction},
+    channel::{GuildChannel, Message},
     // event::MessageUpdateEvent,
     gateway::{Activity, Ready},
     guild::{Guild, Member},
     id::{ChannelId, GuildId},
     prelude::User,
 };
-use std::convert::TryFrom;
 
+use color_eyre::eyre::Result;
+use std::convert::TryFrom;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use anyhow::Result;
 // use thorne::english_gen;
 
 // questions_thread
 
 use serenity::client::{Context, EventHandler};
-
-const INTRODUCTION_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(947769443516284939)
-} else {
-    ChannelId(816249489911185418)
-};
-
-const QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026115789721444384)
-} else {
-    ChannelId(1026792978854973460)
-};
-const SELFHOSTED_QUESTIONS_CHANNEL: ChannelId = if cfg!(debug_assertions) {
-    ChannelId(1026800568989143051)
-} else {
-    ChannelId(1026800700002402336)
-};
 
 pub struct Listener {
     pub is_loop_running: AtomicBool,
@@ -114,9 +97,9 @@ impl EventHandler for Listener {
         guild_member_removal::responder(_ctx, _guild_id, _user, _member_data_if_available).await;
     }
 
-    async fn reaction_add(&self, _ctx: Context, _added_reaction: Reaction) {
-        reaction_add::responder(_ctx, _added_reaction).await;
-    }
+    // async fn reaction_add(&self, _ctx: Context, _added_reaction: Reaction) {
+    //     reaction_add::responder(_ctx, _added_reaction).await;
+    // }
 
     // We use the cache_ready event just in case some cache operation is required in whatever use
     // case you have for this.
@@ -172,7 +155,7 @@ impl EventHandler for Listener {
     }
 
     async fn thread_update(&self, _ctx: Context, _thread: GuildChannel) {
-        thread_update::responder(_ctx, _thread).await;
+        thread_update::responder(_ctx, _thread).await.unwrap();
     }
 
     async fn guild_create(&self, _ctx: Context, _guild: Guild, _is_new: bool) {

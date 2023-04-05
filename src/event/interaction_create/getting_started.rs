@@ -1,5 +1,8 @@
 use crate::db::ClientContextExt;
-use crate::event::{INTRODUCTION_CHANNEL, QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use crate::variables::{
+    GENERAL_CHANNEL, INTRODUCTION_CHANNEL, OFFTOPIC_CHANNEL, QUESTIONS_CHANNEL,
+    SELFHOSTED_QUESTIONS_CHANNEL,
+};
 use std::time::Duration;
 
 use anyhow::{bail, Context as _, Result};
@@ -17,7 +20,6 @@ use serenity::{
         channel::ReactionType,
         guild::Member,
         guild::Role,
-        id::ChannelId,
         id::RoleId,
         prelude::*,
         Permissions,
@@ -161,6 +163,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
         },
     ]);
 
+    // Add more Roles related with Programming to additional_roles array
     for prog_role in [
         "Bash", "C", "CPP", "CSharp", "Docker", "Go", "Haskell", "Java", "Js", "Kotlin", "Lua",
         "Nim", "Nix", "Node", "Perl", "Php", "Python", "Ruby", "Rust",
@@ -174,6 +177,8 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
             value: prog_role,
         });
     }
+
+    // User inputs
     let mut role_choices: Vec<String> = Vec::new();
     let mut join_reason = String::new();
 
@@ -229,22 +234,22 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
         match interaction.data.custom_id.as_str() {
             "channel_choice" => {
                 interaction.create_interaction_response(&ctx.http, |r| {
-									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
-										d.content("**[2/4]:** Would you like to get notified for announcements and community events?");
-										d.components(|c| {
-											c.create_action_row(|a| {
-												a.create_button(|b|{
-													b.label("Yes!").custom_id("subscribed").style(ButtonStyle::Success)
-												});
-												a.create_button(|b|{
-													b.label("No, thank you!").custom_id("not_subscribed").style(ButtonStyle::Danger)
-												});
-												a
-											})
-										});
-										d
-									})
-								}).await?;
+                    r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
+                        d.content("**[2/4]:** Would you like to get notified for announcements and community events?");
+                        d.components(|c| {
+                            c.create_action_row(|a| {
+                                a.create_button(|b|{
+                                    b.label("Yes!").custom_id("subscribed").style(ButtonStyle::Success)
+                                });
+                                a.create_button(|b|{
+                                    b.label("No, thank you!").custom_id("not_subscribed").style(ButtonStyle::Danger)
+                                });
+                                a
+                            })
+                        });
+                        d
+                    })
+                }).await?;
 
                 // Save the choices of last interaction
                 interaction
@@ -253,6 +258,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                     .iter()
                     .for_each(|x| role_choices.push(x.to_string()));
             }
+
             "subscribed" | "not_subscribed" => {
                 interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
@@ -294,6 +300,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                 }
                 additional_roles.push(subscribed_role);
             }
+
             "hangout" | "gitpodio_help" | "selfhosted_help" => {
                 interaction
                     .create_interaction_response(&ctx.http, |r| {
@@ -461,17 +468,6 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                                 msg.delete(&ctx.http).await?;
                             }
 
-                            let general_channel = if cfg!(debug_assertions) {
-                                ChannelId(947769443516284943)
-                            } else {
-                                ChannelId(839379835662368768)
-                            };
-                            let offtopic_channel = if cfg!(debug_assertions) {
-                                ChannelId(947769443793141769)
-                            } else {
-                                ChannelId(972510491933032508)
-                            };
-
                             let mut prepared_msg = MessageBuilder::new();
                             prepared_msg.push_line(format!(
                                 "Welcome to the Gitpod community {} 🙌\n",
@@ -495,8 +491,8 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                                 _ => {}
                             }
                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
-											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
-											.push_quote_line(format!("• {} - for any random discussions ☕️", &offtopic_channel.mention()))
+											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &GENERAL_CHANNEL.mention()))
+											.push_quote_line(format!("• {} - for any random discussions ☕️", &OFFTOPIC_CHANNEL.mention()))
 											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &QUESTIONS_CHANNEL.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
 											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")

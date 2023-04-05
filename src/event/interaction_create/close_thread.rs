@@ -1,4 +1,4 @@
-use crate::event::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
+use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duplicate::duplicate_item;
@@ -75,14 +75,13 @@ where
 
     let thread_node = channel_id
         .to_channel(&ctx.http)
-        .await
-        .unwrap()
+        .await?
         .guild()
-        .unwrap();
+        .context("Failed to get channel info")?;
 
     let thread_type = {
         if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL]
-            .contains(&thread_node.parent_id.unwrap())
+            .contains(&thread_node.parent_id.context("Can't get parent id")?)
         {
             "question"
         } else {
@@ -92,17 +91,36 @@ where
 
     let thread_name = {
         if thread_node.name.contains('✅') || thread_type == "thread" {
-            thread_node.name
+            thread_node.name.to_owned()
         } else {
             format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
         }
     };
 
-    mci.make_interaction_resp(ctx, thread_type).await?;
+    let interacted_member = mci.get_member().await.context("Failed to get member")?;
 
-    channel_id
-        .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
-        .await?;
+    let mut got_admin = false;
+    for role in &interacted_member.roles {
+        if role.to_role_cached(&ctx.cache).map_or(false, |r| {
+            r.has_permission(serenity::model::Permissions::MANAGE_THREADS)
+        }) {
+            got_admin = true;
+            break;
+        }
+    }
+
+    if interacted_member.user.id
+        == thread_node
+            .owner_id
+            .context("Failed to get owner_id of thread")?
+        || got_admin
+    {
+        mci.make_interaction_resp(ctx, thread_type).await?;
+
+        channel_id
+            .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
+            .await?;
+    }
 
     Ok(())
 }

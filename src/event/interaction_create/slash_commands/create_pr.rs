@@ -11,6 +11,8 @@ use serenity::{
 };
 use std::collections::HashMap;
 
+use crate::GITHUB_TOKEN;
+
 const SIGNATURE: &str = "<!-- DISCORD_BOT_FAQ - DO NOT REMOVE -->";
 
 #[derive(Default)]
@@ -239,7 +241,6 @@ impl GitHubAPI {
                 "base": base,
                 "head": head,
                 "maintainer_can_modify": true,
-                "draft": true,
             }))
             .send()
             .await?;
@@ -321,14 +322,18 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     sanitized_messages.reverse();
     let sanitized_messages = sanitized_messages.into_iter().collect::<String>();
 
+    let bot_account_username = String::from("gitpod-community");
     let github_client = GitHubAPI::from(GitHubAPI {
-        origin_api_root: "https://api.github.com/repos/github-activity/website".to_owned(),
+        origin_api_root: format!("https://api.github.com/repos/{bot_account_username}/website"),
         upstream_api_root: "https://api.github.com/repos/gitpod-io/website".to_owned(),
-        token: obfstr::obfstr!(env!("GITHUB_TOKEN")).to_owned(),
+        token: GITHUB_TOKEN
+            .get()
+            .context("github_token= was not passed via stdin")?
+            .to_owned(),
         upstream_main_branch_name: "main".to_owned(),
         upstream_user_name: "gitpod-io".to_owned(),
         origin_work_branch_name: "discord_staging".to_owned(),
-        origin_user_name: "github-activity".to_owned(),
+        origin_user_name: bot_account_username,
         ..Default::default()
     });
 
@@ -414,8 +419,8 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         .commit(
             file.path.as_str(),
             format!("Update {}", file.path).as_str(),
-            "Robo Quat",
-            "roboquat@gitpod.io",
+            "Gitpod Community",
+            "community-bot@gitpod.io",
             file_contents_encoded.as_str(),
             file.sha.as_str(),
             github_client.origin_work_branch_name.as_str(),

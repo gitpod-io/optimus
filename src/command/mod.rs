@@ -3,7 +3,7 @@ mod about;
 mod av;
 mod bash;
 pub mod config;
-mod editlog;
+// mod editlog;
 mod emoji;
 mod invite;
 mod latency;
@@ -15,27 +15,29 @@ mod say;
 mod some_long_command;
 mod status;
 // mod whois;
+mod exec;
+mod index_threads;
 
 // Import commands
 use about::*;
 use av::*;
 use bash::*;
 use config::*;
-use editlog::*;
+// use editlog::*;
 use emoji::*;
 use invite::*;
 use latency::*;
 use math::*;
 // use note::*;
+use index_threads::*;
 use owner_check::*;
 use say::*;
 use status::*;
 // use whois::*;
-mod exec;
 use exec::*;
 
 use crate::db::{ClientContextExt, Db};
-use crate::utils::{db::*, parser::Parse, substr::*};
+use crate::utils::{parser::Parse, substr::*};
 // use thorne::*;
 
 use serenity::{
@@ -80,7 +82,7 @@ impl TypeMapKey for CommandCounter {
 #[group]
 #[commands(
     about,
-    editlog,
+    // editlog,
     // am_i_admin,
     say,
     commands,
@@ -94,7 +96,8 @@ impl TypeMapKey for CommandCounter {
     status,
     invite,
     // some_long_command,
-    config
+    config,
+    index_threads
 )]
 struct General;
 
