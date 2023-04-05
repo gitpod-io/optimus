@@ -1,0 +1,9 @@
+[Unit]
+Description=Meilisearch server
+After=network.target
+
+[Service]
+ExecStart=/opt/discord/meilisearch --max-indexing-memory 100Mb --no-analytics --master-key YOUR_MASTER_KEY_HERE --env development --http-addr 0.0.0.0:7700 --db-path /opt/discord/data.ms
+ExecStartPost=/bin/bash -c 'until curl --silent --show-error --fail http://localhost:7700/health; do sleep 0.5; done'
+Restart=always
+
