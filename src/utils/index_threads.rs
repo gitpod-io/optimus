@@ -1,4 +1,4 @@
-use crate::MEILICLIENT_THREAD_INDEX;
+use crate::init::MEILICLIENT_THREAD_INDEX;
 use color_eyre::eyre::{eyre, Report, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};

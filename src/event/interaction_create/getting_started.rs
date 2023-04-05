@@ -1,8 +1,4 @@
 use crate::db::ClientContextExt;
-use crate::variables::{
-    GENERAL_CHANNEL, INTRODUCTION_CHANNEL, OFFTOPIC_CHANNEL, QUESTIONS_CHANNEL,
-    SELFHOSTED_QUESTIONS_CHANNEL,
-};
 use std::time::Duration;
 
 use anyhow::{bail, Context as _, Result};
@@ -103,6 +99,38 @@ async fn assign_roles(
 }
 
 pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {
+    
+
+    let config = crate::BOT_CONFIG.get().context("Failed to get BotConfig")?;
+
+    let channels = config
+        .discord
+        .channels
+        .as_ref()
+        .context("No discord channels defined")?;
+
+    let primary_questions_channel = channels
+        .primary_questions_channel_id
+        .as_ref()
+        .context("No primary channel found")?;
+    let secondary_questions_channel = channels
+        .secondary_questions_channel_id
+        .as_ref()
+        .context("No secondary channel found")?;
+    let introduction_channel = channels
+        .introduction_channel_id
+        .as_ref()
+        .context("No introduction channel found")?;
+    let general_channel = channels
+        .general_channel_id
+        .as_ref()
+        .context("No general channel found")?;
+    let off_topic_channel = channels
+        .off_topic_channel_id
+        .as_ref()
+        .context("No off topic channel found")?;
+
+
     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
         SelectMenuSpec {
             value: "JetBrainsIDEs",
@@ -329,7 +357,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                         let mut count = 0;
                         if let Ok(intro_msgs) = &ctx
                             .http
-                            .get_messages(*INTRODUCTION_CHANNEL.as_u64(), "")
+                            .get_messages(*introduction_channel.as_u64() , "")
                             .await
                         {
                             intro_msgs.iter().for_each(|x| {
@@ -397,7 +425,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
 												.push_line(format!(
 													"Thank you {}! To unlock the server, drop by {} :wave:",
 													interaction.user.mention(),
-													INTRODUCTION_CHANNEL.mention()
+													introduction_channel.mention()
 												))
 												.push_line("\nWe’d love to get to know you better and hear about:")
 												.push_quote_line("🔧 what you’re working on!")
@@ -439,7 +467,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                         .await
                     {
                         // Watch intro channel
-                        if msg.channel_id == INTRODUCTION_CHANNEL {
+                        if &msg.channel_id == introduction_channel {
                             // let mut count = 0;
                             // intro_msgs.iter().for_each(|x| {
                             // 	if x.author == msg.author {
@@ -477,7 +505,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                                 "gitpodio_help" => {
                                     prepared_msg.push_line(
 														format!("**You mentioned that** you need help with Gitpod.io, please ask in {}\n",
-																	&QUESTIONS_CHANNEL.mention())
+																	&primary_questions_channel.mention())
 													);
                                 }
                                 "selfhosted_help" => {
@@ -485,15 +513,15 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                                     member.add_role(&ctx.http, selfhosted_role.id).await?;
                                     prepared_msg.push_line(
 														format!("**You mentioned that** you need help with selfhosted, please ask in {}\n",
-																	&SELFHOSTED_QUESTIONS_CHANNEL.mention())
+																	&secondary_questions_channel.mention())
 													);
                                 }
                                 _ => {}
                             }
                             prepared_msg.push_bold_line("Here are some channels that you should check out:")
-											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &GENERAL_CHANNEL.mention()))
-											.push_quote_line(format!("• {} - for any random discussions ☕️", &OFFTOPIC_CHANNEL.mention()))
-											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &QUESTIONS_CHANNEL.mention()))
+											.push_quote_line(format!("• {} - for tech, programming and anything related 🖥", &general_channel.mention()))
+											.push_quote_line(format!("• {} - for any random discussions ☕️", &off_topic_channel.mention()))
+											.push_quote_line(format!("• {} - have a question about Gitpod? this is the place to ask! ❓\n", &primary_questions_channel.mention()))
 											.push_line("…And there’s more! Take your time to explore :)\n")
 											.push_bold_line("Feel free to check out the following pages to learn more about Gitpod:")
 											.push_quote_line("• https://www.gitpod.io/community")

@@ -1,7 +1,4 @@
-use crate::{
-    utils::index_threads::index_thread_messages,
-    variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL},
-};
+use crate::utils::index_threads::index_thread_messages;
 use color_eyre::eyre::{eyre, Result};
 use regex::Regex;
 use serenity::{client::Context, model::channel::GuildChannel, model::channel::MessageType};
@@ -26,47 +23,54 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) -> Result<()> {
 }
 
 pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
-    let thread_type = {
-        if [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(
-            &thread
-                .parent_id
-                .ok_or_else(|| eyre!("Couldn't get parent_id of thread"))?,
-        ) {
-            "question"
-        } else {
-            "thread"
-        }
-    };
-    let last_msg = &ctx.http.get_messages(*thread.id.as_u64(), "").await?;
-    let last_msg = last_msg
-        .first()
-        .ok_or_else(|| eyre!("Couldn't get last message"))?;
 
-    if thread_type == "question" {
-        // Index to DB
-        let guild_id = &thread.guild_id;
-        index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
-            .await
-            .ok();
+    if let Some(config) = crate::BOT_CONFIG.get() && let Some(channels) = &config.discord.channels
+    && let Some(primary_questions_channel) = channels.primary_questions_channel_id
+    && let Some(secondary_questions_channel) = channels.secondary_questions_channel_id  {
 
-        if thread
-            .thread_metadata
-            .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
-            .archived
-            && last_msg.is_own(&ctx.cache)
-        {
-            if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
-                || Regex::new("^This [a-z]+ was closed ?b?y?")?.is_match(last_msg.content.as_str()))
+        let thread_type = {
+            if [primary_questions_channel, secondary_questions_channel].contains(
+                &thread
+                    .parent_id
+                    .ok_or_else(|| eyre!("Couldn't get parent_id of thread"))?,
+            ) {
+                "question"
+            } else {
+                "thread"
+            }
+        };
+        let last_msg = &ctx.http.get_messages(*thread.id.as_u64(), "").await?;
+        let last_msg = last_msg
+            .first()
+            .ok_or_else(|| eyre!("Couldn't get last message"))?;
+
+        if thread_type == "question" {
+            // Index to DB
+            let guild_id = &thread.guild_id;
+            index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
+                .await
+                .ok();
+
+            if thread
+                .thread_metadata
+                .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
+                .archived
+                && last_msg.is_own(&ctx.cache)
+            {
+                if !(last_msg.kind.eq(&MessageType::GroupNameUpdate)
+                    || Regex::new("^This [a-z]+ was closed ?b?y?")?.is_match(last_msg.content.as_str()))
+                {
+                    unarchival_action(ctx, thread).await?;
+                }
+            } else if thread
+                .thread_metadata
+                .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
+                .archived
             {
                 unarchival_action(ctx, thread).await?;
             }
-        } else if thread
-            .thread_metadata
-            .ok_or_else(|| eyre!("Couldn't get thread_metadata"))?
-            .archived
-        {
-            unarchival_action(ctx, thread).await?;
         }
     }
+
     Ok(())
 }

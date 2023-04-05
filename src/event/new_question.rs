@@ -1,6 +1,5 @@
 use super::substr::StringUtils;
-use crate::variables::{QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL};
-use anyhow::Result;
+use color_eyre::eyre::{eyre, Result};
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -144,9 +143,28 @@ async fn save_and_fetch_links(
 }
 
 pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
+
+    let config = crate::BOT_CONFIG
+        .get()
+        .ok_or_else(|| eyre!("Failed to get BotConfig"))?;
+
+    let channels = config
+        .discord
+        .channels
+        .as_ref()
+        .ok_or_else(|| eyre!("No discord channels defined"))?;
+    let primary_questions_channel = channels
+        .primary_questions_channel_id
+        .as_ref()
+        .ok_or_else(|| eyre!("No primary channel defined"))?;
+    let secondary_questions_channel = channels
+        .secondary_questions_channel_id
+        .as_ref()
+        .ok_or_else(|| eyre!("No secondary channel found"))?;
+
     if let Some(thread) = msg.channel(&ctx.http).await?.guild() 
     && let Some(parent_channel_id) = thread.parent_id 
-    && [QUESTIONS_CHANNEL, SELFHOSTED_QUESTIONS_CHANNEL].contains(&parent_channel_id) 
+    && [primary_questions_channel, secondary_questions_channel].contains(&&parent_channel_id) 
     && msg.id.as_u64() == thread.id.as_u64() {
         let user_mention = &msg.author.mention();
         let user_without_mention = &msg.author.name;
@@ -197,7 +215,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
         let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
 
         let relevant_links_external_sources = {
-            if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+            if &parent_channel_id != secondary_questions_channel {
                 Vec::from(["https://www.gitpod.io/docs", "https://github.com/gitpod-io"])
             } else {
                 Vec::from(["https://github.com/gitpod-io"])
@@ -313,7 +331,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
             &user_mention, "You can share the following (if applies):"
         ));
 
-        if parent_channel_id != SELFHOSTED_QUESTIONS_CHANNEL {
+        if &parent_channel_id != secondary_questions_channel {
             msg.push_line("• Contents of your `.gitpod.yml`")
                 .push_line("• Contents of your `.gitpod.Dockerfile`")
                 .push_line("• An example repository link");

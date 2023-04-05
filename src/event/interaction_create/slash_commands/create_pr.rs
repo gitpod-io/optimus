@@ -9,9 +9,9 @@ use serenity::{
     model::application::interaction::application_command::ApplicationCommandInteraction,
     model::application::interaction::InteractionResponseType,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
-use crate::GITHUB_TOKEN;
+use crate::BOT_CONFIG;
 
 const SIGNATURE: &str = "<!-- DISCORD_BOT_FAQ - DO NOT REMOVE -->";
 
@@ -21,6 +21,7 @@ struct GitHubAPI {
     upstream_api_root: String,
     client: Client,
     token: String,
+    user_agent: String,
     origin_work_branch_name: String,
     upstream_main_branch_name: String,
     upstream_user_name: String,
@@ -54,7 +55,10 @@ impl GitHubAPI {
         let client = Client::builder()
             .default_headers(
                 [
-                    (header::USER_AGENT, HeaderValue::from_static("Optimus")),
+                    (
+                        header::USER_AGENT,
+                        self.user_agent.parse().expect("Can't parse user agent"),
+                    ),
                     (
                         header::AUTHORIZATION,
                         format!("Bearer {}", self.token)
@@ -76,6 +80,7 @@ impl GitHubAPI {
             origin_api_root: self.origin_api_root,
             upstream_api_root: self.upstream_api_root,
             token: self.token,
+            user_agent: self.user_agent,
             client,
             origin_work_branch_name: self.origin_work_branch_name,
             upstream_main_branch_name: self.upstream_main_branch_name,
@@ -322,14 +327,19 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     sanitized_messages.reverse();
     let sanitized_messages = sanitized_messages.into_iter().collect::<String>();
 
+    let config = BOT_CONFIG.get().context("Failed to get BotConfig")?;
+    let github = config
+        .github
+        .as_ref()
+        .context("Failed to get GitHub credentials")?
+        .clone();
+
     let bot_account_username = String::from("gitpod-community");
     let github_client = GitHubAPI::from(GitHubAPI {
         origin_api_root: format!("https://api.github.com/repos/{bot_account_username}/website"),
         upstream_api_root: "https://api.github.com/repos/gitpod-io/website".to_owned(),
-        token: GITHUB_TOKEN
-            .get()
-            .context("github_token= was not passed via stdin")?
-            .to_owned(),
+        token: github.api_token,
+        user_agent: github.user_agent,
         upstream_main_branch_name: "main".to_owned(),
         upstream_user_name: "gitpod-io".to_owned(),
         origin_work_branch_name: "discord_staging".to_owned(),
