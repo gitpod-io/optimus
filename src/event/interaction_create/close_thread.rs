@@ -15,6 +15,8 @@ use serenity::{
     },
 };
 
+use crate::utils::substr::StringUtils;
+
 #[async_trait]
 pub trait CommonInteractionComponent {
     async fn get_channel_id(&self) -> ChannelId;
@@ -100,6 +102,7 @@ where
                 format!("✅ {}", thread_node.name.trim_start_matches("❓ "))
             }
         };
+        let thread_name_safe = &thread_name.substring(0, 100);
 
         let interacted_member = mci.get_member().await.context("Failed to get member")?;
 
@@ -122,7 +125,7 @@ where
             mci.make_interaction_resp(ctx, thread_type).await?;
 
             channel_id
-                .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name))
+                .edit_thread(&ctx.http, |t| t.archived(true).name(thread_name_safe))
                 .await?;
         }
     }
