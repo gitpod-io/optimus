@@ -3,7 +3,7 @@ image:
 
 tasks:
   - name: Project build (cache) and run instructions
-    init: cargo build --release
+    init: cargo build
     command: |
       # Await for meilisearch to be fully up
       printf 'info: %s' "Awaiting for meilisearch to be fully up"
