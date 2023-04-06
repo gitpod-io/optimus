@@ -15,17 +15,17 @@ use serenity::{
 };
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Thread {
-    title: String,
-    messages: Vec<String>,
-    tags: Vec<String>,
-    author_id: u64,
-    id: u64,
-    guild_id: u64,
-    parent_channel_id: u64,
-    timestamp: i64,
-    date: Timestamp,
-    poster: String, // author discord avatar
+pub struct Thread {
+    pub title: String,
+    pub messages: Vec<String>,
+    pub tags: Vec<String>,
+    pub author_id: u64,
+    pub id: u64,
+    pub guild_id: u64,
+    pub parent_channel_id: u64,
+    pub timestamp: i64,
+    pub date: Timestamp,
+    pub poster: String, // author discord avatar
 }
 
 pub async fn index_channel_threads(ctx: &Context, channel_ids: &[ChannelId]) -> Result<(), Report> {

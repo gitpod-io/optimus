@@ -1,12 +1,14 @@
-# Example BotConfig
-# Please fill it up with your own data
-# Do not commit in git
+# Example BotConfig.
+## Please fill it up with your own data.
+## Do not commit in git.
 
 [discord]
 application_id = 12345678901234567890
 bot_token = "QWERTYUIOP.ASDFGHJKL.123456789"
 
-# optional
+# optional, comment it out if unused.
+## You can get the IDs by right-clicking
+## on your desired channels on your dev server.
 [discord.channels]
 general_channel_id = 12345678901234567890
 off_topic_channel_id = 12345678901234567890
@@ -15,13 +17,16 @@ getting_started_channel_id = 12345678901234567890
 primary_questions_channel_id = 12345678901234567890
 secondary_questions_channel_id = 12345678901234567890
 
-# optional
+# optional, comment it out if unused.
+## You can create a GitHub API token
+## from https://github.com/settings/tokens/new
 [github]
 api_token = "gh121345678"
 user_agent = "optimusbot"
 
-# optional
-# This one does not need to be changed if you're debugging from Gitpod
+# optional, comment it out if unused.
+## This one does not need to be changed
+## if you're developing from Gitpod.
 [meilisearch]
 api_key = "superCoolApiKey1234"
 api_endpoint = "http://localhost:7700"

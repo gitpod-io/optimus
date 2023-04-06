@@ -1,8 +1,9 @@
+use crate::{init::MEILICLIENT_THREAD_INDEX, utils::index_threads::Thread};
+
 use super::substr::StringUtils;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Report, Result};
 
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use serenity::{
     client::Context,
     model::{application::component::ButtonStyle, channel::ReactionType},
@@ -16,164 +17,120 @@ use std::{collections::HashMap, env, time::Duration};
 use tokio::time::sleep;
 use urlencoding::encode;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Thread {
-    id: u64,
-    guild_id: u64,
-    channel_id: u64,
-    title: String,
-    history: String,
-}
-
 async fn save_and_fetch_links(
     sites: &[&str],
-    _thread_id: u64,
-    _channel_id: u64,
-    _guild_id: u64,
-    title: String,
-    _description: String,
-) -> HashMap<String, String> {
+    title: &str,
+    _description: &str,
+) -> Option<HashMap<String, String>> {
     let mut links: HashMap<String, String> = HashMap::new();
 
-    // Init MeiliClient
     let client = reqwest::Client::new();
-    // let mclient = MeiliClient::new("http://localhost:7700", "optimus");
-    // let msettings = Settings::new()
-    //     .with_searchable_attributes(["title", "description"])
-    //     .with_distinct_attribute("title");
-    // let index_uid = "threads";
-    // let threads = {
-    //     if let Ok(res) = mclient.get_index(index_uid).await {
-    //         res
-    //     } else {
-    //         let task = mclient.create_index(index_uid, None).await.unwrap();
-    //         let task = task
-    //             .wait_for_completion(&mclient, None, None)
-    //             .await
-    //             .unwrap();
-    //         let task = task.try_make_index(&mclient).unwrap();
-    //         task.set_settings(&msettings).await.unwrap();
-    //         task
-    //     }
-    // };
 
     // Fetch matching links
     for site in sites.iter() {
         if let Ok(resp) = client
-        .get(format!("https://www.google.com/search?q=site:{} {}", encode(site), encode(title.as_str())))
+        .get(
+                format!(
+                    "https://www.google.com/search?q=site:{} {}",
+                    encode(site),
+                    encode(title)
+                )
+            )
         .header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
         .send()
         .await {
             if let Ok(result) = resp.text().await {
-                let mut times = 1;
-                // [^:~] avoids the google hyperlinks
-                for caps in
+
+                for (i, caps) in
+                    // [^:~] avoids the google hyperlinks
                     Regex::new(format!("\"(?P<url>{}/.[^:~]*?)\"", &site).as_str())
                         .unwrap()
-                        .captures_iter(&result)
+                        .captures_iter(&result).enumerate()
                 {
+                    // 5 MAX, starts at 0
+                    if i == 5 {
+                        break;
+                    }
+
                     let url = &caps["url"];
-                    let hash = {
-                        if let Some(result) = Regex::new(r"(?P<hash>#[^:~].*)").unwrap().captures(url) {
-                            result.name("hash").map(|hash| hash.as_str())
-                        } else {
-                            None
-                        }
-                    };
-                    if let Ok(resp) = client.get(url).header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
+                    let captured_hash = Regex::new(r"(?P<hash>#[^:~].*)").ok()?
+                            .captures(url)
+                            .and_then(|cap| {
+                                cap.name("hash")
+                                .map(|name| name.as_str())
+                            });
+
+                    if let Ok(resp) = client.get(url)
+                            .header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36")
                     .send()
                     .await {
                         if let Ok(result) = resp.text().await {
                             let result = html_escape::decode_html_entities(&result).to_string();
                             for caps in Regex::new(r"<title>(?P<title>.*?)</title>").unwrap().captures_iter(&result) {
                                 let title = &caps["title"];
-                                let text = if hash.is_none() {
-                                    title.to_string()
+
+                                let text = if let Some(hash) = captured_hash {
+                                    format!("{} | {}", title, hash)
                                 } else {
-                                    format!("{} | {}", title, hash.unwrap())
+                                    title.to_string()
                                 };
                                 //links.push_str(format!("• __{}__\n\n", text).as_str());
                                 links.insert(text, url.to_string());
                             }
                         }
                     }
-                    times += 1;
-                    if times > 3 {
-                        break;
-                    }
+
                 }
             }
         }
     }
 
-    // // Fetch matching discord questions
-    // if let Ok(discord_questions) = threads
-    //     .search()
-    //     .with_query(format!("{} {}", title, description).as_str())
-    //     .with_limit(3)
-    //     .execute::<Thread>()
-    //     .await
-    // {
-    //     for ids in discord_questions.hits {
-    //         links.insert(
-    //             ids.result.title,
-    //             format!(
-    //                 "https://discord.com/channels/{}/{}",
-    //                 ids.result.guild_id, ids.result.id
-    //             ),
-    //         );
-    //     }
-    // }
+    // // Fetch 5 MAX matching discord questions
+    if let Some(mclient) = MEILICLIENT_THREAD_INDEX.get()
+    && let Ok(data) = mclient.search().with_query(title).with_limit(5).execute::<Thread>().await {
+        for ids in data.hits {
+            links.insert(
+                ids.result.title,
+                format!(
+                    "https://discord.com/channels/{}/{}",
+                    ids.result.guild_id, ids.result.id
+                ),
+            );
+        }
+    }
 
-    // // Save the question to search engine
-    // threads
-    //     .add_documents(
-    //         &[Thread {
-    //             id: thread_id,
-    //             channel_id,
-    //             guild_id,
-    //             title,
-    //             history: description,
-    //         }],
-    //         Some("id"),
-    //     )
-    //     .await
-    //     .ok();
-    links
+    Some(links)
 }
 
-pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
-
-    let config = crate::BOT_CONFIG
-        .get()
-        .ok_or_else(|| eyre!("Failed to get BotConfig"))?;
-
-    let channels = config
-        .discord
-        .channels
-        .as_ref()
-        .ok_or_else(|| eyre!("No discord channels defined"))?;
-    let primary_questions_channel = channels
-        .primary_questions_channel_id
-        .as_ref()
-        .ok_or_else(|| eyre!("No primary channel defined"))?;
-    let secondary_questions_channel = channels
-        .secondary_questions_channel_id
-        .as_ref()
-        .ok_or_else(|| eyre!("No secondary channel found"))?;
-
-    if let Some(thread) = msg.channel(&ctx.http).await?.guild() 
-    && let Some(parent_channel_id) = thread.parent_id 
-    && [primary_questions_channel, secondary_questions_channel].contains(&&parent_channel_id) 
+pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
+    // Config
+    if let Some(config) = crate::BOT_CONFIG.get() && let Some(channels) = &config.discord.channels
+    && let Some(primary_questions_channel) = channels.primary_questions_channel_id
+    && let Some(secondary_questions_channel) = channels.secondary_questions_channel_id 
+    // Check if thread
+    && let Some(thread) = msg.channel(&ctx.http).await?.guild()
+    && let Some(parent_channel_id) = thread.parent_id
+    && [primary_questions_channel, secondary_questions_channel].contains(&parent_channel_id)
     && msg.id.as_u64() == thread.id.as_u64() {
+
         let user_mention = &msg.author.mention();
         let user_without_mention = &msg.author.name;
 
+        // Message node
         thread
-        .send_message(&ctx, |m| {
-            m.content( MessageBuilder::new().push_quote(format!("Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.", &user_without_mention)).build());
+        .send_message(&ctx, |message| {
+            message.content(
+                MessageBuilder::new()
+                    .push_quote(
+                        format!(
+                            "Hey {}! Thank you for raising this — please hang tight as someone from our community may help you out.",
+                            &user_without_mention
+                        )
+                    ).build()
+            );
 
-            m.components(|c| {
+            // Buttons
+            message.components(|c| {
                 c.create_action_row(|ar| {
                     ar.create_button(|button| {
                         button
@@ -195,6 +152,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                             "https://youtube.com/playlist?list=PL3TSF5whlprXVp-7Br2oKwQgU4bji1S7H",
                         ).emoji(ReactionType::Unicode("📺".to_string()))
                     });
+                    // Final return
                     ar.create_button(|button| {
                         button
                             .style(ButtonStyle::Link)
@@ -205,94 +163,90 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                 })
             });
 
-            m
+            message
 
         })
-        .await
-        .unwrap();
+        .await?;
 
-        // questions_thread::responder(ctx).await;
+        // Simulate typing
         let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
 
+        // Fetch suggestions from relevant sources
         let relevant_links_external_sources = {
-            if &parent_channel_id != secondary_questions_channel {
+            if parent_channel_id != secondary_questions_channel {
                 Vec::from(["https://www.gitpod.io/docs", "https://github.com/gitpod-io"])
             } else {
                 Vec::from(["https://github.com/gitpod-io"])
             }
         };
 
-        let mut relevant_links = save_and_fetch_links(
+        if let Some(mut relevant_links) = save_and_fetch_links(
             &relevant_links_external_sources,
-            *thread.id.as_u64(),
-            *parent_channel_id.as_u64(),
-            *thread.guild_id.as_u64(),
-            thread.name.clone(),
-            (*msg.content).to_string(),
-        )
-        .await;
+            &thread.name,
+            &msg.content,
+        ).await {
 
-        if !&relevant_links.is_empty() {
             let mut prefix_emojis: HashMap<&str, Emoji> = HashMap::new();
             let emoji_sources: HashMap<&str, &str> = HashMap::from([
                 ("gitpod", "https://www.gitpod.io/images/media-kit/logo-mark.png"),
                 ("github", "https://cdn.discordapp.com/attachments/981191970024210462/981192908780736573/github-transparent.png"),
                 ("discord", "https://discord.com/assets/9f6f9cd156ce35e2d94c0e62e3eff462.png")
             ]);
-            let guild = &msg.guild_id.unwrap();
+            let guild = &msg.guild_id.ok_or_else(||eyre!("Failed to get GuildId"))?;
             for source in ["gitpod", "github", "discord"].iter() {
                 let emoji = {
                     if let Some(emoji) = guild
                         .emojis(&ctx.http)
-                        .await
-                        .unwrap()
+                        .await?
                         .into_iter()
                         .find(|x| x.name == *source)
                     {
                         emoji
                     } else {
                         let dw_path =
-                            env::current_dir().unwrap().join(format!("{source}.png"));
-                        let dw_url = emoji_sources.get(source).unwrap().to_string();
+                            env::current_dir()?.join(format!("{source}.png"));
+                        let dw_url = emoji_sources.get(source)
+                            .ok_or_else(||eyre!("Emoji source {source} doesn't exist"))?
+                            .to_string();
                         let client = reqwest::Client::new();
                         let downloaded_bytes = client
                             .get(dw_url)
                             .timeout(Duration::from_secs(5))
                             .send()
-                            .await
-                            .unwrap()
+                            .await?
                             .bytes()
-                            .await
-                            .unwrap();
-                        tokio::fs::write(&dw_path, &downloaded_bytes).await.unwrap();
-                        let emoji_image = read_image(dw_path).unwrap();
+                            .await?;
+                        tokio::fs::write(&dw_path, &downloaded_bytes).await?;
+                        let emoji_image = read_image(dw_path)?;
                         let emoji_image = emoji_image.as_str();
                         guild
                             .create_emoji(&ctx.http, source, emoji_image)
-                            .await
-                            .unwrap()
+                            .await?
                     }
                 };
                 prefix_emojis.insert(source, emoji);
             }
 
-            let mut suggested_count = 1;
+            let mut suggested_block_count = 0;
             thread.send_message(&ctx.http, |m| {
-        m.content(format!("{} I also found some relevant links which might help to self-serve, please do check them out below 🙏:", &user_mention));
-            m.components(|c| {
-                loop {
-                    if suggested_count > 10 || relevant_links.is_empty() {
-                        break;
-                    }
-                    c.create_action_row(|a|
-                        {
-                            let mut i = 1;
-                            for (title, url) in relevant_links.clone() {
-                                if i > 5 {
+                m.content(format!("{} I also found some relevant links which might help to self-serve, please do check them out below 🙏:", &user_mention));
+                m.components(|c| {
+                    // TODO: We could use a more concise `for` loop, but anyway
+                    loop {
+                        // 3 suggestion blocks MAX
+                        if suggested_block_count == 4 || relevant_links.is_empty() {
+                            break;
+                        } else {
+                            suggested_block_count += 1;
+                        }
+
+                        c.create_action_row(|a| {
+                            for (i, (title, url)) in relevant_links.clone().iter().enumerate() {
+                                // 5 MAX, starts at 0
+                                if i == 5 {
                                     break;
                                 } else {
-                                    i += 1;
-                                    relevant_links.remove(&title);
+                                    relevant_links.remove(title);
                                 }
                                 let emoji = {
                                     if url.starts_with("https://www.gitpod.io") {
@@ -313,13 +267,11 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
                                 a
                             }
                         );
-                        suggested_count += 1;
-                }
-                    c
-                });
+                    }
+                        c
+                    });
                 m
-            }
-        ).await.unwrap();
+            }).await?;
         }
 
         // Take a pause
@@ -331,7 +283,7 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
             &user_mention, "You can share the following (if applies):"
         ));
 
-        if &parent_channel_id != secondary_questions_channel {
+        if parent_channel_id != secondary_questions_channel {
             msg.push_line("• Contents of your `.gitpod.yml`")
                 .push_line("• Contents of your `.gitpod.Dockerfile`")
                 .push_line("• An example repository link");
@@ -343,10 +295,9 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<()> {
 
         thread
             .send_message(&ctx.http, |m| m.content(msg.build()))
-            .await
-            .unwrap();
+            .await?;
 
-        thread_typing.stop().unwrap();
+        thread_typing.stop().ok_or_else(|| eyre!("Couldn't stop writing"))?;
     };
 
     Ok(())

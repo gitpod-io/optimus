@@ -23,7 +23,6 @@ async fn unarchival_action(_ctx: Context, _thread: GuildChannel) -> Result<()> {
 }
 
 pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
-
     if let Some(config) = crate::BOT_CONFIG.get() && let Some(channels) = &config.discord.channels
     && let Some(primary_questions_channel) = channels.primary_questions_channel_id
     && let Some(secondary_questions_channel) = channels.secondary_questions_channel_id  {

@@ -4,8 +4,7 @@ After=network.target
 Requires=meilisearch.service
 
 [Service]
-ExecStart=/opt/discord/optimus
-StandardInputText=bot_token=YOUR_TOKEN_HERE app_id=YOUR_APPID_HERE github_token=YOUR_GITHUB_TOKEN_HERE meilisearch_api_key=YOUR_MEILISEARCH_API_KEY_HERE
+ExecStart=/opt/discord/optimus /some/arbitrary/path/to/your_config.toml
 Restart=always
 
 [Install]

@@ -99,8 +99,6 @@ async fn assign_roles(
 }
 
 pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Result<()> {
-    
-
     let config = crate::BOT_CONFIG.get().context("Failed to get BotConfig")?;
 
     let channels = config
@@ -129,7 +127,6 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
         .off_topic_channel_id
         .as_ref()
         .context("No off topic channel found")?;
-
 
     let mut additional_roles: Vec<SelectMenuSpec> = Vec::from([
         SelectMenuSpec {
@@ -357,7 +354,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                         let mut count = 0;
                         if let Ok(intro_msgs) = &ctx
                             .http
-                            .get_messages(*introduction_channel.as_u64() , "")
+                            .get_messages(*introduction_channel.as_u64(), "")
                             .await
                         {
                             intro_msgs.iter().for_each(|x| {
