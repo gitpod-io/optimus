@@ -1,5 +1,5 @@
 use anyhow::{bail, Context as _, Result};
-use base64::{decode, encode};
+use base64::{engine::general_purpose, Engine as _};
 use regex::Regex;
 use reqwest::{header, header::HeaderValue, Client, StatusCode};
 use serde::Deserialize;
@@ -9,7 +9,7 @@ use serenity::{
     model::application::interaction::application_command::ApplicationCommandInteraction,
     model::application::interaction::InteractionResponseType,
 };
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use crate::BOT_CONFIG;
 
@@ -408,7 +408,8 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
 
     // Prepare new file contents
     let file_contents_decoded = {
-        let decoded = decode(file.content.split_whitespace().collect::<String>())?;
+        let decoded = general_purpose::STANDARD
+            .decode(file.content.split_whitespace().collect::<String>())?;
         let decoded = String::from_utf8(decoded)?;
 
         // Append to FAQs
@@ -422,7 +423,7 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     };
 
     // Base64 encode
-    let file_contents_encoded = encode(file_contents_decoded);
+    let file_contents_encoded = general_purpose::STANDARD.encode(file_contents_decoded);
 
     // Commit the new changes
     github_client

@@ -12,7 +12,7 @@ serde = { version = "1.0.159", features = ["derive"] }
 regex = "1.7.3"
 urlencoding = "2.1.2"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "sqlite", "offline"] }
-meilisearch-sdk = "0.22.1"
+meilisearch-sdk = "0.23.0"
 words-count = "0.1.4"
 html-escape = "0.2.13"
 piston_rs = "0.4.3"

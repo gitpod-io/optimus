@@ -2,9 +2,9 @@ use serenity::model::id::ChannelId;
 
 use super::*;
 
-pub struct QuestionChannels {
-    pub id: ChannelId,
-}
+// pub struct QuestionChannels {
+//     pub id: ChannelId,
+// }
 
 impl Db {
     pub async fn set_watch_channels(
@@ -21,18 +21,18 @@ impl Db {
         }
         Ok(())
     }
-    pub async fn get_question_channels(&self) -> Result<Vec<QuestionChannels>> {
-        let q = sqlx::query!("select question_channels from server_config")
-            .fetch_all(&self.sqlitedb)
-            .await?
-            .into_iter()
-            .map(|x| QuestionChannels {
-                id: ChannelId(x.question_channels as u64),
-            })
-            .collect();
+    // pub async fn get_question_channels(&self) -> Result<Vec<QuestionChannels>> {
+    //     let q = sqlx::query!("select question_channels from server_config")
+    //         .fetch_all(&self.sqlitedb)
+    //         .await?
+    //         .into_iter()
+    //         .map(|x| QuestionChannels {
+    //             id: ChannelId(x.question_channels as u64),
+    //         })
+    //         .collect();
 
-        Ok(q)
-    }
+    //     Ok(q)
+    // }
 }
 
 // A command can have sub-commands, just like in command lines tools.

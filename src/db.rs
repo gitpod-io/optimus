@@ -48,10 +48,10 @@ impl ClientContextExt for client::Context {
     }
 }
 
-pub struct User {
-    userid: UserId,
-    roles: Vec<RoleId>,
-}
+// pub struct User {
+//     userid: UserId,
+//     roles: Vec<RoleId>,
+// }
 
 impl Db {
     pub async fn set_user_roles(&self, user_id: UserId, roles: Vec<RoleId>) -> Result<()> {
@@ -60,18 +60,18 @@ impl Db {
         sqlx::query!("insert into user_profile (user_id, roles) values (?1, ?2) on conflict(user_id) do update set roles=?2", user_id, roles).execute(&self.sqlitedb).await?;
         Ok(())
     }
-    pub async fn get_user_roles(&self, user_id: UserId) -> Result<Option<User>> {
-        let user_id = user_id.0 as i64;
-        let result = sqlx::query!("select * from user_profile where user_id=?", user_id)
-            .fetch_optional(&self.sqlitedb)
-            .await?;
-        if let Some(x) = result {
-            Ok(Some(User {
-                userid: UserId(x.user_id as u64),
-                roles: serde_json::from_str(&x.roles).context("Failed to get roles")?,
-            }))
-        } else {
-            Ok(None)
-        }
-    }
+    // pub async fn get_user_roles(&self, user_id: UserId) -> Result<Option<User>> {
+    //     let user_id = user_id.0 as i64;
+    //     let result = sqlx::query!("select * from user_profile where user_id=?", user_id)
+    //         .fetch_optional(&self.sqlitedb)
+    //         .await?;
+    //     if let Some(x) = result {
+    //         Ok(Some(User {
+    //             userid: UserId(x.user_id as u64),
+    //             roles: serde_json::from_str(&x.roles).context("Failed to get roles")?,
+    //         }))
+    //     } else {
+    //         Ok(None)
+    //     }
+    // }
 }

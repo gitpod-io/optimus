@@ -8,7 +8,7 @@ use crate::config::MeilisearchConfig;
 pub static MEILICLIENT_THREAD_INDEX: OnceCell<Index> = OnceCell::new();
 
 pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
-    let mclient = MeiliClient::new(&meili.api_endpoint, &meili.api_key);
+    let mclient = MeiliClient::new(&meili.api_endpoint, Some(&meili.api_key));
     let msettings = Settings::new()
         .with_searchable_attributes(["title", "messages", "tags", "author_id", "id"])
         .with_filterable_attributes(["timestamp", "tags"])
