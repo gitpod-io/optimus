@@ -38,11 +38,10 @@ cargo run
 > You can also explicitly pass a path for your config.
 > For example:
 ```bash
-# For cargo
-# $PWD = on Gitpod it'd be `/workspace/optimus`
-cargo run -- $PWD/BotConfig.toml
+# From cargo
+cargo run -- BotConfig.toml
 
-# For a release binary
+# From a release binary
 ./target/release/optimus /some/arbitrary/path/to/your_config.toml
 ```
 
