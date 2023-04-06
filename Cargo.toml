@@ -23,7 +23,9 @@ once_cell = "1.17.1"
 color-eyre = "0.6.2"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 tracing-error = "0.2.0"
-toml = "0.7.0"
+toml = "0.7.3"
+url = "2.3.1"
+fastrand = "1.9.0"
 
 [dependencies.reqwest]
 default-features = false

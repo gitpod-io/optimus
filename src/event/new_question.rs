@@ -1,4 +1,5 @@
 use crate::{init::MEILICLIENT_THREAD_INDEX, utils::index_threads::Thread};
+use url::Url;
 
 use super::substr::StringUtils;
 use color_eyre::eyre::{eyre, Report, Result};
@@ -13,7 +14,7 @@ use serenity::{
     model::{guild::Emoji, prelude::Message},
     utils::{read_image, MessageBuilder},
 };
-use std::{collections::HashMap, env, time::Duration};
+use std::{collections::HashMap, env, time::Duration, iter::repeat_with};
 use tokio::time::sleep;
 use urlencoding::encode;
 
@@ -47,8 +48,8 @@ async fn save_and_fetch_links(
                         .unwrap()
                         .captures_iter(&result).enumerate()
                 {
-                    // 5 MAX, starts at 0
-                    if i == 5 {
+                    // 3 MAX each, starts at 0
+                    if i == 3 {
                         break;
                     }
 
@@ -87,7 +88,7 @@ async fn save_and_fetch_links(
 
     // // Fetch 5 MAX matching discord questions
     if let Some(mclient) = MEILICLIENT_THREAD_INDEX.get()
-    && let Ok(data) = mclient.search().with_query(title).with_limit(5).execute::<Thread>().await {
+    && let Ok(data) = mclient.search().with_query(title).with_limit(10).execute::<Thread>().await {
         for ids in data.hits {
             links.insert(
                 ids.result.title,
@@ -233,8 +234,8 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
                 m.components(|c| {
                     // TODO: We could use a more concise `for` loop, but anyway
                     loop {
-                        // 3 suggestion blocks MAX
-                        if suggested_block_count == 4 || relevant_links.is_empty() {
+                        // 3 suggestion blocks MAX, means 10 links
+                        if suggested_block_count == 3 || relevant_links.is_empty() {
                             break;
                         } else {
                             suggested_block_count += 1;
@@ -258,15 +259,28 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
                                     }
                                 };
 
-                                a.create_button(|b|b.label(title.as_str().substring(0, 80)).custom_id(url.as_str().substring(0, 100)).style(ButtonStyle::Secondary).emoji(ReactionType::Custom {
-                                    id: emoji.id,
-                                    name: Some(emoji.name.clone()),
-                                    animated: false,
-                                }));
+                                if let Ok(mut parsed_url) = Url::parse(url) {
+
+                                    let random_str: String = repeat_with(fastrand::alphanumeric).take(4).collect();
+                                    parsed_url.query_pairs_mut().append_key_only(&random_str);
+
+                                    a.create_button(|b| b.label(title.as_str().substring(0, 80))
+                                        .custom_id(parsed_url.as_str().substring(0, 100))
+                                        .style(ButtonStyle::Secondary)
+                                        .emoji(ReactionType::Custom {
+                                            id: emoji.id,
+                                            name: Some(emoji.name.clone()),
+                                            animated: false,
+                                        })
+                                    );
+                                }
+                                    // .query_pairs_mut()
+                                    // .append_key_only(&random_str)
+                                    // .finish();
+
                             }
                                 a
-                            }
-                        );
+                        });
                     }
                         c
                     });
