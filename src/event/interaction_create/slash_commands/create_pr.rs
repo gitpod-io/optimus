@@ -356,11 +356,11 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
 
         if let Some(openai) = &config.openai {
             let prompt = format!(
-                "{}\n{}\n{}\n{}\n{}\n\n```markdown\n{}\n```",
-                "I copy pasted a discord conversation for documenting as a FAQ on a (markdown) web page, can you convert it to a concise FAQ for me?",
+                "{}\n{}\n{}\n{}\n{}\n\n```\n{}\n```",
+                "Below is a discord conversation for documenting as a FAQ on a (markdown) web page, can you convert it to a concise FAQ for me?",
                 "Rules:",
                 "1. Shouldn't read like a conversation",
-                "2. Should persist the heading discord link.",
+                "2. Should persist the heading discord link",
                 "3. Shouldn't use inline backticks but rather code blocks for representing bash commands or code",
                 conversation
             );
