@@ -1,5 +1,9 @@
 use anyhow::{bail, Context as _, Result};
 use base64::{engine::general_purpose, Engine as _};
+use openai::{
+    chat::{ChatCompletion, ChatCompletionMessage, ChatCompletionMessageRole},
+    set_key,
+};
 use regex::Regex;
 use reqwest::{header, header::HeaderValue, Client, StatusCode};
 use serde::Deserialize;
@@ -264,6 +268,7 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
     let thread_id = &thread_node.id;
     let guild_id = &mci.guild_id.context("Failed to get guild ID")?;
     let options = &mci.data.options;
+    let config = BOT_CONFIG.get().context("Failed to get BotConfig")?;
 
     let link = &options
         .get(0)
@@ -325,9 +330,42 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         title, SIGNATURE
     ));
     sanitized_messages.reverse();
-    let sanitized_messages = sanitized_messages.into_iter().collect::<String>();
 
-    let config = BOT_CONFIG.get().context("Failed to get BotConfig")?;
+    // Use GPT to summarize the messages if available
+    let sanitized_messages = {
+        let conversation = sanitized_messages.clone().into_iter().collect::<String>();
+        let mut ret = conversation.clone();
+
+        if let Some(openai) = &config.openai {
+            let prompt = format!(
+                "{}\n{}\n{}\n{}\n{}\n\n```markdown\n{}\n```",
+                "I copy pasted a discord conversation to a (markdown) web page for documenting as a FAQ, can you convert it to a concise FAQ for me?",
+                "Rules:",
+                "1. Shouldn't read like a conversation",
+                "2. Shouldn't link back to discord or slack.",
+                "3. Shouldn't use inline backticks but rather code blocks for representing bash commands or code",
+                conversation
+            );
+            set_key(openai.api_key.clone());
+
+            // TODO: Figure out a good system message later.
+            // TODO: Make the LLM figure out target page URL also.
+            let messages = vec![ChatCompletionMessage {
+                role: ChatCompletionMessageRole::User,
+                content: prompt,
+                name: None,
+            }];
+
+            if let Ok(Ok(http_req)) = &ChatCompletion::builder("gpt-3.5-turbo", messages).create().await
+            && let Some(choice) = http_req.choices.first()
+            {
+                ret = choice.message.content.clone();
+            }
+        }
+
+        ret
+    };
+
     let github = config
         .github
         .as_ref()

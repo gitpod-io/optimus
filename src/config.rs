@@ -8,6 +8,7 @@ pub struct BotConfig {
     pub github: Option<GithubConfig>,
     pub discord: DiscordConfig,
     pub meilisearch: Option<MeilisearchConfig>,
+    pub openai: Option<OpenaiConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -38,6 +39,12 @@ pub struct MeilisearchConfig {
     pub api_key: String,
     pub api_endpoint: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct OpenaiConfig {
+    pub api_key: String,
+}
+
 
 pub fn read(toml_path: &str) -> Result<BotConfig, Report> {
     // Read the TOML file into a var
