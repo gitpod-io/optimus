@@ -9,9 +9,13 @@ use reqwest::{header, header::HeaderValue, Client, StatusCode};
 use serde::Deserialize;
 use serde_json::json;
 use serenity::{
-    client::Context, futures::StreamExt,
+    client::Context,
+    futures::StreamExt,
     model::application::interaction::application_command::ApplicationCommandInteraction,
-    model::application::interaction::InteractionResponseType,
+    model::{
+        application::interaction::InteractionResponseType,
+        prelude::application_command::CommandDataOptionValue,
+    },
 };
 use std::collections::HashMap;
 
@@ -279,18 +283,32 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         .to_string();
     let link = link.trim_start_matches('"').trim_end_matches('"');
 
-    let title = {
-        if let Some(result) = &options.get(1) {
-            result
-                .value
-                .as_ref()
-                .context("Error getting value")?
-                .to_string()
-        } else {
-            thread_node.name
-        }
-    };
+    let title = &options
+        .iter()
+        .find_map(|op| {
+            if op.name == "title"
+            && let Some(res) = &op.resolved
+            && let CommandDataOptionValue::String(value) = res {
+                Some(value)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(&thread_node.name);
     let title = title.trim_start_matches('"').trim_end_matches('"');
+
+    let gpt4 = &options
+        .iter()
+        .find_map(|op| {
+            if op.name == "gpt4"
+            && let Some(res) = &op.resolved
+            && let CommandDataOptionValue::Boolean(res) = res {
+                Some(res)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(&false);
 
     mci.create_interaction_response(&ctx.http, |r| {
         r.kind(InteractionResponseType::DeferredChannelMessageWithSource)
@@ -339,10 +357,10 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
         if let Some(openai) = &config.openai {
             let prompt = format!(
                 "{}\n{}\n{}\n{}\n{}\n\n```markdown\n{}\n```",
-                "I copy pasted a discord conversation to a (markdown) web page for documenting as a FAQ, can you convert it to a concise FAQ for me?",
+                "I copy pasted a discord conversation for documenting as a FAQ on a (markdown) web page, can you convert it to a concise FAQ for me?",
                 "Rules:",
                 "1. Shouldn't read like a conversation",
-                "2. Shouldn't link back to discord or slack.",
+                "2. Should persist the heading discord link.",
                 "3. Shouldn't use inline backticks but rather code blocks for representing bash commands or code",
                 conversation
             );
@@ -356,7 +374,9 @@ pub async fn responder(mci: &ApplicationCommandInteraction, ctx: &Context) -> Re
                 name: None,
             }];
 
-            if let Ok(Ok(http_req)) = &ChatCompletion::builder("gpt-3.5-turbo", messages).create().await
+            let model = if **gpt4 { "gpt-4" } else { "gpt-3.5-turbo" };
+
+            if let Ok(Ok(http_req)) = &ChatCompletion::builder(model, messages).create().await
             && let Some(choice) = http_req.choices.first()
             {
                 ret = choice.message.content.clone();

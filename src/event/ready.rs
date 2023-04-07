@@ -39,6 +39,13 @@ impl Init {
                             .description("Title of the FAQ")
                             .required(false)
                     })
+                    .create_option(|opt| {
+                        opt.kind(CommandOptionType::Boolean)
+                            .name("gpt4")
+                            .required(false)
+                            .default_option(false)
+                            .description("Use GPT4 instead of GPT3.5")
+                    })
             });
 
             commands.create_application_command(|c| {
