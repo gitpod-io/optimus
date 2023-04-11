@@ -13,11 +13,10 @@ RUN mkdir -m 0755 -p "${APP_DIR}"
 # 	&& curl -L "${url}" -o "${path}" \
 # 	&& chmod +x "${path}"
 RUN apk add --no-cache libgcc
-COPY --from=meilisearch_alpine --chown=root:root /bin/meilisearch /app/meilisearch
+COPY --from=meilisearch_alpine --chown=root:root /bin/meilisearch ${APP_DIR}/meilisearch
 
 # Bot
-COPY target/x86_64-unknown-linux-musl/release/optimus /app/optimus
-# EXPOSE 7700
+COPY target/x86_64-unknown-linux-musl/release/optimus ${APP_DIR}/optimus
 
-# Automatically start meilisearch, and reads a BotConfig.toml from /app dir (in exists)
+# Automatically start meilisearch, and read a BotConfig.toml from ${APP_DIR} (if exists)
 ENTRYPOINT ["optimus"]
