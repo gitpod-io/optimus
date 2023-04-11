@@ -35,7 +35,8 @@ features = ["rustls-tls", "json"]
 version = "0.11.16"
 
 [dependencies.serenity]
-path = "serenity/"
+git = "https://github.com/serenity-rs/serenity"
+rev = "f42ec02"
 default-features = false
 features = ["client", "unstable_discord_api", "gateway", "rustls_backend", "model", "utils", "cache", "framework", "standard_framework", "collector"]
 #version = "0.10.10"
