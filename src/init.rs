@@ -1,34 +1,28 @@
+use crate::config::MeilisearchConfig;
 use color_eyre::eyre::{eyre, Result};
-use meilisearch_sdk::{client::Client as MeiliClient, indexes::Index, settings::Settings};
+use meilisearch_sdk::{client::Client, indexes::Index, settings::Settings};
 use once_cell::sync::OnceCell;
 use sysinfo::{System, SystemExt};
 use tokio::time::{sleep, Duration, Instant};
-use tracing::{event, Level};
-
-use crate::config::MeilisearchConfig;
-
 pub static MEILICLIENT_THREAD_INDEX: OnceCell<Index> = OnceCell::new();
 
-async fn wait_for_meili_server(url: &str, timeout: Duration) -> Result<()> {
-    let client = reqwest::Client::new();
-    let start = Instant::now();
+fn remove_scheme_from_url(url_str: &str) -> Result<String> {
+    let url = url::Url::parse(url_str)?;
+    let host = url.host_str().ok_or_else(|| eyre!("Invalid host {url}"))?;
+    let path = url.path().trim_end_matches('/');
+    let port = url.port().ok_or_else(|| eyre!("Invalid port {url}"))?;
 
-    loop {
-        if let Ok(response) = client.get(url).send().await && response.status().is_success() {
-            break;
-        }
-
-        if start.elapsed() > timeout {
-            return Err(eyre!("Timeout waiting for server."));
-        }
-
-        sleep(Duration::from_millis(200)).await;
-    }
-
-    Ok(())
+    Ok(format!("{host}{path}:{port}"))
 }
 
 pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
+    let meili_api_endpoint = &meili.api_endpoint;
+
+    let meili_api_endpoint_without_scheme = remove_scheme_from_url(meili_api_endpoint)?;
+    let meili_api_endpoint_without_scheme = meili_api_endpoint_without_scheme.as_str();
+
+    let mclient = Client::new(meili_api_endpoint, Some(&meili.master_key));
+
     let mut system = System::new_all();
     system.refresh_processes();
     if system
@@ -57,15 +51,24 @@ pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
         std::process::Command::new(&server_cmd[0])
             .args(&server_cmd[1..])
             .args(["--log-level", "WARN"])
+            .args(["--http-addr", meili_api_endpoint_without_scheme])
             .args(["--master-key", &meili.master_key])
+            .current_dir(exec_parent_dir)
             .spawn()?;
 
-        wait_for_meili_server(&meili.api_endpoint, Duration::from_secs(15)).await?;
+        // Await for the server to be fully started
+        let start = Instant::now();
+        while !mclient.is_healthy().await {
+            if start.elapsed() > Duration::from_secs(1000) {
+                return Err(eyre!("Timeout waiting for server."));
+            }
+            println!("Awaiting for Meilisearch to be up ...");
+            sleep(Duration::from_millis(300)).await;
+        }
     } else {
-        event!(Level::WARN, "Meilisearch server is already running");
+        eprintln!("Meilisearch server is already running");
     }
 
-    let mclient = MeiliClient::new(&meili.api_endpoint, Some(&meili.master_key));
     let msettings = Settings::new()
         .with_searchable_attributes(["title", "messages", "tags", "author_id", "id"])
         .with_filterable_attributes(["timestamp", "tags"])
@@ -92,6 +95,9 @@ pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
         .set(threads_index_db)
         .ok()
         .ok_or_else(|| eyre!("Can't cache the meiliclient index"))?;
+
+    println!("Meilisearch is now fully up and healthy.");
+
     Ok(())
 }
 
@@ -100,8 +106,8 @@ pub fn tracing() -> Result<()> {
     use tracing_subscriber::prelude::*;
     use tracing_subscriber::{fmt, EnvFilter};
 
-    let fmt_layer = fmt::layer().with_target(false);
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+    let fmt_layer = fmt::layer().with_target(true).pretty();
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("warn"))?;
 
     tracing_subscriber::registry()
         .with(filter_layer)

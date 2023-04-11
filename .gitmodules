@@ -1,3 +1,0 @@
-[submodule "serenity"]
-	path = serenity
-	url = https://github.com/serenity-rs/serenity

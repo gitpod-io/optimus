@@ -111,7 +111,7 @@ docker container start -a optimus
 
 # Press Ctrl+c to detach
 
-# In case you want to stop:
+# In case you want to stop again:
 docker container stop -t 2 optimus
 ```
 

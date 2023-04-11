@@ -26,6 +26,7 @@ static BOT_CONFIG: OnceCell<config::BotConfig> = OnceCell::new();
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Tracing
     init::tracing()?;
     color_eyre::install()?;
 
