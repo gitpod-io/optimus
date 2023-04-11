@@ -27,6 +27,7 @@ tracing-error = "0.2.0"
 toml = "0.7.3"
 url = "2.3.1"
 fastrand = "1.9.0"
+openai = "1.0.0-alpha.8"
 sysinfo = "0.28.4"
 
 [dependencies.reqwest]
