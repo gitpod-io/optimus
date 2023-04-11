@@ -79,9 +79,9 @@ In conclusion, a server with 128MB RAM (+SWAP), shared CPU and 1GB storage will 
 
 #### Docker
 
-Note: WIP
+Docker would come handy in case you want something that JustWorks™️.
 
-Docker would come handy in case you want something that JustWorks™️. Run the following commands:
+**Preparing the config:**
 
 ```bash
 # Get the sample config
@@ -89,9 +89,25 @@ curl -LO https://raw.githubusercontent.com/gitpod-io/optimus/main/BotConfig.toml
 
 # Update the config with your bot token and application ID
 vim BotConfig.toml # or nano, or any other editor
+```
 
-# Start the docker container
-docker run -d --name optimus -v $(pwd)/BotConfig.toml:/app/BotConfig.toml ghcr.io/gitpod-io/optimus:latest
+**Starting the container:**
+
+```bash
+# You can also start in detached mode by passing `-d` to `run` subcommand
+docker run --name optimus -v $(pwd)/BotConfig.toml:/app/BotConfig.toml ghcr.io/gitpod-io/optimus:main
+
+# You can press Ctrl+c to stop
+```
+
+**Restarting the container:**
+
+```bash
+# Starts in detached mode
+docker container start optimus
+
+# To attach to the pty
+docker attach optimus
 ```
 
 If you are hardware resource constrained, you can use the [barebones](#barebones) or [systemd](#systemd) method instead.

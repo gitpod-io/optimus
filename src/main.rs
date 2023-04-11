@@ -18,6 +18,7 @@ use serenity::{
 };
 use std::{
     collections::{HashMap, HashSet},
+    path::Path,
     sync::{atomic::AtomicBool, Arc},
 };
 
@@ -32,7 +33,7 @@ async fn main() -> Result<()> {
     let config_path = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "BotConfig.toml".to_owned());
-    let config = BOT_CONFIG.get_or_try_init(|| config::read(&config_path))?;
+    let config = BOT_CONFIG.get_or_try_init(|| config::read(Path::new(&config_path)))?;
 
     // Init meilisearch
     if let Some(meili) = &config.meilisearch {
