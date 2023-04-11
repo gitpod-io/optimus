@@ -30,5 +30,16 @@ bot_token = "QWERTYUIOP.ASDFGHJKL.123456789"
 ## This one does not need to be changed
 ## if you're developing from Gitpod.
 [meilisearch]
-api_key = "superCoolApiKey1234"
+master_key = "superCoolApiKey1234"
 api_endpoint = "http://localhost:7700"
+# Do not specify --http-addr, --master-key here.
+# But you can specify --db-path if you want.
+server_cmd = [
+  "meilisearch",
+    "--no-analytics",
+    "--max-indexing-memory",
+      "100Mb",
+    "--env",
+      "development",
+]
+
