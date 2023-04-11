@@ -5,6 +5,9 @@ tasks:
   - name: Project build (cache) and run instructions
     init: cargo build
     command: |
+      # Fully cleanup terminal
+      printf "\033[3J\033c\033[3J"
+      
       # Await for meilisearch to be fully up
       #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
       #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
