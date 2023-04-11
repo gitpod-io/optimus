@@ -6,8 +6,8 @@ tasks:
     init: cargo build
     command: |
       # Await for meilisearch to be fully up
-      printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
-      until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
+      #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
+      #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
 
       # Restore config if exists and run bot
       config_name="BotConfig.toml"
@@ -30,13 +30,13 @@ tasks:
           "    ${YELLOW}cargo run -- ${config_name}${RC}"
       } fi
 
-  - name: Meilisearch
-    command: |
-      # Fully cleanup terminal
-      printf "\033[3J\033c\033[3J"
+#   - name: Meilisearch
+#     command: |
+#       # Fully cleanup terminal
+#       printf "\033[3J\033c\033[3J"
 
-      # Start server
-      meilisearch --no-analytics --master-key "${MEILISEARCH_API_KEY}" --env development --http-addr 0.0.0.0:7700 --db-path ./data.ms
+#       # Start server
+#       meilisearch --no-analytics --master-key "${MEILISEARCH_API_KEY}" --env development --http-addr 0.0.0.0:7700 --db-path ./data.ms
 
 vscode:
   extensions:
