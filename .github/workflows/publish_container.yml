@@ -2,9 +2,9 @@ name: Build optimus and publish a Docker image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   REGISTRY: ghcr.io
@@ -24,7 +24,7 @@ jobs:
           submodules: recursive
 
       - name: Build optimus
-        run: cargo build --release
+        run: docker run -v $(pwd):/volume --rm -t clux/muslrust:nightly cargo build --release
 
       - name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
