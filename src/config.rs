@@ -1,4 +1,9 @@
-use color_eyre::{eyre::Context, Report};
+use std::path::Path;
+
+use color_eyre::{
+    eyre::{eyre, Context},
+    Report,
+};
 use serde::Deserialize;
 use serenity::model::prelude::ChannelId;
 
@@ -36,8 +41,9 @@ pub struct DiscordChannels {
 
 #[derive(Debug, Deserialize)]
 pub struct MeilisearchConfig {
-    pub api_key: String,
+    pub master_key: String,
     pub api_endpoint: String,
+    pub server_cmd: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -45,15 +51,23 @@ pub struct OpenaiConfig {
     pub api_key: String,
 }
 
+pub fn read(toml_path: &Path) -> Result<BotConfig, Report> {
+    // Get executable path and parent dir
+    let exec_path = std::env::current_exe()?;
+    let exec_parent_dir = exec_path
+        .parent()
+        .ok_or_else(|| eyre!("Failed to get parent dir of self"))?;
+    let exec_parent_dir_config = exec_parent_dir.join("BotConfig.toml");
 
-pub fn read(toml_path: &str) -> Result<BotConfig, Report> {
     // Read the TOML file into a var
-    let contents = std::fs::read_to_string(toml_path)
-        .wrap_err_with(|| format!("Couldn't read a {toml_path} file from the provided path"))?;
+    let contents = [toml_path, &exec_parent_dir_config]
+        .iter()
+        .find_map(|path| std::fs::read_to_string(path).ok())
+        .ok_or_else(|| eyre!("Failed to read a BotConfig"))?;
 
     // Parse the TOML string into a `Config` object
     let config: BotConfig =
-        toml::from_str(&contents).wrap_err_with(|| format!("Failed to parse {toml_path}"))?;
+        toml::from_str(&contents).wrap_err_with(|| format!("Failed to parse {:?}", toml_path))?;
 
     // Return
     Ok(config)
