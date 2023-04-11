@@ -7,7 +7,7 @@ tasks:
     command: |
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
-      
+
       # Await for meilisearch to be fully up
       #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
       #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
@@ -19,6 +19,9 @@ tasks:
         base64 -d <<< "${DISCORD_BOT_CONFIG_ENCODED}" > "${config_name}"
         cargo run -- "${config_name}"
       } else {
+        # Create "BotConfig.toml"
+        cp ExampleBotConfig.toml "${config_name}"
+
         RC=$'\033[0m'
         BGREEN=$'\033[1;32m'
         YELLOW=$'\033[1;33m'
@@ -26,6 +29,7 @@ tasks:
 
         printf '\n';
         printf '%s\n' \
+          ">>> Created ${BGREEN}./${config_name}${RC} by copying ./ExampleBotConfig.toml" \
           ">>> Please update/fill-up ${BGREEN}./${config_name}${RC} with the necessary information and run:" \
           "# To persist the config change" \
           "    ${BRED}gp env DISCORD_BOT_CONFIG_ENCODED=\"\$(base64 -w0 ${config_name})\"${RC}" \

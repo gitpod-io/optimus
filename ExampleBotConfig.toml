@@ -27,9 +27,8 @@ bot_token = "QWERTYUIOP.ASDFGHJKL.123456789"
 # user_agent = "optimusbot"
 
 # optional, comment it out if unused.
-## This one does not need to be changed
-## if you're developing from Gitpod.
 [meilisearch]
+## This one does not need to be changed if you're developing from Gitpod.
 master_key = "superCoolApiKey1234"
 api_endpoint = "http://localhost:7700"
 # Do not specify --http-addr, --master-key here.
@@ -43,3 +42,6 @@ server_cmd = [
       "development",
 ]
 
+# optional, uncomment block to use.
+# [openai]
+# api_key = "sk-1234567qwertyu"

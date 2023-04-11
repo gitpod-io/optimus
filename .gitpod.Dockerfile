@@ -1,8 +1,5 @@
 FROM gitpod/workspace-rust:2023-03-24-22-45-37
 
-# meilisearch
-ENV MEILISEARCH_API_KEY="superCoolApiKey1234"
-
 USER root
 
 # Install meilisearch
@@ -17,3 +14,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
   && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
   | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
   && install-packages google-cloud-cli
+
+USER gitpod

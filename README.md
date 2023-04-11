@@ -25,11 +25,13 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
 
 ### Running the BOT from Gitpod for development
 
-- Update/fill-up [./BotConfig.toml](./BotConfig.toml) with:
+- If you don't have `./BotConfig.toml` file, create it by copying [./ExampleBotConfig.toml](./ExampleBotConfig.toml). So, you could run: `cp ExampleBotConfig.toml BotConfig.toml`
+
+- Update/fill-up `./BotConfig.toml` with:
   - The token from your 🧩 `Bot` page on discord dev portal. You might need to reset it to see.
     ![bot token](/.assets/bot_token_example.png)
   - The **Application ID** from the `General Information` section in your left sidebar
-- Persist the config changes accross Gitpod workspaces:
+- To persist the config changes accross development Gitpod workspaces:
 
 ```bash
 # Run this every time after making changes to ./BotConfig.toml
@@ -54,9 +56,9 @@ cargo run -- BotConfig.toml
 ./target/release/optimus /some/arbitrary/path/to/your_config.toml
 ```
 
-## Meilisearch and GitHub integration
+## Meilisearch, GitHub and OpenAI integration
 
-Some (optional) features use Meilisearch and GitHub API.
+Some (optional) features use Meilisearch, GitHub and OpenAI API.
 
 Note: This part is undocumented, will be done soon.
 
@@ -85,7 +87,7 @@ Docker would come handy in case you want something that JustWorks™️.
 
 ```bash
 # Get the sample config
-curl -LO https://raw.githubusercontent.com/gitpod-io/optimus/main/BotConfig.toml
+curl -o BotConfig.toml -L https://raw.githubusercontent.com/gitpod-io/optimus/main/ExampleBotConfig.toml
 
 # Update the config with your bot token and application ID
 vim BotConfig.toml # or nano, or any other editor
@@ -108,8 +110,10 @@ docker container stop -t 2 optimus
 
 # Starts and attach to it
 docker container start -a optimus
-
 # Press Ctrl+c to detach
+
+# To attach back
+docker attach optimus
 
 # In case you want to stop again:
 docker container stop -t 2 optimus
