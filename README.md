@@ -146,3 +146,6 @@ gcloud compute instances create discord-optimus-bot \
 
 - WIP (will be written soon)
 
+## Also see
+
+- https://github.com/gitpod-io/gitpod-qa (AI powered chatbot)
