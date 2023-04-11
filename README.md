@@ -54,13 +54,13 @@ cargo run -- BotConfig.toml
 ./target/release/optimus /some/arbitrary/path/to/your_config.toml
 ```
 
-### Meilisearch and GitHub integration
+## Meilisearch and GitHub integration
 
 Some (optional) features use Meilisearch and GitHub API.
 
 Note: This part is undocumented, will be done soon.
 
-### Deploying a release build to production server
+## Deploying a release build to production server
 
 Minimal resource requirements:
 
@@ -69,15 +69,15 @@ Minimal resource requirements:
 
 In conclusion, a server with 128MB RAM (+SWAP), shared CPU and 1GB storage will do.
 
-#### barebones
+### barebones
 
 - WIP (will be written soon)
 
-#### systemd
+### systemd
 
 - WIP (will be written soon)
 
-#### Docker
+### Docker
 
 Docker would come handy in case you want something that JustWorks™️.
 
@@ -95,28 +95,33 @@ vim BotConfig.toml # or nano, or any other editor
 
 ```bash
 # You can also start in detached mode by passing `-d` to `run` subcommand
-docker run --name optimus -v $(pwd)/BotConfig.toml:/app/BotConfig.toml ghcr.io/gitpod-io/optimus:main
-
+docker run --init --name optimus -v $(pwd)/BotConfig.toml:/app/BotConfig.toml -t ghcr.io/gitpod-io/optimus:main
 # You can press Ctrl+c to stop
+# If using meilisearch, its database will be stored at `/app/data.ms` inside the `optimus` container
 ```
 
 **Restarting the container:**
 
 ```bash
-# Starts in detached mode
-docker container start optimus
+# Ensure it's stopped
+docker container stop -t 2 optimus
 
-# To attach to the pty
-docker attach optimus
+# Starts and attach to it
+docker container start -a optimus
+
+# Press Ctrl+c to detach
+
+# In case you want to stop:
+docker container stop -t 2 optimus
 ```
 
 If you are hardware resource constrained, you can use the [barebones](#barebones) or [systemd](#systemd) method instead.
 
-#### Docker compose
+### Docker compose
 
 The [docker](#docker) method is enough, using docker-compose for this would be overkill in terms of hardware resources 🌳
 
-#### GCP
+### GCP
 
 - Create a **f1-micro** (~600MB RAM) Linux VM from **Compute Engine > VM Instances**. For example, with `gcloud` CLI:
 
@@ -136,3 +141,4 @@ gcloud compute instances create discord-optimus-bot \
 ```
 
 - WIP (will be written soon)
+

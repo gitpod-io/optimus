@@ -9,6 +9,25 @@ use crate::config::MeilisearchConfig;
 
 pub static MEILICLIENT_THREAD_INDEX: OnceCell<Index> = OnceCell::new();
 
+async fn wait_for_meili_server(url: &str, timeout: Duration) -> Result<()> {
+    let client = reqwest::Client::new();
+    let start = Instant::now();
+
+    loop {
+        if let Ok(response) = client.get(url).send().await && response.status().is_success() {
+            break;
+        }
+
+        if start.elapsed() > timeout {
+            return Err(eyre!("Timeout waiting for server."));
+        }
+
+        sleep(Duration::from_millis(200)).await;
+    }
+
+    Ok(())
+}
+
 pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
     let mut system = System::new_all();
     system.refresh_processes();
@@ -41,22 +60,7 @@ pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
             .args(["--master-key", &meili.master_key])
             .spawn()?;
 
-        // Await for the server to be fully up
-        let tmp_client = reqwest::Client::new();
-        let start = Instant::now();
-        while tmp_client
-            .get(format!("{}/{}", &meili.api_endpoint, "health"))
-            .send()
-            .await
-            .and_then(|op| op.error_for_status())
-            .is_err()
-        {
-            sleep(Duration::from_millis(200)).await;
-
-            if start.elapsed() > Duration::from_secs(15) {
-                return Err(eyre!("Meilisearch server start timeout"));
-            }
-        }
+        wait_for_meili_server(&meili.api_endpoint, Duration::from_secs(15)).await?;
     } else {
         event!(Level::WARN, "Meilisearch server is already running");
     }
