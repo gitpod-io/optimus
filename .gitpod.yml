@@ -8,6 +8,13 @@ tasks:
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
+      # Login to gcloud
+      if test -n "${PRIVATE_KEY_ENCODED:-}"; then {
+        key_file=/tmp/kf.json
+        base64 -d <<< "${PRIVATE_KEY_ENCODED}" > "${key_file}"
+        gcloud auth activate-service-account --key-file="${key_file}"
+      } fi
+
       # Await for meilisearch to be fully up
       #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
       #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
