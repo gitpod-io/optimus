@@ -8,6 +8,11 @@ tasks:
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
+      # Restore ProdBotConfig.toml
+      if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
+        base64 -d <<<"${PROD_DISCORD_BOT_CONFIG_ENCODED}" > ProdBotConfig.toml
+      } fi
+
       # Await for meilisearch to be fully up
       #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
       #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
@@ -54,7 +59,7 @@ github:
     # enable for the default branch (defaults to true)
     master: true
     # enable for all branches in this repo (defaults to false)
-    branches: false
+    branches: true
     # enable for pull requests coming from this repo (defaults to true)
     pullRequests: true
     # enable for pull requests coming from forks (defaults to false)
