@@ -8,11 +8,9 @@ tasks:
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
-      # Login to gcloud
-      if test -n "${PRIVATE_KEY_ENCODED:-}"; then {
-        key_file=/tmp/kf.json
-        base64 -d <<< "${PRIVATE_KEY_ENCODED}" > "${key_file}"
-        gcloud auth activate-service-account --key-file="${key_file}"
+      # Restore ProdBotConfig.toml
+      if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
+        base64 -d <<<"${PROD_DISCORD_BOT_CONFIG_ENCODED}" > ProdBotConfig.toml
       } fi
 
       # Await for meilisearch to be fully up
@@ -61,7 +59,7 @@ github:
     # enable for the default branch (defaults to true)
     master: true
     # enable for all branches in this repo (defaults to false)
-    branches: false
+    branches: true
     # enable for pull requests coming from this repo (defaults to true)
     pullRequests: true
     # enable for pull requests coming from forks (defaults to false)

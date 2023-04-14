@@ -37,6 +37,14 @@ pub async fn meilisearch(meili: &MeilisearchConfig) -> Result<()> {
             .parent()
             .ok_or_else(|| eyre!("Failed to get parent dir of self"))?;
 
+        // Update PATH
+        if let Ok(value) = std::env::var("PATH") {
+            std::env::set_var(
+                "PATH",
+                format!("{}:{value}", exec_parent_dir.to_string_lossy()),
+            );
+        }
+
         let mut server_cmd = meili.server_cmd.clone();
         // Add db-path if not specified
         if !&server_cmd.contains(&"--db-path".to_owned()) {
