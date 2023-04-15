@@ -169,6 +169,26 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
         })
         .await?;
 
+        thread
+        .send_message(&ctx, |message| {
+            message.content("Try our experimental Gitpod Docs AI!\nNOTE: Not all answers may be 100% correct");
+
+            message.components(|c| {
+                c.create_action_row(|ar| {
+                    ar.create_button(|button| {
+                        button
+                            .style(ButtonStyle::Primary)
+                            .label("Ask Gitpod Docs AI")
+                            .custom_id("question-qa")
+                            .emoji(ReactionType::Unicode("🔍".to_string()))
+                    })
+                })
+            });
+
+            message
+        })
+        .await?;
+
         // Simulate typing
         let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
 
