@@ -1,4 +1,4 @@
-use crate::{init::MEILICLIENT_THREAD_INDEX, utils::index_threads::Thread};
+use crate::{init::MEILICLIENT_THREAD_INDEX, utils::index_threads::{Thread, index_thread_messages}};
 use url::Url;
 
 use super::substr::StringUtils;
@@ -287,6 +287,11 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
                 m
             }).await?;
         }
+
+        // Index to DB
+        index_thread_messages(ctx, &vec![thread.clone()])
+            .await
+            .ok();
 
         // Take a pause
         sleep(Duration::from_secs(20)).await;
