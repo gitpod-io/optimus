@@ -1,0 +1,4 @@
+{
+    "rust-analyzer.hover.actions.references.enable": true,
+    "rust-analyzer.check.command": "clippy"
+}
