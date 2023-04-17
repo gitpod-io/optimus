@@ -88,7 +88,7 @@ async fn save_and_fetch_links(
 
     // // Fetch 5 MAX matching discord questions
     if let Some(mclient) = MEILICLIENT_THREAD_INDEX.get()
-    && let Ok(data) = mclient.search().with_query(title).with_limit(10).execute::<Thread>().await {
+    && let Ok(data) = mclient.search().with_query(title).with_limit(5).execute::<Thread>().await {
         for ids in data.hits {
             links.insert(
                 ids.result.title,
@@ -169,28 +169,8 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
         })
         .await?;
 
-        thread
-        .send_message(&ctx, |message| {
-            message.content("Try our experimental Gitpod Docs AI!\nNOTE: Not all answers may be 100% correct");
-
-            message.components(|c| {
-                c.create_action_row(|ar| {
-                    ar.create_button(|button| {
-                        button
-                            .style(ButtonStyle::Primary)
-                            .label("Ask Gitpod Docs AI")
-                            .custom_id("question-qa")
-                            .emoji(ReactionType::Unicode("🔍".to_string()))
-                    })
-                })
-            });
-
-            message
-        })
-        .await?;
-
         // Simulate typing
-        let thread_typing = thread.clone().start_typing(&ctx.http).unwrap();
+        let thread_typing = thread.clone().start_typing(&ctx.http)?;
 
         // Fetch suggestions from relevant sources
         let relevant_links_external_sources = {
@@ -250,12 +230,12 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
 
             let mut suggested_block_count = 0;
             thread.send_message(&ctx.http, |m| {
-                m.content(format!("{} I also found some relevant links which might help to self-serve, please do check them out below 🙏:", &user_mention));
+                m.content(format!("{}, I found some relevant links which might help to self-serve, please do check them out below 🙏:", &user_without_mention));
                 m.components(|c| {
                     // TODO: We could use a more concise `for` loop, but anyway
                     loop {
-                        // 3 suggestion blocks MAX, means 10 links
-                        if suggested_block_count == 3 || relevant_links.is_empty() {
+                        // 2 suggestion blocks MAX, means ~10 links
+                        if suggested_block_count == 2 || relevant_links.is_empty() {
                             break;
                         } else {
                             suggested_block_count += 1;
@@ -309,9 +289,10 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
         }
 
         // Take a pause
-        sleep(Duration::from_secs(20)).await;
+        sleep(Duration::from_secs(5)).await;
 
         let mut msg = MessageBuilder::new();
+        // Ask for info
         msg.push_quote_line(format!(
             "{} **{}**",
             &user_mention, "You can share the following (if applies):"
@@ -327,8 +308,26 @@ pub async fn responder(ctx: &Context, msg: &Message) -> Result<(), Report> {
             .push_line("• If you have resources that are set up strangely, please run `kubectl describe` on the resource");
         }
 
+        // AI prompt
+        msg.push_line("\n> ✨ **NEW:** Try our experimental Gitpod Docs AI!");
+
         thread
-            .send_message(&ctx.http, |m| m.content(msg.build()))
+            .send_message(&ctx.http, |message| {
+                message.content(msg.build());
+                
+                message.components(|c| {
+                    c.create_action_row(|ar| {
+                        ar.create_button(|button| {
+                            button
+                                .style(ButtonStyle::Primary)
+                                .label("Ask Gitpod Docs AI")
+                                .custom_id("question-qa")
+                                .emoji(ReactionType::Unicode("🔍".to_string()))
+                        })
+                    })
+                });
+                message
+            })
             .await?;
 
         thread_typing.stop().ok_or_else(|| eyre!("Couldn't stop writing"))?;
