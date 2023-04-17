@@ -7,7 +7,7 @@ use serenity::{
     client::Context,
     futures::StreamExt,
     model::{
-        id::{ChannelId, GuildId},
+        id::ChannelId,
         prelude::{GuildChannel, MessageType},
         Timestamp,
     },
@@ -33,14 +33,6 @@ pub async fn index_channel_threads(ctx: &Context, channel_ids: &[ChannelId]) -> 
     // let guild_id = GuildId(947769443189129236);
 
     for channel_id in channel_ids {
-        // Get GUILD_ID for the channel
-        let guild_id = channel_id
-            .to_channel(&ctx.http)
-            .await?
-            .guild()
-            .ok_or_else(|| eyre!("Failed to get Guild from channel ID"))?
-            .guild_id;
-
         // Get archived threads from channel_id
         let archived_threads = channel_id
             .get_archived_public_threads(&ctx.http, None, None)
@@ -48,7 +40,7 @@ pub async fn index_channel_threads(ctx: &Context, channel_ids: &[ChannelId]) -> 
             .threads;
 
         // Iterate over archived threads (AKA posts) from the (forum) channel
-        index_thread_messages(ctx, &guild_id, &archived_threads).await?;
+        index_thread_messages(ctx, &archived_threads).await?;
     }
 
     Ok(())
@@ -56,7 +48,6 @@ pub async fn index_channel_threads(ctx: &Context, channel_ids: &[ChannelId]) -> 
 
 pub async fn index_thread_messages(
     ctx: &Context,
-    guild_id: &GuildId,
     threads: &Vec<GuildChannel>,
 ) -> Result<(), Report> {
     for thread in threads {
@@ -66,9 +57,9 @@ pub async fn index_thread_messages(
             .to_channel(&ctx.http)
             .await?
             .guild()
-            .ok_or_else(|| eyre!("hmm"))?;
+            .ok_or_else(|| eyre!("Failed to get thread node"))?;
         let thread_id = thread_node.id;
-        // let guild_id = &mci.guild_id.context("Failed to get guild ID")?;
+        let guild_id = thread_node.guild_id;
         let thread_parent_channel_id = thread_node
             .parent_id
             .ok_or_else(|| eyre!("Failed to get parent_id of thread"))?;
