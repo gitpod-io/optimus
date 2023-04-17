@@ -1,0 +1,21 @@
+name: Check if optimus is buildable
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  check-build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Check optimus
+        run: docker run -v $(pwd):/volume --rm -t clux/muslrust:nightly cargo check
