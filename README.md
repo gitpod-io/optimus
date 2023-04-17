@@ -20,7 +20,8 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
   - In the same page, toggle on the following options: `Presence Intent`, `Server Members Intent` and `Message Content Intent`
 - Go to **OAuth2 > URL Generator** from your left sidebar
   - Tick `Scopes: bot, application.commands` and `Bot permissions: Adminstrator`. It should look like below:
-    ![OAuth2 example](/.assets/oauth2_example.png)
+    ![OAuth2 example](https://user-images.githubusercontent.com/39482679/232367860-f7342e8e-84aa-44e1-9a5c-d1f935d43d45.png)
+
   - Scroll to the bottom of this page and copy paste the **GENERATED-URL** into your browser tab to add the bot to a discord server. I recommend creating a new Discord server for bot development purposes.
 
 ### Running the BOT from Gitpod for development
@@ -29,7 +30,8 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
 
 - Update/fill-up `./BotConfig.toml` with:
   - The token from your 🧩 `Bot` page on discord dev portal. You might need to reset it to see.
-    ![bot token](/.assets/bot_token_example.png)
+    ![bot token](https://user-images.githubusercontent.com/39482679/232367937-8767dbb4-d11e-4de0-ba6a-d8dbdd01c422.png)
+
   - The **Application ID** from the `General Information` section in your left sidebar
 - To persist the config changes accross development Gitpod workspaces:
 
