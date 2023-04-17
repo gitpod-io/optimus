@@ -8,6 +8,10 @@ tasks:
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
+      # Install clippy and rustfmt
+      rustup component add clippy --toolchain nightly-x86_64-unknown-linux-gnu
+      rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
+
       # Restore ProdBotConfig.toml
       if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
         base64 -d <<<"${PROD_DISCORD_BOT_CONFIG_ENCODED}" > ProdBotConfig.toml

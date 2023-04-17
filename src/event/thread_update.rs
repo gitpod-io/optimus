@@ -45,8 +45,7 @@ pub async fn responder(ctx: Context, thread: GuildChannel) -> Result<()> {
 
         if thread_type == "question" {
             // Index to DB
-            let guild_id = &thread.guild_id;
-            index_thread_messages(&ctx, guild_id, &vec![thread.clone()])
+            index_thread_messages(&ctx, &vec![thread.clone()])
                 .await
                 .ok();
 
