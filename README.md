@@ -28,11 +28,9 @@ You wanna contribute!? That sounds awesome! Thank you for taking the step to con
 
 - If you don't have `./BotConfig.toml` file, create it by copying [./ExampleBotConfig.toml](./ExampleBotConfig.toml). So, you could run: `cp ExampleBotConfig.toml BotConfig.toml`
 
-- Update/fill-up `./BotConfig.toml` with:
-  - The token from your 🧩 `Bot` page on discord dev portal. You might need to reset it to see.
+- Update/fill-up `./BotConfig.toml` with the token from your 🧩 `Bot` page on discord dev portal. You might need to reset it to see.
     ![bot token](https://user-images.githubusercontent.com/39482679/232367937-8767dbb4-d11e-4de0-ba6a-d8dbdd01c422.png)
 
-  - The **Application ID** from the `General Information` section in your left sidebar
 - To persist the config changes accross development Gitpod workspaces:
 
 ```bash

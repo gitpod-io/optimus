@@ -24,7 +24,7 @@ pub struct GithubConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct DiscordConfig {
-    pub application_id: u64,
+    // pub application_id: u64,
     pub bot_token: String,
     pub channels: Option<DiscordChannels>,
 }

@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
     // .group(&OWNER_GROUP)
 
     let mut client = Client::builder(&config.discord.bot_token, GatewayIntents::default())
-        .application_id(config.discord.application_id)
+        // .application_id(config.discord.application_id)
         .event_handler(event::Listener {
             is_loop_running: AtomicBool::new(false),
         })

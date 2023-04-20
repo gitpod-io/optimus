@@ -3,7 +3,6 @@
 ## Do not commit in git.
 
 [discord]
-application_id = 12345678901234567890
 bot_token = "QWERTYUIOP.ASDFGHJKL.123456789"
 
 # optional, uncomment block to use.
