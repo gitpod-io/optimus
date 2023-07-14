@@ -210,7 +210,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
     mci.create_interaction_response(&ctx.http, |r| {
         r.kind(InteractionResponseType::ChannelMessageWithSource);
         r.interaction_response_data(|d| {
-            d.content("**[1/4]:** Which additional channels would you like to have access to?");
+            d.content("**[1/5]:** Which additional channels would you like to have access to?");
             d.components(|c| {
                 c.create_action_row(|a| {
                     a.create_select_menu(|s| {
@@ -260,7 +260,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
             "channel_choice" => {
                 interaction.create_interaction_response(&ctx.http, |r| {
                     r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d|{
-                        d.content("**[2/4]:** Would you like to get notified for announcements and community events?");
+                        d.content("**[2/5]:** Would you like to get notified for announcements and community events?");
                         d.components(|c| {
                             c.create_action_row(|a| {
                                 a.create_button(|b|{
@@ -287,7 +287,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
             "subscribed" | "not_subscribed" => {
                 interaction.create_interaction_response(&ctx.http, |r| {
 									r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
-										d.content("**[3/4]:** Why did you join our community?\nI will point you to the correct channels with this info.").components(|c| {
+										d.content("**[3/5]:** Why did you join our community?\nI will point you to the correct channels with this info.").components(|c| {
 											c.create_action_row(|a| {
 												a.create_button(|b|{
 													b.label("To hangout with others");
@@ -329,10 +329,23 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
             "hangout" | "gitpodio_help" | "selfhosted_help" => {
                 interaction
                     .create_interaction_response(&ctx.http, |r| {
-                        r.kind(InteractionResponseType::UpdateMessage)
+                        r.kind(InteractionResponseType::Modal)
                             .interaction_response_data(|d| {
-                                d.content("**[3/4]**: You have personalized the server, congrats!")
-                                    .components(|c| c)
+                                d.custom_id("company_name_submitted")
+                                    .title("[4/5] Share your company name")
+                                    .components(|c| {
+                                        c.create_action_row(|a| {
+                                            a.create_input_text(|t| {
+                                                t.custom_id("company_submitted")
+                                                    .label("Company (optional)")
+                                                    .placeholder("Type in your company name")
+                                                    .max_length(50)
+                                                    .min_length(2)
+                                                    .required(false)
+                                                    .style(component::InputTextStyle::Short)
+                                            })
+                                        })
+                                    })
                             })
                     })
                     .await?;
@@ -340,6 +353,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
                 // Save join reason
                 join_reason.push_str(interaction.data.custom_id.as_str());
 
+                // Fetch member
                 let mut member = mci.member.clone().context("Can't fetch member")?;
                 let member_role = get_role(mci, ctx, "Member").await?;
                 let never_introduced = {
@@ -371,7 +385,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
 
                 let followup = interaction
                     .create_followup_message(&ctx.http, |d| {
-                        d.content("**[4/4]:** How did you find Gitpod?");
+                        d.content("**[5/5]:** How did you find Gitpod?");
                         d.components(|c| {
                             c.create_action_row(|a| {
                                 a.create_select_menu(|s| {
