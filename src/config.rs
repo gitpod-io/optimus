@@ -14,6 +14,7 @@ pub struct BotConfig {
     pub discord: DiscordConfig,
     pub meilisearch: Option<MeilisearchConfig>,
     pub openai: Option<OpenaiConfig>,
+    pub misc: Option<Misc>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -49,6 +50,11 @@ pub struct MeilisearchConfig {
 #[derive(Debug, Deserialize)]
 pub struct OpenaiConfig {
     pub api_key: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Misc {
+    pub company_share_endpoint: String,
 }
 
 pub fn read(toml_path: &Path) -> Result<BotConfig, Report> {
