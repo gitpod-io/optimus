@@ -22,6 +22,7 @@ pub struct Thread {
     pub author_id: u64,
     pub id: u64,
     pub guild_id: u64,
+
     pub parent_channel_id: u64,
     pub timestamp: i64,
     pub date: Timestamp,
@@ -72,8 +73,10 @@ pub async fn index_thread_messages(
             .await?
             .user
             .face();
+
         // Get tags
         // TODO: How to optimize this, and better visualize this problem in mind, ask Thomas.
+        // IDEA: Map available_tags into a hashmap, id to key and tag to value.
         let thread_available_tags = thread_parent_channel_id
             .to_channel(&ctx.http)
             .await?
