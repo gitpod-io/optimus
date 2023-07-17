@@ -33,6 +33,7 @@ async fn company_name_submitted_response(
             .post(&misc.company_share_endpoint)
             .json(&json!(
             {
+                "userid": mci.user.id,
                 "username": mci.user.name,
                 "company": it.value
             }
