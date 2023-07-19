@@ -27,6 +27,7 @@ async fn company_name_submitted_response(
     if let Some(component) = &mci.data.components.get(0)
     && let Some(input_field) = component.components.get(0)
     && let ActionRowComponent::InputText(it) = input_field 
+    && !it.value.is_empty()
     && let Some(config) = BOT_CONFIG.get() && let Some(misc) = &config.misc 
     {
         reqwest::Client::new()
