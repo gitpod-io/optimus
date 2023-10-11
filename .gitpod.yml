@@ -3,14 +3,22 @@ image:
 
 tasks:
   - name: Project build (cache) and run instructions
-    init: cargo build
+    init: |
+      cargo build
+      
+      # workaround for https://github.com/gitpod-io/gitpod/issues/524
+      find target -exec stat --format='%.Y %n' {} + > /workspace/.ts
+
     command: |
+      # workaround for https://github.com/gitpod-io/gitpod/issues/524
+      while read -r ts file; do touch -d "@${ts}" "${file}"; done < /workspace/.ts
+
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
       # Install clippy and rustfmt
-      rustup component add clippy --toolchain nightly-x86_64-unknown-linux-gnu
-      rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
+      rustup component add clippy --toolchain nightly-2023-06-27
+      rustup component add rustfmt --toolchain nightly-2023-06-27
 
       # Restore ProdBotConfig.toml
       if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
@@ -50,28 +58,10 @@ tasks:
 #     command: |
 #       # Fully cleanup terminal
 #       printf "\033[3J\033c\033[3J"
-
 #       # Start server
 #       meilisearch --no-analytics --master-key "${MEILISEARCH_API_KEY}" --env development --http-addr 0.0.0.0:7700 --db-path ./data.ms
-
 vscode:
   extensions:
     - rust-lang.rust-analyzer
+    - tamasfe.even-better-toml
 
-github:
-  prebuilds:
-    # enable for the default branch (defaults to true)
-    master: true
-    # enable for all branches in this repo (defaults to false)
-    branches: true
-    # enable for pull requests coming from this repo (defaults to true)
-    pullRequests: true
-    # enable for pull requests coming from forks (defaults to false)
-    # DANGER: do not enable!!
-    pullRequestsFromForks: false
-    # add a check to pull requests (defaults to true)
-    addCheck: true
-    # add a "Review in Gitpod" button as a comment to pull requests (defaults to false)
-    addComment: true
-    # add a "Review in Gitpod" button to the pull request's description (defaults to false)
-    addBadge: true
