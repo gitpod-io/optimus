@@ -3,8 +3,16 @@ image:
 
 tasks:
   - name: Project build (cache) and run instructions
-    init: cargo build
+    init: |
+      cargo build
+      
+      # workaround for https://github.com/gitpod-io/gitpod/issues/524
+      find target -exec stat --format='%.Y %n' {} + > /workspace/.ts
+
     command: |
+      # workaround for https://github.com/gitpod-io/gitpod/issues/524
+      while read -r ts file; do touch -d "@${ts}" "${file}"; done < /workspace/.ts
+
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
