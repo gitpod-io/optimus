@@ -1,5 +1,4 @@
 /target
-/Cargo.lock
 /bot.sqlite*
 /data.ms
 /*BotConfig.toml
