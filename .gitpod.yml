@@ -16,10 +16,6 @@ tasks:
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
-      # Install clippy and rustfmt
-      rustup component add clippy --toolchain nightly #-2023-07-13
-      rustup component add rustfmt --toolchain nightly #-2023-07-13
-
       # Restore ProdBotConfig.toml
       if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
         base64 -d <<<"${PROD_DISCORD_BOT_CONFIG_ENCODED}" > ProdBotConfig.toml
@@ -62,5 +58,5 @@ tasks:
 #       meilisearch --no-analytics --master-key "${MEILISEARCH_API_KEY}" --env development --http-addr 0.0.0.0:7700 --db-path ./data.ms
 vscode:
   extensions:
-    - rust-lang.rust-analyzer
+    - https://github.com/rust-lang/rust-analyzer/releases/download/2023-10-09/rust-analyzer-linux-x64.vsix
     - tamasfe.even-better-toml
