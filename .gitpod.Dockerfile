@@ -1,4 +1,4 @@
-FROM gitpod/workspace-rust:latest
+FROM gitpod/workspace-rust:2023-10-13-07-50-14
 
 USER root
 
