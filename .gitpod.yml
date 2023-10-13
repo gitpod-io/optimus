@@ -1,11 +1,11 @@
-image: 
+image:
   file: .gitpod.Dockerfile
 
 tasks:
   - name: Project build (cache) and run instructions
     init: |
       cargo build
-      
+
       # workaround for https://github.com/gitpod-io/gitpod/issues/524
       find target -exec stat --format='%.Y %n' {} + > /workspace/.ts
 
@@ -17,8 +17,8 @@ tasks:
       printf "\033[3J\033c\033[3J"
 
       # Install clippy and rustfmt
-      rustup component add clippy --toolchain nightly-2023-06-27
-      rustup component add rustfmt --toolchain nightly-2023-06-27
+      rustup component add clippy --toolchain nightly #-2023-07-13
+      rustup component add rustfmt --toolchain nightly #-2023-07-13
 
       # Restore ProdBotConfig.toml
       if test -n "${PROD_DISCORD_BOT_CONFIG_ENCODED:-}"; then {
@@ -64,4 +64,3 @@ vscode:
   extensions:
     - rust-lang.rust-analyzer
     - tamasfe.even-better-toml
-
