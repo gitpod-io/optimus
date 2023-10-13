@@ -2,13 +2,11 @@
 
 mod command;
 mod config;
-mod db;
 mod event;
-mod utils;
-use db::Db;
 mod init;
+mod utils;
 
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use command::*;
 use once_cell::sync::OnceCell;
 use serenity::{
@@ -40,13 +38,6 @@ async fn main() -> Result<()> {
     if let Some(meili) = &config.meilisearch {
         init::meilisearch(meili).await?;
     }
-
-    // Init sqlite database
-    let db = Db::new().await.expect("Can't init database");
-    db.run_migrations()
-        .await
-        .ok()
-        .ok_or_else(|| eyre!("Failed to run db migrations"))?;
 
     let http = Http::new(&config.discord.bot_token);
     let (owners, bot_id) = match http.get_current_application_info().await {
@@ -126,8 +117,7 @@ async fn main() -> Result<()> {
         // They're made in the pattern: `#name_GROUP` for the group instance and `#name_GROUP_OPTIONS`.
         // #name is turned all uppercase
         .help(&MY_HELP)
-        .group(&GENERAL_GROUP)
-        .group(&CONFIG_GROUP);
+        .group(&GENERAL_GROUP);
     // .group(&NOTE_GROUP);
     ////// .group(&EMOJI_GROUP)
     ////// .group(&MATH_GROUP)
@@ -147,7 +137,6 @@ async fn main() -> Result<()> {
         let mut data = client.data.write().await;
         data.insert::<CommandCounter>(HashMap::default());
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
-        data.insert::<Db>(Arc::new(db));
     }
 
     if let Err(why) = client.start().await {

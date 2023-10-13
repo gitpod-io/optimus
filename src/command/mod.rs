@@ -2,7 +2,6 @@ mod about;
 // mod am_i_admin;
 mod av;
 mod bash;
-pub mod config;
 // mod editlog;
 mod emoji;
 mod invite;
@@ -22,7 +21,6 @@ mod index_threads;
 use about::*;
 use av::*;
 use bash::*;
-use config::*;
 // use editlog::*;
 use emoji::*;
 use invite::*;
@@ -36,7 +34,6 @@ use status::*;
 // use whois::*;
 use exec::*;
 
-use crate::db::{ClientContextExt, Db};
 use crate::utils::{parser::Parse, substr::*};
 // use thorne::*;
 
@@ -96,7 +93,6 @@ impl TypeMapKey for CommandCounter {
     status,
     invite,
     // some_long_command,
-    config,
     index_threads
 )]
 struct General;
@@ -122,19 +118,6 @@ struct Emoji;
 // #[summary = "Note autoresponder"]
 // #[commands(add, remove, link, list)]
 // struct Note;
-
-#[group]
-#[prefix = "config"]
-#[description = "Set bot configs for the server"]
-#[summary = "Bot config"]
-// #[commands(
-//     questions_channel,
-//     introduction_channel,
-//     getting_started,
-//     subscriber_role,
-//     default_role
-// )]
-struct Config;
 
 #[group]
 // Sets a single prefix for this group.
