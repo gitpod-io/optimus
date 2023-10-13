@@ -2,55 +2,34 @@ mod about;
 // mod am_i_admin;
 mod av;
 mod bash;
-pub mod config;
 // mod editlog;
-mod emoji;
 mod invite;
 mod latency;
-mod math;
 // pub mod note;
-mod owner_check;
-mod ping;
-mod say;
-mod some_long_command;
-mod status;
-// mod whois;
 mod exec;
 mod index_threads;
+mod status;
 
 // Import commands
 use about::*;
 use av::*;
 use bash::*;
-use config::*;
-// use editlog::*;
-use emoji::*;
+use exec::*;
+use index_threads::*;
 use invite::*;
 use latency::*;
-use math::*;
-// use note::*;
-use index_threads::*;
-use owner_check::*;
-use say::*;
 use status::*;
-// use whois::*;
-use exec::*;
 
-use crate::db::{ClientContextExt, Db};
 use crate::utils::{parser::Parse, substr::*};
-// use thorne::*;
 
 use serenity::{
     client::bridge::gateway::{ShardId, ShardManager},
     framework::standard::{
-        buckets::RevertBucket,
         help_commands,
-        macros::{check, command, group, help, hook},
-        Args, CommandGroup, CommandOptions, CommandResult, Delimiter, DispatchError, HelpOptions,
-        Reason,
+        macros::{command, group, help, hook},
+        Args, CommandGroup, CommandResult, Delimiter, DispatchError, HelpOptions,
     },
     model::{channel::Message, id::UserId},
-    utils::{content_safe, ContentSafeOptions},
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -59,7 +38,6 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
 use serenity::prelude::*;
 // use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
 use tokio::{process, sync::Mutex};
@@ -80,78 +58,8 @@ impl TypeMapKey for CommandCounter {
 }
 
 #[group]
-#[commands(
-    about,
-    // editlog,
-    // am_i_admin,
-    say,
-    commands,
-    bash,
-	exec,
-    // bashget,
-    // ping,
-    latency,
-    // whois,
-    av,
-    status,
-    invite,
-    // some_long_command,
-    config,
-    index_threads
-)]
+#[commands(about, bash, exec, latency, av, status, invite, index_threads)]
 struct General;
-
-#[group]
-// Sets multiple prefixes for a group.
-// This requires us to call commands in this group
-// via `~emoji` (or `~em`) instead of just `~`.
-#[prefixes("emoji", "em")]
-// Set a description to appear if a user wants to display a single group
-// e.g. via help using the group-name or one of its prefixes.
-#[description = "A group with commands providing an emoji as response."]
-// Summary only appears when listing multiple groups.
-#[summary = "Do emoji fun!"]
-// Sets a command that will be executed if only a group-prefix was passed.
-#[default_command(bird)]
-#[commands(cat, dog)]
-struct Emoji;
-
-// #[group]
-// #[prefix = "note"]
-// #[description = "A group of commands providing notes keeping functionality"]
-// #[summary = "Note autoresponder"]
-// #[commands(add, remove, link, list)]
-// struct Note;
-
-#[group]
-#[prefix = "config"]
-#[description = "Set bot configs for the server"]
-#[summary = "Bot config"]
-// #[commands(
-//     questions_channel,
-//     introduction_channel,
-//     getting_started,
-//     subscriber_role,
-//     default_role
-// )]
-struct Config;
-
-#[group]
-// Sets a single prefix for this group.
-// So one has to call commands in this group
-// via `~math` instead of just `~`.
-#[prefix = "math"]
-#[commands(multiply)]
-struct Math;
-
-// #[group]
-// #[owners_only]
-// // Limit all commands to be guild-restricted.
-// #[only_in(guilds)]
-// // Summary only appears when listing multiple groups.
-// #[summary = "Server admins only"]
-// #[commands(slow_mode)]
-// struct Owner;
 
 // The framework provides two built-in help commands for you to use.
 // But you can also make your own customized help command that forwards

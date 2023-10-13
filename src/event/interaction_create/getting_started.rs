@@ -1,4 +1,3 @@
-use crate::db::ClientContextExt;
 use std::time::Duration;
 
 use anyhow::{bail, Context as _, Result};
@@ -82,8 +81,6 @@ async fn assign_roles(
             role_ids.push(role.id);
         }
         member.add_roles(&ctx.http, &role_ids).await?;
-        let db = &ctx.get_db().await;
-        db.set_user_roles(mci.user.id, role_ids).await?;
     }
 
     // Remove the temp role from user
