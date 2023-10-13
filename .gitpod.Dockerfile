@@ -10,6 +10,6 @@ RUN target=/usr/bin/meilisearch \
 
 USER gitpod
 
-RUN rustup default nightly \
-    && rustup component add clippy --toolchain nightly #-2023-07-13 \
-    && rustup component add rustfmt --toolchain nightly #-2023-07-13
+RUN rustup default nightly-2023-10-12 \
+    && rustup component add clippy --toolchain nightly-2023-10-12 \
+    && rustup component add rustfmt --toolchain nightly-2023-10-12
