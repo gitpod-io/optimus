@@ -5,8 +5,9 @@ use serenity::{
     client::Context,
     model::{
         application::{
-            component::ButtonStyle, interaction::message_component::MessageComponentInteraction,
-            interaction::InteractionResponseType,
+            component::ButtonStyle,
+            interaction::message_component::MessageComponentInteraction,
+            interaction::{InteractionResponseType, MessageFlags},
         },
         channel::ReactionType,
         prelude::component::Button,
@@ -35,6 +36,7 @@ pub async fn responder(mci: &MessageComponentInteraction, ctx: &Context) -> Resu
         mci.create_interaction_response(&ctx.http, |r| {
             r.kind(InteractionResponseType::ChannelMessageWithSource)
                 .interaction_response_data(|d| {
+                    d.flags(MessageFlags::EPHEMERAL);
                     d.content(format!("{}: {button_label}", &mci.user.mention()))
                         .components(|c| {
                             c.create_action_row(|a| {
