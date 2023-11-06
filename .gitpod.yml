@@ -8,11 +8,12 @@ tasks:
 
       # workaround for https://github.com/gitpod-io/gitpod/issues/524
       find target -exec stat --format='%.Y %n' {} + > /workspace/.ts
-
     command: |
       # workaround for https://github.com/gitpod-io/gitpod/issues/524
       while read -r ts file; do touch -d "@${ts}" "${file}"; done < /workspace/.ts
 
+  - name: Setup BotConfig and run program
+    before: |
       # Fully cleanup terminal
       printf "\033[3J\033c\033[3J"
 
@@ -21,16 +22,11 @@ tasks:
         base64 -d <<<"${PROD_DISCORD_BOT_CONFIG_ENCODED}" > ProdBotConfig.toml
       } fi
 
-      # Await for meilisearch to be fully up
-      #printf '\n\ninfo: %s\n' "Awaiting for meilisearch to be fully up ..."
-      #until curl --silent --show-error --fail http://localhost:7700/health >/dev/null 2>&1; do sleep 0.5; done
-
       # Restore config if exists and run bot
       config_name="BotConfig.toml"
 
       if test -n "${DISCORD_BOT_CONFIG_ENCODED:-}"; then {
         base64 -d <<< "${DISCORD_BOT_CONFIG_ENCODED}" > "${config_name}"
-        cargo run -- "${config_name}"
       } else {
         # Create "BotConfig.toml"
         cp ExampleBotConfig.toml "${config_name}"
@@ -49,13 +45,13 @@ tasks:
           "# To execute the bot from cargo in debug variant" \
           "    ${YELLOW}cargo run -- ${config_name}${RC}"
       } fi
+    command: |
+      config_name="BotConfig.toml"
 
-#   - name: Meilisearch
-#     command: |
-#       # Fully cleanup terminal
-#       printf "\033[3J\033c\033[3J"
-#       # Start server
-#       meilisearch --no-analytics --master-key "${MEILISEARCH_API_KEY}" --env development --http-addr 0.0.0.0:7700 --db-path ./data.ms
+      if test -e "${config_name}"; then {
+        cargo run -- "${config_name}"
+      } fi
+
 vscode:
   extensions:
     - https://github.com/rust-lang/rust-analyzer/releases/download/2023-10-09/rust-analyzer-linux-x64.vsix
